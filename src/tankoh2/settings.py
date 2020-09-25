@@ -3,7 +3,10 @@
 import json
 import os, sys
 
+from tankoh2.exception import Tankoh2Error
+
 myCrOSettings = None
+exampleFileName = 'settings_example.json'
 
 def applySettings(filename=None):
     """reads settings from the settingsfile"""
@@ -16,8 +19,11 @@ def applySettings(filename=None):
                 # look for settings file in actual folder
                 filename = os.path.join(searchDir, defaultSettingsFileName)
     if filename is None:
-        log.error(
-            f'Could not find the settings file "{defaultSettingsFileName}" in the following folders: {searchDirs}')
+        writeSettingsExample()
+        raise Tankoh2Error(
+            f'Could not find the settings file "{defaultSettingsFileName}" in the following folders: {searchDirs}.\n'
+            f'An example settings file is written to ./{exampleFileName}.\n'
+            f'Please add the requried settings and rename the file to {exampleFileName.replace("_example","")}.')
 
     with open(filename, 'r') as f:
         settings = json.load(f)
@@ -30,11 +36,12 @@ def applySettings(filename=None):
     try:
         import mycropychain as pychain
     except ModuleNotFoundError:
-        log.error('Could not find package "mycropychain". Please check the path to mycropychain in the settings?')
+        raise Tankoh2Error('Could not find package "mycropychain". Please check the path to mycropychain in the '
+                           'settings file.')
     else:
         if len(pychain.__dict__) < 10:
             # len(pychain.__dict__) was 8 on failure and 17 on success
-            log.error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
+            raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
 
         # set general path information
         global myCrOSettings
@@ -45,8 +52,7 @@ def applySettings(filename=None):
 def writeSettingsExample():
     """writes an example for settings"""
     from tankoh2 import log
-    outFileName = 'settings_example.json'
-    log.info(f'write file {outFileName}')
+    log.info(f'write file {exampleFileName}')
     with open('settings_example.json', 'w') as f:
         json.dump({'comment': "Please rename this example file to 'settings.json' and include the required settings. "
                               "For paths, please use '\\' or '/'",

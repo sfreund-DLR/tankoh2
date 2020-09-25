@@ -16,11 +16,8 @@ version = __version__
 # create logger
 formatStr = "%(levelname)s\t%(asctime)s: %(message)s"
 logging.basicConfig(stream=sys.stdout, format=formatStr, level=logging.INFO)
-
 log = logging.root
 
 # make mycropychain available
-
 applySettings()
 import mycropychain as pychain
-
