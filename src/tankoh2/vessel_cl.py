@@ -117,25 +117,37 @@ def main():
     # #########################################################################################
 
     # load contour from file
+    fileNameReducedDomeContour = os.path.join(dataDir, "Dome_contour_" + tankname + "_modified.dcon")
     Data = np.loadtxt(os.path.join(dataDir, "Dome_contour_" + tankname + ".txt"))
-    Xvec = abs(Data[:, 0])
-    Xvec = Xvec - Xvec[0]
-    rVec = abs(Data[:, 1])
+    if 1:
+        contourPoints = np.abs(Data)
+        contourPoints[:, 0] -= contourPoints[0, 0]
+        #reduce points
+        redContourPoints = contourPoints[::dpoints,:]
+        if not np.allclose(redContourPoints[-1,:],contourPoints[-1,:]):
+            redContourPoints = np.append(redContourPoints, [contourPoints[-1,:]], axis=0)
+        np.savetxt(fileNameReducedDomeContour, redContourPoints, delimiter=',')
+        Xvec, rVec = redContourPoints[:,0], redContourPoints[:,1]
 
-    # reduce data points
-    log.info(len(Xvec) - 1)
-    index = np.linspace(0, dpoints * int((len(Xvec) / dpoints)), int((len(Xvec) / dpoints)) + 1, dtype=np.int16)
+    else:
+        Xvec = abs(Data[:, 0])
+        Xvec = Xvec - Xvec[0]
+        rVec = abs(Data[:, 1])
 
-    arr = [len(Xvec) - 1]
-    index = np.append(index, arr)
+        # reduce data points
+        log.info(len(Xvec) - 1)
+        index = np.linspace(0, dpoints * int((len(Xvec) / dpoints)), int((len(Xvec) / dpoints)) + 1, dtype=np.int16)
 
-    Xvec = Xvec[index]
-    rVec = rVec[index]
+        arr = [len(Xvec) - 1]
+        index = np.append(index, arr)
 
-    # save liner contour for loading in mikroWind
-    with open(os.path.join(dataDir, "Dome_contour_" + tankname + "_modified.dcon"), "w") as contour:
-        for i in range(len(Xvec)):
-            contour.write(str(Xvec[i]) + ',' + str(rVec[i]) + '\n')
+        Xvec = Xvec[index]
+        rVec = rVec[index]
+
+        # save liner contour for loading in mikroWind
+        with open(fileNameReducedDomeContour, "w") as contour:
+            for i in range(len(Xvec)):
+                contour.write(str(Xvec[i]) + ',' + str(rVec[i]) + '\n')
 
     # build  dome
     dome = pychain.winding.Dome()
@@ -149,15 +161,16 @@ def main():
     liner.buildFromDome(dome, lzylinder, 1.0)
 
     # save liner for visualization with µChainWind
-    liner.saveToFile(os.path.join(dataDir, tankname + ".liner"))
+    linerFilename = os.path.join(dataDir, tankname + ".liner")
+    liner.saveToFile(linerFilename)
     log.info('saved liner')
 
     # change name of liner in file
-    with open(tankname + ".liner") as jsonFile:
+    with open(linerFilename) as jsonFile:
         data = json.load(jsonFile)
     data["liner"]["name"] = tankname
-    with open(os.path.join(dataDir, tankname + ".liner"), "w") as jsonFile:
-        json.dump(data, jsonFile)
+    with open(linerFilename, "w") as jsonFile:
+        json.dump(data, jsonFile, indent=4)
 
     # copyfile(tankname+"_.liner", tankname+'_copy.liner')
 
@@ -230,7 +243,7 @@ def main():
         data = json.load(jsonFile)
     data["designs"]["1"]["name"] = tankname
     with open(os.path.join(dataDir, tankname + ".design"), "w") as jsonFile:
-        json.dump(data, jsonFile)
+        json.dump(data, jsonFile, indent=4)
 
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
@@ -295,7 +308,7 @@ def main():
         data = json.load(jsonFile)
     data["vessel"]["name"] = tankname
     with open(os.path.join(dataDir, tankname + ".vessel"), "w") as jsonFile:
-        json.dump(data, jsonFile)
+        json.dump(data, jsonFile, indent=4)
 
     # rename vessel
 
