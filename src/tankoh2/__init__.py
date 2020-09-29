@@ -20,4 +20,5 @@ log = logging.root
 
 # make mycropychain available
 applySettings()
+pychain = None
 import mycropychain as pychain

@@ -119,7 +119,7 @@ def main():
     # load contour from file
     fileNameReducedDomeContour = os.path.join(dataDir, "Dome_contour_" + tankname + "_modified.dcon")
     Data = np.loadtxt(os.path.join(dataDir, "Dome_contour_" + tankname + ".txt"))
-    if 1:
+    if 0:
         contourPoints = np.abs(Data)
         contourPoints[:, 0] -= contourPoints[0, 0]
         #reduce points
@@ -259,7 +259,7 @@ def main():
     with open(os.path.join(dataDir, tankname + "_realised_winding.txt"), "w") as file:
         file.write("Layer number" + '\t' + "Angle" + '\t' + "Polar opening" + '\n')
         vessel.resetWindingSimulation()
-        for i in range(5):  # len(angle_degree)
+        for i in range(3):  # len(angle_degree)
             log.info('--------------------------------------------------')
             log.info(f'apply layer {i + 1} with angle {angle_degree[i]}')
             layerindex = i
