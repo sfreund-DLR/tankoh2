@@ -1,11 +1,10 @@
 """methods for liners and domes"""
 
-import os
 import numpy as np
 
 from tankoh2 import pychain
 from tankoh2.exception import Tankoh2Error
-from tankoh2.utilities import updateName
+from tankoh2.utilities import updateName, copyAsJson
 
 
 # #########################################################################################
@@ -82,20 +81,8 @@ def getLiner(dome, length, linerFilename=None, linerName=None):
     if linerFilename:
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
-
+        copyAsJson(linerFilename, 'liner')
+        liner = pychain.winding.Liner()
+        liner.loadFromFile(linerFilename)
     return liner
 
-# copyfile(tankname+"_.liner", tankname+'_copy.liner')
-
-# fobj = open(tankname+"_copy.liner")
-# fobj_new = open(tankname+"_.liner", "w")
-
-# for line in fobj:
-#     if line[9:13]=='name':
-#         print ('change name from '+line+' to '+tankname)
-#         fobj_new.write('\t\t"name": "'+tankname+'", \n')
-#     else:
-#         fobj_new.write(line)
-# fobj.close()
-# fobj_new.close()
-# os.remove(tankname+"_copy.liner")

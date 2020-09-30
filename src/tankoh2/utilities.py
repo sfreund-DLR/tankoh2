@@ -1,8 +1,19 @@
 """utility methods"""
 
 import json
+import shutil
 
 from tankoh2.exception import Tankoh2Error
+
+def copyAsJson(filename, typename):
+    """copy a file creating a .json file
+
+    Files in mycrowind have specific file types although they are json files.
+    This method creates an additional json file besides the original file."""
+    if filename.endswith(f'.{typename}'):
+        # also save as json for syntax highlighting
+        shutil.copy2(filename, filename + '.json')
+
 
 def updateName(jsonFilename, name, objsName):
     """updates the name of an item in a json file.

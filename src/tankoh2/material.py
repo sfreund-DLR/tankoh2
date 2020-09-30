@@ -3,7 +3,7 @@
 import numpy as np
 
 from tankoh2 import pychain
-from tankoh2.utilities import updateName
+from tankoh2.utilities import updateName, copyAsJson
 
 
 def getMaterial(materialFilename=None):
@@ -32,7 +32,7 @@ def readLayupData(filename):
     angle_degree, wendekreisdurchmesser, singlePlyThickenss, krempendruchmesser = data.T
     wendekreisradien = wendekreisdurchmesser / 2.
     krempenradien = krempendruchmesser / 2.
-    return angle_degree, singlePlyThickenss, wendekreisradien, krempenradien
+    return np.array([angle_degree, singlePlyThickenss, wendekreisradien, krempenradien])
 
 
 def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness, helixLayerThickenss,
@@ -67,4 +67,7 @@ def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness,
     composite.updateThicknessFromWindingProperties()
     composite.saveToFile(designFilename)
     updateName(designFilename, designName, ["designs", "1"])
+    copyAsJson(designFilename, 'design')
+    composite = pychain.material.Composite()
+    composite.loadFromFile(designFilename, 1)
     return composite
