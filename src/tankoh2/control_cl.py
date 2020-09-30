@@ -5,7 +5,7 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent
+from tankoh2.service import indent, getRunDir
 from tankoh2.settings import myCrOSettings as settings
 from tankoh2.utilities import updateName
 from tankoh2.contour import getLiner, getDome, getReducedDomePoints
@@ -16,17 +16,16 @@ from tankoh2.optimize import optimizeFriction, optimizeHoopShift
 def linear(x, m, n):
     return m * x + n
 
-
 def fitting_linear(x, y):
     popt, pcov = curve_fit(linear, x, y, bounds=([-np.inf, -np.inf], [np.inf, np.inf]))
     m, n = popt[:2]
     return m, n
 
-
 def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
+    layersToWind = 5
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
@@ -42,19 +41,24 @@ def main():
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
-    layersToWind = 50
 
-    fileNameReducedDomeContour = os.path.join(dataDir, "Dome_contour_" + tankname + "_modified.dcon")
-    linerFilename = os.path.join(dataDir, tankname + ".liner")
-    designFilename = os.path.join(dataDir, tankname + ".design")
+    # input files
     layupDataFilename = os.path.join(dataDir, "Winding_" + tankname + ".txt")
-    windingFile = os.path.join(dataDir, tankname + "_realised_winding.txt")
-    vesselFilename = os.path.join(dataDir, tankname + ".vessel")
+    materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
+    # output files
+    runDir = getRunDir()
+    fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
+    linerFilename = os.path.join(runDir, tankname + ".liner")
+    designFilename = os.path.join(runDir, tankname + ".design")
+    windingFile = os.path.join(runDir, tankname + "_realised_winding.txt")
+    vesselFilename = os.path.join(runDir, tankname + ".vessel")
+    windingResultFilename = os.path.join(runDir, tankname + ".wresults")
 
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    x, r = getReducedDomePoints(os.path.join(dataDir, "Dome_contour_" + tankname + ".txt"),
+    x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
     dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
@@ -63,7 +67,7 @@ def main():
     # ###########################################
     # Create material
     # ###########################################
-    material = getMaterial(os.path.join(dataDir, "CFRP_HyMod.json"))
+    material = getMaterial(materialFilename)
 
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)
     composite = getComposite(material, angles, thicknesses, hoopLayerThickness, helixLayerThickenss,
@@ -137,7 +141,7 @@ def main():
     # save winding results
     windingResults = pychain.winding.VesselWindingResults()
     windingResults.buildFromVessel(vessel)
-    windingResults.saveToFile(os.path.join(dataDir, tankname + ".wresults"))
+    windingResults.saveToFile(windingResultFilename)
 
     # #############################################################################
     # run Abaqus
@@ -168,8 +172,8 @@ def main():
 
     # write abaqus scripts
     scriptGenerator = pychain.abaqus.AbaqusVesselScriptGenerator()
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(dataDir, tankname + "_Build.py"), settings, modelOptions)
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(dataDir, tankname + "_Eval.py"), settings, modelOptions)
+    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Build.py"), settings, modelOptions)
+    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Eval.py"), settings, modelOptions)
 
     import matplotlib.pylab as plt
 
@@ -185,3 +189,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

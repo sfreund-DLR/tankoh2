@@ -1,3 +1,11 @@
+# own ignores
+/src/tankoh2/settings.json
+/src/tankoh2/settings_example.json
+.idea/*
+tmp/*
+
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -233,6 +241,3 @@ fabric.properties
 # CodeStream plugin
 # https://plugins.jetbrains.com/plugin/12206-codestream
 .idea/codestream.xml
-/src/tankoh2/settings.json
-/src/tankoh2/settings_example.json
-.idea/*

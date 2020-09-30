@@ -4,8 +4,53 @@ import functools
 import numpy as np
 import io, math
 import itertools,re
+import os
+from datetime import datetime
+import time
+
+from tankoh2 import programDir, log
 
 
+def getTimeString(useMilliSeconds=False):
+    """returns a time string of the format: yyyymmdd_hhmmss"""
+    dt = datetime.now()
+    return dt.strftime("%Y%m%d_%H%M%S") + ('_{}'.format(dt.microsecond) if useMilliSeconds else '')
+
+def makeAllDirs(directory):
+    absPath = os.path.abspath(directory)
+    for i in range(0,absPath.count(os.sep))[::-1]:
+        #Split path into subpaths beginning from the top of the drive
+        subPath = absPath.rsplit(os.sep,i)[0]
+        if not os.path.exists(subPath):
+            os.makedirs(subPath)
+
+def getRunDir(runDirExtension='', useMilliSeconds=False):
+    """Creates a folder that will be used as directory for the actual run.
+
+    The created folder has this name::
+
+        tmp/tank_<timestamp><runDirExtension>
+
+    :param runDirExtension: optional string appended to the folder name. Defaults to ''
+    :param useMilliSeconds: include milliseconds to the run dir name or not
+    :returns: absolute path to the new folder
+
+    Example::
+
+        >> getRunDir('_bar', False)
+        C:/tankoh2/tmp/tank_20170206_152323_bar
+
+    """
+    while True:
+        runDir = os.path.join(programDir, 'tmp', 'tank_' + getTimeString(useMilliSeconds)) + runDirExtension
+        if os.path.exists(runDir):
+            log.warning('runDir already exists. Wait 1s and retry with new timestring.')
+            time.sleep(1)
+        else:
+            makeAllDirs(runDir)
+            break
+
+    return runDir
 
 def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
            separateRows=False, prefix='', postfix='', wrapfunc=lambda x: wrap_npstr(x)):  # lambda x:x):
