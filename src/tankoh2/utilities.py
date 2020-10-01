@@ -2,8 +2,27 @@
 
 import json
 import shutil
+import pandas as pd
 
 from tankoh2.exception import Tankoh2Error
+
+def getElementThicknesses(vessel):
+    """returns a vector with thicknesses of each element along the whole vessel"""
+    thicknesses = []
+    for layerNumber in range(vessel.getNumberOfLayers()):
+        vesselLayer = vessel.getVesselLayer(layerNumber)
+        mandrelOuter2 = vesselLayer.getOuterMandrel2()
+        numberOfElements = mandrelOuter2.numberOfNodes - 1
+        layerThicknesses = []
+        for elementNumber in range(numberOfElements):
+            layerElement = vesselLayer.getVesselLayerElement(elementNumber, False)
+            layerThicknesses.append(layerElement.elementThickness)
+        thicknesses.append(layerThicknesses)
+    thicknesses = pd.DataFrame(thicknesses)
+    #thicknesses.T.plot()
+    return thicknesses.sum()
+
+
 
 def copyAsJson(filename, typename):
     """copy a file creating a .json file

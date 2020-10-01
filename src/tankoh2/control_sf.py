@@ -22,13 +22,11 @@ def main():
     polarOpening = 20.  # mm
     lzylinder = 500.  # mm
     dpoints = 4  # data points for liner contour
-    defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
-    bandWidthMult = 4
-    bandWidth = 3.175 * bandWidthMult
-    numberOfRovings = 1
-    rovingWidth = bandWidth / numberOfRovings
+    rovingWidth = 3.175
+    numberOfRovings = 4
+    bandWidth = rovingWidth * numberOfRovings
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
@@ -75,7 +73,6 @@ def main():
     # run winding simulation
     # #############################################################################
 
-    # vessel.finishWinding()
     with open(windingFile, "w") as file:
         file.write('\t'.join(["Layer number", "Angle", "Polar opening"]) + '\n')
     outArr = []
@@ -104,6 +101,7 @@ def main():
     with open(windingFile, "w") as file:
         file.write(indent([["Layer \#", "Angle", "Polar opening", "Polar opening diameter"]] + outArr))
 
+    vessel.finishWinding()
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -115,6 +113,12 @@ def main():
     windingResults.saveToFile(windingResultFilename)
     copyAsJson(windingResultFilename, 'wresults')
 
+
+    from tankoh2.utilities import getElementThicknesses
+    t = getElementThicknesses(vessel)
+
+
+    return
     # #############################################################################
     # run Abaqus
     # #############################################################################
