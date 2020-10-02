@@ -36,33 +36,25 @@ def readLayupData(filename):
 
 
 def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness, helixLayerThickenss,
-                 sectionAreaFibre, bandWidth, rovingWidth, numberOfRovings, tex,
+                 sectionAreaFibre, rovingWidth, numberOfRovings, tex,
                  designFilename=None, designName=None):
     # create composite with layers
     composite = pychain.material.Composite()
 
-    for i in range(len(angle_degree)):  #
-        angle = angle_degree[i]
-        composite.appendLayer(angle, singlePlyThickenss[i], material, pychain.material.LAYER_TYPES.BAP)
-        fvg = sectionAreaFibre / (bandWidth * singlePlyThickenss[i])
-        composite.getOrthotropLayer(i).phi = fvg
-
+    for i, angle, plyThickness in zip(range(len(angle_degree)), angle_degree, singlePlyThickenss):  #
+        composite.appendLayer(angle, plyThickness, material, pychain.material.LAYER_TYPES.BAP)
+        fvg = sectionAreaFibre / (rovingWidth * plyThickness)
+        layer = composite.getOrthotropLayer(i)
+        layer.phi = fvg
+        layer.windingProperties.rovingWidth = rovingWidth
+        layer.windingProperties.numberOfRovings = numberOfRovings
+        layer.windingProperties.texNumber = tex
+        layer.windingProperties.coverage = 1.
         if angle == 90.:
-            # change winding properties
-            composite.getOrthotropLayer(i).windingProperties.rovingWidth = rovingWidth
-            composite.getOrthotropLayer(i).windingProperties.numberOfRovings = numberOfRovings
-            composite.getOrthotropLayer(i).windingProperties.texNumber = tex
-            composite.getOrthotropLayer(i).windingProperties.coverage = 1.
-            composite.getOrthotropLayer(i).windingProperties.isHoop = True
-            composite.getOrthotropLayer(i).windingProperties.cylinderThickness = hoopLayerThickness
-
+            layer.windingProperties.isHoop = True
+            layer.windingProperties.cylinderThickness = hoopLayerThickness
         else:
-            # change winding properties
-            composite.getOrthotropLayer(i).windingProperties.rovingWidth = rovingWidth
-            composite.getOrthotropLayer(i).windingProperties.numberOfRovings = numberOfRovings
-            composite.getOrthotropLayer(i).windingProperties.texNumber = tex
-            composite.getOrthotropLayer(i).windingProperties.coverage = 1.
-            composite.getOrthotropLayer(i).windingProperties.cylinderThickness = helixLayerThickenss
+            layer.windingProperties.cylinderThickness = helixLayerThickenss
 
     composite.updateThicknessFromWindingProperties()
     composite.saveToFile(designFilename)

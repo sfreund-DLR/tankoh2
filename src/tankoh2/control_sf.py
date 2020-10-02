@@ -61,7 +61,7 @@ def main():
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)[:,:layersToWind]
     angles[2] = 40.
     composite = getComposite(material, angles, thicknesses, hoopLayerThickness, helixLayerThickenss,
-                             sectionAreaFibre, bandWidth, rovingWidth, numberOfRovings, tex,
+                             sectionAreaFibre, rovingWidth, numberOfRovings, tex,
                              designFilename, tankname)
 
     # create vessel and set liner and composite
