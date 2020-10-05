@@ -10,7 +10,7 @@ from tankoh2.settings import myCrOSettings as settings
 from tankoh2.utilities import updateName
 from tankoh2.contour import getLiner, getDome, getReducedDomePoints
 from tankoh2.material import getMaterial, getComposite, readLayupData
-from tankoh2.optimize import optimizeFriction, optimizeHoopShift
+from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution
 
 
 def linear(x, m, n):
@@ -25,7 +25,7 @@ def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
-    layersToWind = 5
+    layersToWind = 48
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
@@ -35,9 +35,9 @@ def main():
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
-    bandWidth = 3.175
+    rovingWidth = 3.175
     numberOfRovings = 1
-    rovingWidth = bandWidth / numberOfRovings
+    bandWidth = rovingWidth * numberOfRovings
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
@@ -103,10 +103,19 @@ def main():
             # global arr_fric, arr_wk
             # arr_fric = []
             # arr_wk = []
+            log.info(f'using optimizeFriction')
             log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
             friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
             log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
+
+            
+            log.info(f'using optimizeFrictionGlobal_differential_evolution')
+            log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
+            friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False)
+            log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
+                     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
+
             # file = open("data.txt", "w")
             # for j in range(len(arr_fric)):
             #    file.write(str(arr_fric[j])+'\t'+str(arr_wk[j])+'\n')
