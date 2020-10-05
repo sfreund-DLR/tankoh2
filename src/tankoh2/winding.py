@@ -29,7 +29,7 @@ def getPolarOpeningDiffHelicalUsingLogFriction(friction, args):
     try:
         vessel.runWindingSimulation(layerindex + 1)
         wk = vessel.getPolarOpeningR(layerindex, True)
-    except (IOError, ValueError, IOError, ZeroDivisionError):
+    except (IOError, ValueError, IOError, ZeroDivisionError, RuntimeError):
         raise
         log.info('I have to pass')
     
@@ -45,8 +45,13 @@ def getPolarOpeningDiffHelicalUsingLogFriction(friction, args):
 def getPolarOpeningDiffHoop(shift, args):
     vessel, krempenradius, layerindex, verbose = args
     vessel.setHoopLayerShift(layerindex, shift, True)
-    vessel.runWindingSimulation(layerindex + 1)
-    wk = vessel.getPolarOpeningR(layerindex, True)
+    try:
+        vessel.runWindingSimulation(layerindex + 1)
+        wk = vessel.getPolarOpeningR(layerindex, True)
+    except (IOError, ValueError, IOError, ZeroDivisionError, RuntimeError):
+        raise
+        log.info('I have to pass')
+
 
     if verbose:
         log.info(f"layer {layerindex}, shift {shift}, po actual {wk}, po target {krempenradius}, po diff {wk - krempenradius}")
@@ -56,5 +61,23 @@ def getPolarOpeningDiffHoop(shift, args):
 
     return abs(wk - krempenradius)
 
+def getPolarOpeningXDiffHoop(shift, args):
+    vessel, polarOpeningX, layerindex, verbose = args
+    vessel.setHoopLayerShift(layerindex, shift, True)
+    try:
+        vessel.runWindingSimulation(layerindex + 1)
+        wk = vessel.getPolarOpeningX(layerindex, True)
+    except (IOError, ValueError, IOError, ZeroDivisionError, RuntimeError):
+        raise
+        log.info('I have to pass')
+
+
+    if verbose:
+        log.info(f"layer {layerindex}, shift {shift}, po actual {wk}, po target {polarOpeningX}, po diff {wk - polarOpeningX}")
+
+    # log.info('this hoop layer shoud end at', krempenradius[layerindex], 'mm but is at', wk, 'mm so there is a
+    # deviation of', krempenradius[layerindex]-wk, 'mm')
+
+    return abs(wk - polarOpeningX)
 
 

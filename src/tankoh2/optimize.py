@@ -11,7 +11,7 @@ from scipy.optimize import minimize
 from scipy.optimize import differential_evolution
 
 from tankoh2 import log
-from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, getPolarOpeningDiffHelicalUsingLogFriction
+from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop
 
 def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))
@@ -35,6 +35,12 @@ def optimizeHoopShift(vessel, krempenradius, layerindex, verbose=False):
     shift = popt.x
     return shift, popt.fun, popt.nit
 
+def optimizeHoopShiftForPolarOpeningX(vessel, polarOpeningX, layerindex, verbose=False):
+    popt = minimize_scalar(getPolarOpeningXDiffHoop, method='brent',
+                           options={'xtol':1e-2},
+                           args=[vessel, polarOpeningX, layerindex, verbose])
+    shift = popt.x
+    return shift, popt.fun, popt.nit
 
 # write new optimasation with scipy.optimize.differential_evolution
 
