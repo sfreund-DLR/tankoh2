@@ -23,14 +23,14 @@ def main():
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
-    polarOpening = 20.  # mm
+    polarOpening = 48./2.  # mm
     lzylinder = 500.  # mm
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
-    numberOfRovings = 8
+    numberOfRovings = 1
     bandWidth = rovingWidth * numberOfRovings
     log.info(f'winding using {numberOfRovings} robings with {rovingWidth}mm resulting in bandwith of {bandWidth}')
     tex = 446  # g / km
@@ -40,7 +40,7 @@ def main():
     # input files
     layupDataFilename = os.path.join(dataDir, "Winding_" + tankname + ".txt")
     materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")
     # output files
     runDir = getRunDir()
     fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
@@ -64,8 +64,11 @@ def main():
     # ###########################################
     material = getMaterial(materialFilename)
 
+    
+
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)
-    composite = getComposite(material, angles, thicknesses, hoopLayerThickness, helixLayerThickenss,
+    log.info(f'{angles[0:layersToWind]}')
+    composite = getComposite(material, angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness, helixLayerThickenss,
                              sectionAreaFibre, rovingWidth, numberOfRovings, tex,
                              designFilename, tankname)
 
@@ -94,13 +97,14 @@ def main():
             po_goal = lzylinder/2. - anzHoop*rovingWidth
             anzHoop = anzHoop+1
             #po_goal = wendekreisradius
+            log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {po_goal}')
             if optimizeWindingHoop:                
-                log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {po_goal}')
+                
                 shift, err_wk, iterations = optimizeHoopShiftForPolarOpeningX(vessel, po_goal, layerindex)
                 log.info(f'{iterations} iterations. Shift is {shift} resulting in a polar opening error of {err_wk} '
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')                
             else:
-                # winding without optimization
+                # winding without optimization, but direct correction of shift
                 vessel.setHoopLayerShift(layerindex, 0., True)
                 vessel.runWindingSimulation(layerindex + 1)     
                 coor = po_goal - vessel.getPolarOpeningX(layerindex, True)
@@ -113,17 +117,17 @@ def main():
             # arr_fric = []
             # arr_wk = []
             po_goal = wendekreisradius
+            log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
             if optimizeWindingHelical:                
-                log.info(f'using optimizeFriction')
-                log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
-                friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
-                log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
-                     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
+                log.info(f'using optimizeFriction')                
+                #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
+                #log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
+                #     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
             
-                po_local = vessel.getPolarOpeningR(layerindex, True)    
+                #po_local = vessel.getPolarOpeningR(layerindex, True)    
             
                 log.info(f'using optimizeFrictionGlobal_differential_evolution')
-                log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
+                log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
                 friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False)
                 log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
