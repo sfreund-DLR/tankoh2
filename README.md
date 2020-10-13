@@ -51,7 +51,7 @@ Please cite name and web address of the project
 
 ## License
 
-MIT
+see [license](LICENSE.md)
 
 ## Change Log
 
