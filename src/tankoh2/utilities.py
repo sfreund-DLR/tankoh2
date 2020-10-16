@@ -6,8 +6,8 @@ import pandas as pd
 
 from tankoh2.exception import Tankoh2Error
 
-def getElementThicknesses(vessel):
-    """returns a vector with thicknesses of each element along the whole vessel"""
+def getLayerThicknesses(vessel):
+    """returns a dataframe with thicknesses of each layer along the whole vessel"""
     thicknesses = []
     for layerNumber in range(vessel.getNumberOfLayers()):
         vesselLayer = vessel.getVesselLayer(layerNumber)
@@ -20,9 +20,12 @@ def getElementThicknesses(vessel):
         thicknesses.append(layerThicknesses)
     thicknesses = pd.DataFrame(thicknesses)
     #thicknesses.T.plot()
+    return thicknesses
+
+def getElementThicknesses(vessel):
+    """returns a vector with thicknesses of each element along the whole vessel"""
+    thicknesses = getLayerThicknesses(vessel)
     return thicknesses.sum()
-
-
 
 def copyAsJson(filename, typename):
     """copy a file creating a .json file

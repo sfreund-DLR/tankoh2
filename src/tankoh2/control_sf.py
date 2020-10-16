@@ -1,27 +1,32 @@
 """control a tank optimization"""
 
-import os
+import os, sys
+#print('path')
+#print('\n'.join(os.environ['PATH'].split(';')))
+#print('pythonpath')
+#print('\n'.join(sys.path))
+
+import numpy as np
+import pandas
 
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir
-from tankoh2.settings import myCrOSettings as settings
+from tankoh2.service import indent, getRunDir, plotStressEpsPuck
 from tankoh2.utilities import updateName, copyAsJson
-from tankoh2.contour import getLiner, getDome, getReducedDomePoints
+from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData
-from tankoh2.optimize import optimizeFriction, optimizeHoopShift
-
+from tankoh2.winding import windLayer
+from tankoh2.optimize import optimizeAngle, maximizeInitialAngleToFitting
+from tankoh2.solver import getLinearResults
 
 def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
-    layersToWind = 5
+    layersToWind = 7
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
-    polarOpening = 20.  # mm
     lzylinder = 500.  # mm
-    dpoints = 4  # data points for liner contour
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
@@ -30,14 +35,18 @@ def main():
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    safetyFactor = 2.5
+
+    # design constants AND not recognized issues
+    minPolarOpening = 20 #mm
+    # band pattern not recognized
+
 
     # input files
     layupDataFilename = os.path.join(dataDir, "Winding_" + tankname + ".txt")
     materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
     # output files
     runDir = getRunDir()
-    fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
     windingFile = os.path.join(runDir, tankname + "_realised_winding.txt")
@@ -47,23 +56,25 @@ def main():
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    x, r = getReducedDomePoints(domeContourFilename,
-                                dpoints, fileNameReducedDomeContour)
-    dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
-                   x, r)
+    dome = getDome(dzyl / 2., minPolarOpening, pychain.winding.DOME_TYPES.ISOTENSOID)
     liner = getLiner(dome, lzylinder, linerFilename, tankname)
 
     # ###########################################
     # Create material
     # ###########################################
     material = getMaterial(materialFilename)
+    puckProperties = material.puckProperties
 
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)[:,:layersToWind]
-    angles[2] = 40.
+    try:
+        angles[2] = 40.
+        angles[5] = 90.
+        angles[6] = 90.
+    except:pass
     composite = getComposite(material, angles, thicknesses, hoopLayerThickness, helixLayerThickenss,
                              sectionAreaFibre, rovingWidth, numberOfRovings, tex,
                              designFilename, tankname)
-
+    composite.info()
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
@@ -77,29 +88,31 @@ def main():
         file.write('\t'.join(["Layer number", "Angle", "Polar opening"]) + '\n')
     outArr = []
     vessel.resetWindingSimulation()
-    for i, angle, krempenradius, wendekreisradius in zip(range(layersToWind), angles, krempenradien,
-                                                         wendekreisradien):  # len(angle_degree)
-        log.info('--------------------------------------------------')
-        layerindex = i
-        # wk = winding_layer(i, 0.5)
-        if abs(angle - 90.) < 1e-8:
-            log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {krempenradius}')
-            shift, err_wk, iterations = optimizeHoopShift(vessel, krempenradius, layerindex)
-            log.info(f'{iterations} iterations. Shift is {shift} resulting in a polar opening error of {err_wk} '
-                     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
-        else:
-            log.info(f'apply layer {i} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
-            friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
-            log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
-                     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
 
-        po = vessel.getPolarOpeningR(layerindex, True)
-        outArr.append([i, angle, po, po*2])
-        with open(windingFile, "a") as file:
-            file.write('\t'.join([str(s) for s in outArr[-1]]) + '\n')
+    #start with hoop layer
+    polarOpening = windLayer(vessel, 0, 90)
 
-    with open(windingFile, "w") as file:
-        file.write(indent([["Layer \#", "Angle", "Polar opening", "Polar opening diameter"]] + outArr))
+    #introduce layer up to the fitting. Optimize required angle
+    layerNumber = 1
+    angle, _, _ = maximizeInitialAngleToFitting(vessel, minPolarOpening, layerNumber, True)
+    vessel.setLayerAngle(layerNumber, angle)
+    vessel.runWindingSimulation(layerNumber + 1)
+
+    # create other layers
+    layerNumber = 2
+    results = getLinearResults(vessel, puckProperties, 2)
+    plotStressEpsPuck(True,None, *results)
+    puckFF, puckIFF = results[7:9]
+    # only observe one cylinder element and dome elements starting at ...
+    dropIndicies = range(1,320)
+    puckFF.drop(dropIndicies, inplace=True)
+    puckIFF.drop(dropIndicies, inplace=True)
+    layermax = puckFF.max().argmax()
+    idxmax = puckFF.idxmax()[layermax]
+
+    radii = pandas.DataFrame([vessel.getVesselLayer(layerNumber-1).getOuterMandrel1().getRArray()],
+                             columns=['radius'])
+    radiusmax = radii[idxmax]
 
     vessel.finishWinding()
     # save vessel
@@ -118,47 +131,13 @@ def main():
     t = getElementThicknesses(vessel)
 
 
-    return
+
     # #############################################################################
-    # run Abaqus
+    # run Evaluation
     # #############################################################################
+    results = getLinearResults(vessel, puckProperties, layersToWind)
+    plotStressEpsPuck(True,None, *results)
 
-    # build shell model for internal calculation
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, 10)
-
-    # run linear solver
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-    linerSolver.run(True)
-
-    # get stresses in the fiber COS
-    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
-    # get  x coordinates (element middle)
-    xCoords = shellModel.getElementCoordsX()
-
-    # create model options for abaqus calculation
-    modelOptions = pychain.mycrofem.VesselFEMModelOptions()
-    modelOptions.modelName = tankname + "_Vessel"
-    modelOptions.jobName = tankname + "_Job"
-    modelOptions.windingResultsFileName = tankname
-    modelOptions.useMaterialPhi = False
-    modelOptions.fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALTY
-    modelOptions.globalMeshSize = 0.25
-    modelOptions.pressureInBar = 300.0
-
-    # write abaqus scripts
-    scriptGenerator = pychain.abaqus.AbaqusVesselScriptGenerator()
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Build.py"), settings, modelOptions)
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Eval.py"), settings, modelOptions)
-
-    import matplotlib.pylab as plt
-
-    fig = plt.figure()
-    ax = fig.gca()
-    ax.plot(S11[:, 0])
-    ax.plot(S11[:, 1])
-    ax.plot(S11[:, 2])
-    # plt.show()
 
     log.info('FINISHED')
 

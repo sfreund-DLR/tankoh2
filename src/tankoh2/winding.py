@@ -3,6 +3,40 @@
 
 from tankoh2 import log
 
+def getPolarOpeningDiffByAngle(angle, args):
+    vessel, layerNumber, targetPolarOpening, verbose = args
+    if verbose:
+        log.info(f'angle {angle}')
+    actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
+    if verbose:
+        log.info(f'angle {angle}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
+    return abs(targetPolarOpening - actualPolarOpening)
+
+def getAngleAndPolarOpeningDiffByAngle(angle, args):
+    vessel, layerNumber, targetPolarOpening, verbose = args
+    if verbose:
+        log.info(f'angle {angle}')
+    actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
+    funVal = -1*angle + abs(targetPolarOpening - actualPolarOpening)
+    if verbose:
+        log.info(f'angle {angle}, target function val {funVal}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
+    return funVal
+
+def windLayer(vessel, layerNumber, angle=None, verbose = False):
+    """wind up to the given layer(0-based count) and return polar opening angle"""
+    if angle:
+        vessel.setLayerAngle(layerNumber, angle)
+    try:
+        vessel.runWindingSimulation(layerNumber + 1)
+    except RuntimeError as e:
+        if 'bandmiddle path crossed polar opening!' in str(e):
+            if verbose:
+                log.info(f'Got an error at angle {angle}: {e}')
+            return 1e10
+        else:
+            raise
+
+    return vessel.getPolarOpeningR(layerNumber, True)
 
 def getPolarOpeningDiffHelical(friction, args):
     vessel, wendekreisradius, layerindex, verbose = args

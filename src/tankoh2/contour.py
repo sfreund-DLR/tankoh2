@@ -62,6 +62,8 @@ def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.IS
     if x is not None and r is not None:
         if not np.allclose(r[0], cylinderRadius):
             raise Tankoh2Error('cylinderRadius and r-vector do not fit')
+        if not np.allclose(r[-1], polarOpening):
+            raise Tankoh2Error('polarOpening and r-vector do not fit')
         dome.setPoints(x, r)
     return dome
 

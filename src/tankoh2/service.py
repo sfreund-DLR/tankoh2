@@ -1,6 +1,7 @@
 """some service functions"""
 
 import functools
+import pandas
 import numpy as np
 import io, math
 import itertools,re
@@ -9,6 +10,51 @@ from datetime import datetime
 import time
 
 from tankoh2 import programDir, log
+
+
+def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
+    import matplotlib.pylab as plt
+    fig, axs = plt.subplots(2, 3)
+    axs = iter(axs.T.flatten())
+
+    ax = next(axs)
+    ax.set_title('S11')
+    for layerIndex, stressLayer11 in enumerate(S11.T):
+        ax.plot(stressLayer11, label=f'layer {layerIndex}')
+        ax.legend()
+
+    ax = next(axs)
+    ax.set_title('S22')
+    for layerIndex, stressLayer22 in enumerate(S22.T):
+        ax.plot(stressLayer22, label=f'layer {layerIndex}')
+        ax.legend()
+
+    ax = next(axs)
+    ax.set_title('eps axial')
+    ax.plot(epsAxialBot, label='epsAxialBot')
+    ax.plot(epsAxialTop, label='epsAxialTop')
+    ax.legend()
+
+    ax = next(axs)
+    ax.set_title('eps circ')
+    ax.plot(epsCircBot, label='epsCircBot')
+    ax.plot(epsCircTop, label='epsCircTop')
+    ax.legend()
+
+    ax = next(axs)
+    ax.set_title('puck fibre failure')
+    puckFF.plot(ax=ax)
+    ax.legend()
+
+    ax = next(axs)
+    ax.set_title('puck inter fibre failure')
+    puckIFF.plot(ax=ax)
+    ax.legend()
+
+    if show:
+        plt.show()
+    if filename:
+        plt.savefig(filename)
 
 
 def getTimeString(useMilliSeconds=False):
