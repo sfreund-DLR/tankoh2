@@ -31,7 +31,7 @@ def windLayer(vessel, layerNumber, angle=None, verbose = False):
     except RuntimeError as e:
         if 'bandmiddle path crossed polar opening!' in str(e):
             if verbose:
-                log.info(f'Got an error at angle {angle}: {e}')
+                log.warning(f'Got an error at angle {angle}: {e}')
             return 1e10
         else:
             raise

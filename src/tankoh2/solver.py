@@ -5,7 +5,14 @@ import pandas
 
 from tankoh2 import pychain
 
-def getLinearResults(vessel, puckProperties, layersWinded):
+def getLinearResults(vessel, puckProperties, layerNumber):
+    """
+
+    :param vessel:
+    :param puckProperties:
+    :param layerNumber: 0-based
+    :return:
+    """
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
     shellModel = converter.buildAxShellModell(vessel, 10)  # pressure in MPa (bar / 10.)
@@ -35,7 +42,7 @@ def getLinearResults(vessel, puckProperties, layersWinded):
     stresses[5, :, :] = S12
     stressVec = pychain.utility.StressVector()
     puckFF, puckIFF = np.zeros(S11.shape), np.zeros(S11.shape)
-    for layer in range(layersWinded):
+    for layer in range(layerNumber+1):
         failures = []
         for elemNr in range(len(xCoords)):
             stressVec.fromVector(stresses[:, elemNr, layer])

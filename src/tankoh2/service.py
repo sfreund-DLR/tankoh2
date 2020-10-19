@@ -8,13 +8,13 @@ import itertools,re
 import os
 from datetime import datetime
 import time
+import matplotlib.pylab as plt
 
 from tankoh2 import programDir, log
 
 
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
-    import matplotlib.pylab as plt
-    fig, axs = plt.subplots(2, 3)
+    fig, axs = plt.subplots(2, 3, figsize=(18,10))
     axs = iter(axs.T.flatten())
 
     ax = next(axs)
@@ -44,18 +44,17 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     ax = next(axs)
     ax.set_title('puck fibre failure')
     puckFF.plot(ax=ax)
-    ax.legend()
+    ax.legend(loc='lower left')
 
     ax = next(axs)
     ax.set_title('puck inter fibre failure')
     puckIFF.plot(ax=ax)
-    ax.legend()
+    ax.legend(loc='lower left')
 
-    if show:
-        plt.show()
     if filename:
         plt.savefig(filename)
-
+    if show:
+        plt.show()
 
 def getTimeString(useMilliSeconds=False):
     """returns a time string of the format: yyyymmdd_hhmmss"""

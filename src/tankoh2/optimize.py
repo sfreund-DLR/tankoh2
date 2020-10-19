@@ -13,11 +13,12 @@ import numpy as np
 from tankoh2 import log
 from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
-    getPolarOpeningDiffByAngle, getAngleAndPolarOpeningDiffByAngle
+    getPolarOpeningDiffByAngle, getAngleAndPolarOpeningDiffByAngle, windLayer
 from tankoh2.exception import Tankoh2Error
 
 
-def optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose=False):
+def optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose=False,
+                  targetFunction = getPolarOpeningDiffByAngle):
     """optimizes the angle of the actual layer to realize the desired polar opening
 
     :param vessel: vessel object
@@ -27,30 +28,23 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose=False):
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
     tol = 1e-2
-    popt = minimize_scalar(getPolarOpeningDiffByAngle, method='bounded',
+    popt = minimize_scalar(targetFunction, method='bounded',
                            bounds=[.1, 75],  # bounds of the angle
                            args=[vessel, layerNumber, targetPolarOpening, verbose],
                            options={"maxiter": 1000, 'disp': 1, "xatol": tol})
-    return popt.x, popt.fun, popt.nfev
-
-def maximizeInitialAngleToFitting(vessel, targetPolarOpening, layerNumber, verbose=False):
-    """maximizes the angle, so that it still satisfies the target polar opening
-
-    :param vessel: vessel object
-    :param targetPolarOpening: polar opening radius that should be realized
-    :param layerNumber: number of the actual layer
-    :param verbose: flag if more output should be given
-    :return: 3-tuple (resultAngle, polar opening, number of runs)
-    """
-    tol = 1e-2
-    popt = minimize_scalar(getAngleAndPolarOpeningDiffByAngle, method='bounded',
-                           bounds=[.1, 75],  # negative bounds of the angle in order to maximize
-                           args=[vessel, layerNumber, targetPolarOpening, verbose],
-                           options={"maxiter": 1000, 'disp': 1, "xatol": tol}
-                          )
     if not popt.success:
         raise Tankoh2Error('Could not finde optimal solution')
-    return popt.x, popt.fun, popt.nfev
+    angle, funVal, iterations = popt.x, popt.fun, popt.nfev
+    if popt.fun > 1 and targetFunction is getPolarOpeningDiffByAngle:
+        # desired polar opening not met. This happens, when polar opening is near fitting.
+        # There is a discontinuity at this point. Switch target function to search from the fitting side.
+        angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose,
+                                                        getAngleAndPolarOpeningDiffByAngle)
+    else:
+        windLayer(vessel, layerNumber, angle)
+    #angle2 = vessel.estimateCylinderAngle(layerNumber, targetPolarOpening)
+    #r = angle / angle2
+    return angle, funVal, iterations
 
 def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))
