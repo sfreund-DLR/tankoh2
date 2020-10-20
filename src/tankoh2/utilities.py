@@ -3,8 +3,41 @@
 import json
 import shutil
 import pandas as pd
+import numpy as np
 
 from tankoh2.exception import Tankoh2Error
+
+
+def getRadiusByShiftOnMandrel(mandrel, startRadius, shift):
+    """Calculates a shift along the mandrel surface in the dome section
+
+    :param mandrel: mandrel obj
+    :param startRadius: radius on mandrel where the shift should be applied
+    :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
+    :return: x-coordinate, radius
+    """
+    # x-coordinate, radius, length on mandrel
+    coords = pd.DataFrame(np.array([  # mandrel.getXArray(),
+                                    mandrel.getRArray(),
+                                    mandrel.getLArray()]).T,
+                          columns=[  # 'x',
+                                   'r', 'l'])
+
+    # cut section of above 0.9*maxRadius
+    maxR = coords['r'].max()
+    coords = coords[coords['r'] < 0.9 * maxR]
+
+    # invert index order
+    coordsRev = coords.iloc[::-1]
+
+    # get initial length and perform shift
+    startLength = np.interp(startRadius, coordsRev['r'], coordsRev['l'])
+    targetLength = startLength + shift
+
+    # get target radius
+    targetRadius = np.interp(targetLength, coords['l'], coords['r'])
+    return targetRadius
+
 
 def getLayerThicknesses(vessel):
     """returns a dataframe with thicknesses of each layer along the whole vessel"""
@@ -19,13 +52,15 @@ def getLayerThicknesses(vessel):
             layerThicknesses.append(layerElement.elementThickness)
         thicknesses.append(layerThicknesses)
     thicknesses = pd.DataFrame(thicknesses)
-    #thicknesses.T.plot()
+    # thicknesses.T.plot()
     return thicknesses
+
 
 def getElementThicknesses(vessel):
     """returns a vector with thicknesses of each element along the whole vessel"""
     thicknesses = getLayerThicknesses(vessel)
     return thicknesses.sum()
+
 
 def copyAsJson(filename, typename):
     """copy a file creating a .json file
@@ -57,4 +92,3 @@ def updateName(jsonFilename, name, objsName):
     item["name"] = name
     with open(jsonFilename, "w") as jsonFile:
         json.dump(data, jsonFile, indent=4)
-

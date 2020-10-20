@@ -11,7 +11,7 @@ import pandas
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck
-from tankoh2.utilities import updateName, copyAsJson
+from tankoh2.utilities import updateName, copyAsJson, getRadiusByShiftOnMandrel
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.winding import windLayer, getAngleAndPolarOpeningDiffByAngle
@@ -88,9 +88,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
         else:
             # get location of critical element
             radiusCrit = float(xrl['radius'].loc[idxmax])
-            lengthCrit = float(xrl['length'].loc[idxmax])
-            lengthPolarOpening = lengthCrit + bandWidth
-            radiusPolarOpening = np.interp(lengthPolarOpening, xrl['length'], xrl['radius'])
+            radiusPolarOpening = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1(), radiusCrit, bandWidth)
             if radiusPolarOpening < minPolarOpening:
                 radiusPolarOpening = minPolarOpening
             angle, _, _ = optimizeAngle(vessel, radiusPolarOpening, layerNumber, True)
