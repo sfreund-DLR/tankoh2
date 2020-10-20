@@ -88,3 +88,44 @@ def getLiner(dome, length, linerFilename=None, linerName=None):
         liner.loadFromFile(linerFilename)
     return liner
 
+def getLengthContourPath(domeContourFilename, r1, r2, ninc):
+    """get length of a contour path on dome contour between polar opening r1 and r2 
+
+    :param domeContourFilename: txt file of dome contour with secifications as in getReducedDomePoints
+    :param r1: first polar opening radius
+    :param r2: second polar oping radius
+    :param nink: number of radius increments for calculation countour path length
+    """
+
+    xvec, rvec = getReducedDomePoints(domeContourFilename,
+                                1, None)
+    
+    ir1 = rvec.index(r1)
+    ir2 = rvec.index(r2)
+    
+    i1 = np.min(ir1, ir2)
+    i2 = np.max(ir1, ir2)
+    
+    dinc = int(abs(i2-i1))/ninc
+    
+    arc = 0.
+    for i in range(i1, i2+1, dinc):
+        arc = arc + (rvec(i1)-r1)**2. + (xvec(i1)-x1)**2.
+    
+    return arc 
+        
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    

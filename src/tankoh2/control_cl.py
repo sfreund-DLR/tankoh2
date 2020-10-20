@@ -8,7 +8,7 @@ from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir
 from tankoh2.settings import myCrOSettings as settings
 from tankoh2.utilities import updateName
-from tankoh2.contour import getLiner, getDome, getReducedDomePoints
+from tankoh2.contour import getLiner, getDome, getReducedDomePoints, getLengthContourPath
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX
 
@@ -49,6 +49,8 @@ def main():
     windingFile = os.path.join(runDir, tankname + "_realised_winding.txt")
     vesselFilename = os.path.join(runDir, tankname + ".vessel")
     windingResultFilename = os.path.join(runDir, tankname + ".wresults")
+    
+    print(getLengthContourPath(domeContourFilename, 24., 51.175/2., 1))
 
     # #########################################################################################
     # Create Liner
