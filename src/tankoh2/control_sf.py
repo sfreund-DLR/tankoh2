@@ -1,13 +1,6 @@
 """control a tank optimization"""
 
 import os, sys
-# print('path')
-# print('\n'.join(os.environ['PATH'].split(';')))
-# print('pythonpath')
-# print('\n'.join(sys.path))
-
-import numpy as np
-import pandas
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck
@@ -16,10 +9,10 @@ from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.winding import windLayer, getAngleAndPolarOpeningDiffByAngle
 from tankoh2.optimize import optimizeAngle
-from tankoh2.solver import getLinearResults
+from tankoh2.solver import getLinearResults, getCriticalElementIdx
 
 
-def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, runDir):
+def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, burstPressure, runDir):
     """
     Strategy:
     #. Start with hoop layer
@@ -51,7 +44,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
     radiusDropThreshold = windLayer(vessel, 0, 70)
 
     # start with hoop layer
-    polarOpening = windLayer(vessel, 0, 90)
+    windLayer(vessel, 0, 90)
 
     # introduce layer up to the fitting. Optimize required angle
     layerNumber = 1
@@ -60,34 +53,15 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
 
     # create other layers
     for layerNumber in range(layerNumber + 1, maxLayers):
-        results = getLinearResults(vessel, puckProperties, layerNumber - 1)
-        if show or save:
-            plotStressEpsPuck(show,
-                              os.path.join(runDir, f'sig_eps_puck_{layerNumber - 1}.png') if save else '',
-                              *results)
-        puckFF, puckIFF = results[7:9]
-
-        # x-coordinate, radius, length on mandrel
-        xrl = pandas.DataFrame(np.array([vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1().getXArray(),
-                              vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1().getRArray(),
-                              vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1().getLArray()]).T,
-                              columns=['x', 'radius', 'length'])
-
-        # only observe one cylinder element and dome elements starting at radiusDropThreshold
-        dropRadiusIndex = xrl['radius'].lt(radiusDropThreshold).idxmax()
-        dropIndicies = range(1, dropRadiusIndex)
-        puckFF.drop(dropIndicies, inplace=True)
-        puckIFF.drop(dropIndicies, inplace=True)
-        # identify critical element
-        layermax = puckFF.max().argmax()
-        idxmax = puckFF.idxmax()[layermax]
+        mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
+        idxmax = getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure)
 
         if idxmax == 0:
             vessel.setLayerAngle(layerNumber, 90)
             vessel.runWindingSimulation(layerNumber + 1)
         else:
             # get location of critical element
-            radiusCrit = float(xrl['radius'].loc[idxmax])
+            radiusCrit = mandrel.getRArray()[idxmax]
             radiusPolarOpening = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1(), radiusCrit, bandWidth)
             if radiusPolarOpening < minPolarOpening:
                 radiusPolarOpening = minPolarOpening
@@ -95,7 +69,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
 
     vessel.finishWinding()
 
-    results = getLinearResults(vessel, puckProperties, layerNumber)
+    results = getLinearResults(vessel, puckProperties, layerNumber, burstPressure)
     if show or save:
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
                           *results)
@@ -118,7 +92,9 @@ def main():
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    pressure = 0.15  # pressure in MPa (bar / 10.)
     safetyFactor = 2.5
+    burstPressure = pressure * safetyFactor
 
     # design constants AND not recognized issues
     minPolarOpening = 20  # mm
@@ -166,7 +142,7 @@ def main():
     # #############################################################################
     # run winding simulation
     # #############################################################################
-    designLayers(vessel, layersToWind, minPolarOpening, puckProperties, bandWidth, runDir)
+    designLayers(vessel, layersToWind, minPolarOpening, puckProperties, bandWidth, burstPressure, runDir)
 
     with open(windingFile, "w") as file:
         file.write('\t'.join(["Layer number", "Angle", "Polar opening"]) + '\n')

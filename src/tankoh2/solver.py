@@ -1,11 +1,27 @@
 """solver related methods"""
 
+import os
 import numpy as np
 import pandas
 
 from tankoh2 import pychain
+from tankoh2.service import plotStressEpsPuck
 
-def getLinearResults(vessel, puckProperties, layerNumber):
+def getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
+    """Returns the index of the most critical element
+    
+    """
+    mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
+    dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
+    dropIndicies = range(1, dropRadiusIndex)
+    puckFF, puckIFF = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)
+
+    # identify critical element
+    layermax = puckFF.max().argmax()
+    idxmax = puckFF.idxmax()[layermax]
+    return idxmax
+
+def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropIndicies=None):
     """
 
     :param vessel:
@@ -15,7 +31,7 @@ def getLinearResults(vessel, puckProperties, layerNumber):
     """
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, 10)  # pressure in MPa (bar / 10.)
+    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
 
     # run linear solver
     linerSolver = pychain.mycrofem.LinearSolver(shellModel)
@@ -54,5 +70,51 @@ def getLinearResults(vessel, puckProperties, layerNumber):
     puckFF = pandas.DataFrame(puckFF, columns=[f'layer {layer}' for layer in range(puckFF.shape[1])])
     puckIFF = pandas.DataFrame(puckIFF, columns=[f'layer {layer}' for layer in range(puckIFF.shape[1])])
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
+
+def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=None):
+    """
+
+    :param vessel:
+    :param puckProperties:
+    :param layerNumber: 0-based
+    :return:
+    """
+    # build shell model for internal calculation
+    converter = pychain.mycrofem.VesselConverter()
+    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
+
+    # run linear solver
+    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
+
+    puck = pychain.failure.PuckFailureCriteria2D()
+    puck.setPuckProperties(puckProperties)
+    linerSolver.run(True)
+
+    # get stresses in the fiber COS (elemNr, layerNr)
+    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
+    numberOfElements, numberOfLayers = S11.shape
+    stresses = np.zeros((numberOfElements,numberOfLayers, 6))
+    stresses[:, :, 0] = S11
+    stresses[:, :, 1] = S22
+    stresses[:, :, 5] = S12
+    stressVec = pychain.utility.StressVector()
+    puckFF, puckIFF = [], []
+    for elemIdx, elemStresses in enumerate(stresses):
+        if elemIdx in dropIndicies:
+            failures = np.zeros((numberOfElements,2))
+        else:
+            failures = []
+            for layerStress in elemStresses:
+                stressVec.fromVector(layerStress)
+                puckResult = puck.getExposure(stressVec)
+                failures.append([puckResult.f_FF, puckResult.f_E0_IFF])
+            failures = np.array(failures)
+        puckFF.append(failures[:,0])
+        puckIFF.append(failures[:,1])
+    puckFF = pandas.DataFrame(puckFF, columns=[f'lay{layer}' for layer in range(numberOfLayers)])
+    puckIFF = pandas.DataFrame(puckIFF, columns=[f'lay{layer}' for layer in range(numberOfLayers)])
+    puckFF.drop(dropIndicies, inplace=True)
+    puckIFF.drop(dropIndicies, inplace=True)
+    return puckFF, puckIFF
 
 
