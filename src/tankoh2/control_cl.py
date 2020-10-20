@@ -8,7 +8,7 @@ from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir
 from tankoh2.settings import myCrOSettings as settings
 from tankoh2.utilities import updateName
-from tankoh2.contour import getLiner, getDome, getReducedDomePoints, getLengthContourPath
+from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX
 
@@ -30,7 +30,7 @@ def main():
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
-    numberOfRovings = 1
+    numberOfRovings = 6
     bandWidth = rovingWidth * numberOfRovings
     log.info(f'winding using {numberOfRovings} robings with {rovingWidth}mm resulting in bandwith of {bandWidth}')
     tex = 446  # g / km
@@ -50,7 +50,7 @@ def main():
     vesselFilename = os.path.join(runDir, tankname + ".vessel")
     windingResultFilename = os.path.join(runDir, tankname + ".wresults")
     
-    print(getLengthContourPath(domeContourFilename, 24., 51.175/2., 1))
+    #print(getLengthContourPath(domeContourFilename, 24., 51.175/2., 1))
 
     # #########################################################################################
     # Create Liner
@@ -64,6 +64,7 @@ def main():
     # ###########################################
     # Create material
     # ###########################################
+    log.info(f'get material')
     material = getMaterial(materialFilename)
 
     
@@ -89,11 +90,12 @@ def main():
     outArr = []
     vessel.resetWindingSimulation()
     anzHoop = 0.
+    anzHelix = 0.
     for i, angle, krempenradius, wendekreisradius in zip(range(layersToWind), angles, krempenradien,
                                                          wendekreisradien):  # len(angle_degree)
         log.info('--------------------------------------------------')
         layerindex = i
-        # wk = winding_layer(i, 0.5)
+        # Hoop Layer
         if abs(angle - 90.) < 1e-8:
             #po_goal = krempenradius
             po_goal = lzylinder/2. - anzHoop*rovingWidth
@@ -113,13 +115,17 @@ def main():
                 vessel.setHoopLayerShift(layerindex, coor, True)
                 vessel.runWindingSimulation(layerindex + 1)     
 
+        # Helix layer
         else:
+            anzHelix = anzHelix+1
             # global arr_fric, arr_wk
             # global arr_fric, arr_wk
             # arr_fric = []
             # arr_wk = []
             po_goal = wendekreisradius
-            log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
+            if anzHelix == 1:
+                po_goal = polarOpening
+            log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {po_goal}')
             if optimizeWindingHelical:                
                 log.info(f'using optimizeFriction')                
                 #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
@@ -129,8 +135,8 @@ def main():
                 #po_local = vessel.getPolarOpeningR(layerindex, True)    
             
                 log.info(f'using optimizeFrictionGlobal_differential_evolution')
-                log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {wendekreisradius}')
-                friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False)
+                log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {po_goal}')
+                friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex, verbose=False)
                 log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')
             else:
@@ -174,21 +180,26 @@ def main():
     windingResults.saveToFile(windingResultFilename)
 
     # #############################################################################
-    # run Abaqus
+    # run internal calculation
     # #############################################################################
 
     # build shell model for internal calculation
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, 10)
+#    converter = pychain.mycrofem.VesselConverter()
+ #   shellModel = converter.buildAxShellModell(vessel, 10)
 
     # run linear solver
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-    linerSolver.run(True)
+ #   linerSolver = pychain.mycrofem.LinearSolver(shellModel)
+ #   linerSolver.run(True)
 
     # get stresses in the fiber COS
-    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
+ #   S11, S22, S12 = shellModel.calculateLayerStressesBottom()
     # get  x coordinates (element middle)
-    xCoords = shellModel.getElementCoordsX()
+ #   xCoords = shellModel.getElementCoordsX()
+
+    # #############################################################################
+    # run ABAQUS
+    # #############################################################################
+
 
     # create model options for abaqus calculation
     modelOptions = pychain.mycrofem.VesselFEMModelOptions()
