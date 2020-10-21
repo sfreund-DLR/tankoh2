@@ -1,5 +1,6 @@
 """performs the winding of one layer and provides target functions for optimizers"""
 
+import numpy as np
 
 from tankoh2 import log
 
@@ -32,7 +33,7 @@ def windLayer(vessel, layerNumber, angle=None, verbose = False):
         if 'bandmiddle path crossed polar opening!' in str(e):
             if verbose:
                 log.warning(f'Got an error at angle {angle}: {e}')
-            return 1e10
+            return np.inf
         else:
             raise
 

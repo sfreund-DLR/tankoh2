@@ -1,11 +1,10 @@
 """solver related methods"""
 
-import os
 import numpy as np
 import pandas
 
 from tankoh2 import pychain
-from tankoh2.service import plotStressEpsPuck
+from tankoh2.winding import windLayer
 
 def getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
     """Returns the index of the most critical element
@@ -71,13 +70,21 @@ def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropInd
     puckIFF = pandas.DataFrame(puckIFF, columns=[f'layer {layer}' for layer in range(puckIFF.shape[1])])
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
 
+def getMaxFibreFailure(angle, args):
+    """Return maximum fibre failure of the all layers after winding the given angle"""
+    vessel, puckProperties, burstPressure, dropIndicies, verbose = args
+    actualPolarOpening = windLayer(vessel, vessel.getWindingPosition(), angle, verbose)
+    if actualPolarOpening is np.inf:
+        return np.inf
+    return getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max()
+
 def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=None):
-    """
+    """Calculates puck results and returns them as dataframe
 
     :param vessel:
     :param puckProperties:
     :param layerNumber: 0-based
-    :return:
+    :return: 2-tuple with dataframes (fibre failure, inter fibre failure)
     """
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
@@ -101,18 +108,21 @@ def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=Non
     puckFF, puckIFF = [], []
     for elemIdx, elemStresses in enumerate(stresses):
         if elemIdx in dropIndicies:
-            failures = np.zeros((numberOfElements,2))
+            failures = np.zeros((numberOfLayers,2))
         else:
             failures = []
             for layerStress in elemStresses:
-                stressVec.fromVector(layerStress)
-                puckResult = puck.getExposure(stressVec)
-                failures.append([puckResult.f_FF, puckResult.f_E0_IFF])
+                if np.all(abs(layerStress)<1e-8): # for hoop layers, the stress in dome region is 0
+                    failures.append([0.,0.])
+                else:
+                    stressVec.fromVector(layerStress)
+                    puckResult = puck.getExposure(stressVec)
+                    failures.append([puckResult.f_FF, puckResult.f_E0_IFF])
             failures = np.array(failures)
         puckFF.append(failures[:,0])
         puckIFF.append(failures[:,1])
-    puckFF = pandas.DataFrame(puckFF, columns=[f'lay{layer}' for layer in range(numberOfLayers)])
-    puckIFF = pandas.DataFrame(puckIFF, columns=[f'lay{layer}' for layer in range(numberOfLayers)])
+    puckFF = pandas.DataFrame(np.array(puckFF), columns=[f'lay{layer}' for layer in range(numberOfLayers)])
+    puckIFF = pandas.DataFrame(np.array(puckIFF), columns=[f'lay{layer}' for layer in range(numberOfLayers)])
     puckFF.drop(dropIndicies, inplace=True)
     puckIFF.drop(dropIndicies, inplace=True)
     return puckFF, puckIFF

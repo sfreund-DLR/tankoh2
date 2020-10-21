@@ -14,14 +14,14 @@ def getRadiusByShiftOnMandrel(mandrel, startRadius, shift):
     :param mandrel: mandrel obj
     :param startRadius: radius on mandrel where the shift should be applied
     :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
-    :return: x-coordinate, radius
+    :return: radius
     """
     # x-coordinate, radius, length on mandrel
     coords = pd.DataFrame(np.array([  # mandrel.getXArray(),
-                                    mandrel.getRArray(),
-                                    mandrel.getLArray()]).T,
+        mandrel.getRArray(),
+        mandrel.getLArray()]).T,
                           columns=[  # 'x',
-                                   'r', 'l'])
+                              'r', 'l'])
 
     # cut section of above 0.9*maxRadius
     maxR = coords['r'].max()
@@ -37,6 +37,26 @@ def getRadiusByShiftOnMandrel(mandrel, startRadius, shift):
     # get target radius
     targetRadius = np.interp(targetLength, coords['l'], coords['r'])
     return targetRadius
+
+
+def getCoordsShiftFromLength(mandrel, startLength, shift):
+    """Calculates a shift along the mandrel surface in the dome section
+
+    :param mandrel: mandrel obj
+    :param startRadius: radius on mandrel where the shift should be applied
+    :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
+    :return: 4-tuple with scalar or vector entires depending on parameter "shift"
+        x-coordinate, radius, length, nearestNodeIndicies
+
+    """
+    targetLength = startLength + shift
+    x, r, l = mandrel.getXArray(), mandrel.getRArray(), mandrel.getLArray()
+
+    targetRadius = np.interp(targetLength, l, r)
+    targetX = np.interp(targetLength, l, x)
+    lengths = np.array([mandrel.getLArray()] * len(targetLength))
+    indicies = np.argmin(np.abs(lengths.T - targetLength), axis=0)
+    return targetX, targetRadius, targetLength, indicies
 
 
 def getLayerThicknesses(vessel):
@@ -72,7 +92,7 @@ def copyAsJson(filename, typename):
         shutil.copy2(filename, filename + '.json')
 
 
-def updateName(jsonFilename, name, objsName):
+def updateName(jsonFilename, name, objsName, attrName='name'):
     """updates the name of an item in a json file.
 
     The given json file will be updated in place
@@ -89,6 +109,6 @@ def updateName(jsonFilename, name, objsName):
             item = item[objName]
         except KeyError:
             raise Tankoh2Error(f'Tree of "{objsName}" not included in "{jsonFilename}"')
-    item["name"] = name
+    item[attrName] = name
     with open(jsonFilename, "w") as jsonFile:
         json.dump(data, jsonFile, indent=4)

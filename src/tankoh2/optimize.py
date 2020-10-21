@@ -6,15 +6,13 @@
 """
 
 from scipy.optimize import minimize_scalar, LinearConstraint
-from scipy.optimize import minimize
 from scipy.optimize import differential_evolution
-import numpy as np
 
-from tankoh2 import log
 from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
     getPolarOpeningDiffByAngle, getAngleAndPolarOpeningDiffByAngle, windLayer
 from tankoh2.exception import Tankoh2Error
+from tankoh2.solver import getMaxFibreFailure
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose=False,
@@ -45,6 +43,22 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose=False,
     #angle2 = vessel.estimateCylinderAngle(layerNumber, targetPolarOpening)
     #r = angle / angle2
     return angle, funVal, iterations
+
+def minimizeUtilization(vessel, angleBounds, dropIndicies, puckProperties, burstPressure, verbose=False):
+    """Minimizes puck fibre failure criterion in a certain region of angles
+
+    """
+    tol = 1e-2
+    popt = minimize_scalar(getMaxFibreFailure, method='bounded',
+                           bounds=angleBounds,  # bounds of the angle
+                           args=[vessel, puckProperties, burstPressure, dropIndicies, verbose],
+                           options={"maxiter": 1000, 'disp': 1, "xatol": tol})
+    if not popt.success:
+        raise Tankoh2Error('Could not finde optimal solution')
+    angle, funVal, iterations = popt.x, popt.fun, popt.nfev
+    windLayer(vessel, vessel.getWindingPosition(), angle)
+    return angle, funVal, iterations
+
 
 def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))

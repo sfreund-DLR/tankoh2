@@ -4,11 +4,11 @@ import os, sys
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck
-from tankoh2.utilities import updateName, copyAsJson, getRadiusByShiftOnMandrel
+from tankoh2.utilities import updateName, copyAsJson, getRadiusByShiftOnMandrel, getCoordsShiftFromLength
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.winding import windLayer, getAngleAndPolarOpeningDiffByAngle
-from tankoh2.optimize import optimizeAngle
+from tankoh2.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.solver import getLinearResults, getCriticalElementIdx
 
 
@@ -61,11 +61,18 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
             vessel.runWindingSimulation(layerNumber + 1)
         else:
             # get location of critical element
-            radiusCrit = mandrel.getRArray()[idxmax]
-            radiusPolarOpening = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1(), radiusCrit, bandWidth)
-            if radiusPolarOpening < minPolarOpening:
-                radiusPolarOpening = minPolarOpening
-            angle, _, _ = optimizeAngle(vessel, radiusPolarOpening, layerNumber, True)
+            critLength = mandrel.getLArray()[idxmax]
+            shift = 4*bandWidth
+            x,radii,lengths,indicies = getCoordsShiftFromLength(mandrel, critLength, [-shift, shift])
+            dropIndicies = list(range(0, indicies[0])) + list(range(indicies[1], len(mandrel.getLArray())))
+            angleBounds = [optimizeAngle(vessel, radius, layerNumber)[0] for radius in radii[::-1]]
+
+            minimizeUtilization(vessel, angleBounds, dropIndicies, puckProperties, burstPressure, verbose=True)
+            #radiusCrit = mandrel.getRArray()[idxmax]
+            #radiusPolarOpening = getRadiusByShiftOnMandrel(mandrel, radiusCrit, bandWidth)
+            #if radiusPolarOpening < minPolarOpening:
+            #    radiusPolarOpening = minPolarOpening
+            #angle, _, _ = optimizeAngle(vessel, radiusPolarOpening, layerNumber, True)
 
     vessel.finishWinding()
 
@@ -150,6 +157,8 @@ def main():
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
+    updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')
+    updateName(vesselFilename, safetyFactor, ['vessel'], attrName='securityFactor')
     copyAsJson(vesselFilename, 'vessel')
 
     # save winding results
@@ -164,8 +173,9 @@ def main():
     # #############################################################################
     # run Evaluation
     # #############################################################################
-    results = getLinearResults(vessel, puckProperties, layersToWind - 1)
-    # plotStressEpsPuck(True,None, *results)
+    if 0:
+        results = getLinearResults(vessel, puckProperties, layersToWind - 1, burstPressure)
+        plotStressEpsPuck(True,None, *results)
 
     vessel.printSimulationStatus()
 
