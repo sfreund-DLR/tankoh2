@@ -60,6 +60,6 @@ def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness,
     composite.saveToFile(designFilename)
     updateName(designFilename, designName, ["designs", "1"])
     copyAsJson(designFilename, 'design')
-    composite = pychain.material.Composite()
+    composite = pychain.material.Composite()    
     composite.loadFromFile(designFilename)
     return composite
