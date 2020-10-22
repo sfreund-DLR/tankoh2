@@ -13,12 +13,22 @@ def getPolarOpeningDiffByAngle(angle, args):
         log.info(f'angle {angle}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
     return abs(targetPolarOpening - actualPolarOpening)
 
-def getAngleAndPolarOpeningDiffByAngle(angle, args):
+def getNegAngleAndPolarOpeningDiffByAngle(angle, args):
     vessel, layerNumber, targetPolarOpening, verbose = args
     if verbose:
         log.info(f'angle {angle}')
     actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
     funVal = -1*angle + abs(targetPolarOpening - actualPolarOpening)
+    if verbose:
+        log.info(f'angle {angle}, target function val {funVal}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
+    return funVal
+
+def getAngleAndPolarOpeningDiffByAngle(angle, args):
+    vessel, layerNumber, targetPolarOpening, verbose = args
+    if verbose:
+        log.info(f'angle {angle}')
+    actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
+    funVal = angle + abs(targetPolarOpening - actualPolarOpening)
     if verbose:
         log.info(f'angle {angle}, target function val {funVal}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
     return funVal

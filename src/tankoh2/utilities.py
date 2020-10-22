@@ -46,7 +46,7 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
     :param startRadius: radius on mandrel where the shift should be applied
     :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
     :return: 4-tuple with scalar or vector entires depending on parameter "shift"
-        x-coordinate, radius, length, nearestNodeIndicies
+        x-coordinate, radius, length, nearestElementIndicies
 
     """
     targetLength = startLength + shift
@@ -54,8 +54,10 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
 
     targetRadius = np.interp(targetLength, l, r)
     targetX = np.interp(targetLength, l, x)
-    lengths = np.array([mandrel.getLArray()] * len(targetLength))
-    indicies = np.argmin(np.abs(lengths.T - targetLength), axis=0)
+    nodalLengths = mandrel.getLArray()
+    elementLengths = (nodalLengths[:-1]+nodalLengths[1:]) / 2
+    elementLengths = np.array([elementLengths] * len(targetLength))
+    indicies = np.argmin(np.abs(elementLengths.T - targetLength), axis=0)
     return targetX, targetRadius, targetLength, indicies
 
 

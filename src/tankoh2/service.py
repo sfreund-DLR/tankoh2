@@ -42,9 +42,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     ax.legend()
 
     ax = next(axs)
-    ax.set_title('puck fibre failure')
-    puckFF.plot(ax=ax)
-    ax.legend(loc='lower left')
+    plotPuckFF(show, filename, puckFF, ax)
 
     ax = next(axs)
     ax.set_title('puck inter fibre failure')
@@ -55,6 +53,34 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
         plt.savefig(filename)
     if show:
         plt.show()
+
+def plotPuckFF(show, filename, puckFF, axes=None, vlines=None):
+    """plots puck properties
+
+    :param show: show the plot created
+    :param filename: save the plot to filename
+    :param puckFF: dataframe with layers as columns and elementIds as index
+    :param axes: matplotlib axes object
+    :param hlines: x-coordinates with a vertical line to draw
+    """
+    if axes is None:
+        fig = plt.figure()
+        ax = fig.gca()
+    else:
+        ax = axes
+
+    ax.set_title('puck fibre failure')
+    puckFF.plot(ax=ax)
+    ax.legend(loc='lower left')
+
+    if vlines is not None:
+        plt.vlines(vlines, puckFF.min().min(), puckFF.max().max(), colors='black',linestyles='dashed')
+
+    if axes is None:
+        if filename:
+            plt.savefig(filename)
+        if show:
+            plt.show()
 
 def getTimeString(useMilliSeconds=False):
     """returns a time string of the format: yyyymmdd_hhmmss"""

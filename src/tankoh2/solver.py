@@ -3,12 +3,19 @@
 import numpy as np
 import pandas
 
-from tankoh2 import pychain
+from tankoh2 import pychain, log
 from tankoh2.winding import windLayer
+
 
 def getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
     """Returns the index of the most critical element
-    
+
+    """
+    return getCriticalElementIdxAndPuckFF(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure)[0]
+
+def getCriticalElementIdxAndPuckFF(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
+    """Returns the index of the most critical element
+
     """
     mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
     dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
@@ -18,7 +25,7 @@ def getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThresho
     # identify critical element
     layermax = puckFF.max().argmax()
     idxmax = puckFF.idxmax()[layermax]
-    return idxmax
+    return idxmax, puckFF
 
 def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropIndicies=None):
     """
@@ -72,11 +79,19 @@ def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropInd
 
 def getMaxFibreFailure(angle, args):
     """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, puckProperties, burstPressure, dropIndicies, verbose = args
-    actualPolarOpening = windLayer(vessel, vessel.getWindingPosition(), angle, verbose)
-    if actualPolarOpening is np.inf:
-        return np.inf
-    return getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max()
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
+    if hasattr(angle, '__iter__'):
+        angle = angle[0]
+    if angle is not None:
+        actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
+        if actualPolarOpening is np.inf:
+            return np.inf
+    maxPerElement = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max(axis=1)
+    maxFF = maxPerElement.max()
+    if verbose:
+        maxIndex = maxPerElement.idxmax()
+        log.info(f'angle {angle}, max fibre failure {maxFF}, index {maxIndex}')
+    return maxFF
 
 def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=None):
     """Calculates puck results and returns them as dataframe
@@ -107,7 +122,7 @@ def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=Non
     stressVec = pychain.utility.StressVector()
     puckFF, puckIFF = [], []
     for elemIdx, elemStresses in enumerate(stresses):
-        if elemIdx in dropIndicies:
+        if dropIndicies is not None and elemIdx in dropIndicies:
             failures = np.zeros((numberOfLayers,2))
         else:
             failures = []
