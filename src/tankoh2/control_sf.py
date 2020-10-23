@@ -8,7 +8,7 @@ from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotPuckFF
 from tankoh2.utilities import updateName, copyAsJson, getRadiusByShiftOnMandrel, getCoordsShiftFromLength
 from tankoh2.contour import getLiner, getDome
-from tankoh2.material import getMaterial, getComposite, readLayupData
+from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
 from tankoh2.winding import windLayer, getNegAngleAndPolarOpeningDiffByAngle, getAngleAndPolarOpeningDiffByAngle
 from tankoh2.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.solver import getLinearResults, getCriticalElementIdx, getCriticalElementIdxAndPuckFF, getMaxFibreFailure
@@ -21,23 +21,25 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
     Strategy:
     #. Start with hoop layer
     #. Second layer:
-        #. Maximize layer angle that still satisfies the fitting radius
+        #. Maximize layer angle that still attaches to the fitting
         #. add layer with this angle
     #. Iteratively perform the following
-    #. Get stresses and puck reserve factors
-    #. Check if reserve factors are satisfied - if yes end iteration
+    #. Get puck fibre failures
+    #. TODO: Check if reserve factors are satisfied - if yes end iteration
     #. Reduce relevant locations to
         #. 1 element at cylindrical section and
-        #. everything between radius 0 and raduis of 70° layer will be used
-    #. identify most loaded element
-    #. if most loaded element is in cylindrical section
+        #. every element between polar opening radii of 0 and of 70° angle layers
+    #. identify critical element
+    #. if critical element is in cylindrical section
         #. add hoop layer
         #. next iteration step
     #. if most loaded element is in dome area:
-        #. get (critical) radius of most loaded element
-        #. calculate polar opening radius for a layer, with it's band mid at the critical radius
-        #. optimize layer angle to fit the target polar opening
-        #. add layer
+        #. Define Optimization bounds [minAngle, 70°] and puck result bounds
+        #. Minimize puck fibre failue:
+            #. Set angle
+            #. Use analytical linear solver
+            #. return max puck fibre failure
+        #. Apply optimal angle to actual layer
         #. next iteration step
     """
 
@@ -48,6 +50,9 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
     layerNumber = 0
     iterations = 0
     radiusDropThreshold = windLayer(vessel, layerNumber, 70)
+    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+    dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
+
     minAngle, _, _ = optimizeAngle(vessel, minPolarOpening, layerNumber, 1., False, targetFunction=getAngleAndPolarOpeningDiffByAngle)
 
     # start with hoop layer
@@ -63,36 +68,28 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
     # create other layers
     for layerNumber in range(layerNumber + 1, maxLayers):
         printLayer(layerNumber)
-        mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
-        elemIdxmax, puckFF = getCriticalElementIdxAndPuckFF(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure)
+        elemIdxmax, puckFF = getCriticalElementIdxAndPuckFF(vessel, puckProperties, dropRadiusIndex, burstPressure)
 
         if elemIdxmax == 0:
             windLayer(vessel, layerNumber, angle=90)
-            indicies=[]
+            indicies, poIndex=[], 0
         else:
             # get location of critical element
             minAngle, _, _ = optimizeAngle(vessel, minPolarOpening, layerNumber, 1., False,
                                            targetFunction=getAngleAndPolarOpeningDiffByAngle)
-            critLength = mandrel.getLArray()[elemIdxmax:elemIdxmax+2].mean() # convert nodal coordinates to element middle coords
-            shift = 4*bandWidth
-            x,radii,lengths,indicies = getCoordsShiftFromLength(mandrel, critLength, [-shift, shift])
-
-            mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
-            dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
             dropIndicies = range(0, dropRadiusIndex)
             angleBounds = [minAngle, 70]
-
-            #dropIndicies = list(range(0, indicies[0])) + list(range(indicies[1], len(mandrel.getLArray())-2))
-            #angleBounds = [optimizeAngle(vessel, radius, layerNumber,minAngle)[0] for radius in radii[::-1]]
+            #critLength = mandrel.getLArray()[elemIdxmax:elemIdxmax+2].mean() # convert nodal coordinates to element middle coords
+            #shift = 4*bandWidth
+            #x,radii,lengths,indicies = getCoordsShiftFromLength(mandrel, critLength, [-shift, shift])
 
             angle,_,loopIt = minimizeUtilization(vessel, layerNumber, angleBounds, dropIndicies, puckProperties, burstPressure, verbose=True)
+            mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+            poIndex = np.argmin(np.abs(mandrel.getRArray()-vessel.getPolarOpeningR(layerNumber,True)))
             iterations += loopIt
-            #radiusCrit = mandrel.getRArray()[idxmax]
-            #radiusPolarOpening = getRadiusByShiftOnMandrel(mandrel, radiusCrit, bandWidth)
-            #if radiusPolarOpening < minPolarOpening:
-            #    radiusPolarOpening = minPolarOpening
-            #angle, _, _ = optimizeAngle(vessel, radiusPolarOpening, layerNumber,minAngle, True)
-        plotPuckFF(False,os.path.join(runDir,f'puck_{layerNumber}.png'),puckFF,None, [elemIdxmax]+list(indicies))
+
+        plotPuckFF(False,os.path.join(runDir,f'puck_{layerNumber}.png'),puckFF,None,
+                   vlines=[elemIdxmax, dropRadiusIndex, poIndex], vlineColors=['red','black', 'green'])
         getMaxFibreFailure(None, [vessel, layerNumber, puckProperties, burstPressure, [], True])
     vessel.finishWinding()
 
@@ -197,6 +194,7 @@ def main():
         plotStressEpsPuck(True,None, *results)
 
     #vessel.printSimulationStatus()
+    saveComposite(composite, designFilename.replace('.design','_optimized.design'), tankname)
     composite.info()
 
     duration = datetime.datetime.now() - startTime

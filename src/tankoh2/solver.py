@@ -7,18 +7,16 @@ from tankoh2 import pychain, log
 from tankoh2.winding import windLayer
 
 
-def getCriticalElementIdx(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
+def getCriticalElementIdx(vessel, puckProperties, radiusDropThreshold, burstPressure):
     """Returns the index of the most critical element
 
     """
-    return getCriticalElementIdxAndPuckFF(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure)[0]
+    return getCriticalElementIdxAndPuckFF(vessel, puckProperties, radiusDropThreshold, burstPressure)[0]
 
-def getCriticalElementIdxAndPuckFF(vessel, layerNumber, puckProperties, radiusDropThreshold, burstPressure):
+def getCriticalElementIdxAndPuckFF(vessel, puckProperties, dropRadiusIndex, burstPressure):
     """Returns the index of the most critical element
 
     """
-    mandrel = vessel.getVesselLayer(layerNumber - 1).getOuterMandrel1()
-    dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
     dropIndicies = range(1, dropRadiusIndex)
     puckFF, puckIFF = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)
 

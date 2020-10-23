@@ -54,7 +54,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     if show:
         plt.show()
 
-def plotPuckFF(show, filename, puckFF, axes=None, vlines=None):
+def plotPuckFF(show, filename, puckFF, axes=None, vlines=None, vlineColors=None):
     """plots puck properties
 
     :param show: show the plot created
@@ -74,7 +74,9 @@ def plotPuckFF(show, filename, puckFF, axes=None, vlines=None):
     ax.legend(loc='lower left')
 
     if vlines is not None:
-        plt.vlines(vlines, puckFF.min().min(), puckFF.max().max(), colors='black',linestyles='dashed')
+        if vlineColors is None:
+            vlineColors = 'black'
+        plt.vlines(vlines, puckFF.min().min(), puckFF.max().max(), colors=vlineColors,linestyles='dashed')
 
     if axes is None:
         if filename:

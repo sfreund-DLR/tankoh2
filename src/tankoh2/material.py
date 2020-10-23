@@ -56,10 +56,14 @@ def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness,
         else:
             layer.windingProperties.cylinderThickness = helixLayerThickenss
 
+    saveComposite(composite, designFilename, designName)
+    composite = pychain.material.Composite()
+    composite.loadFromFile(designFilename)
+
+    return composite
+
+def saveComposite(composite, designFilename, designName):
     composite.updateThicknessFromWindingProperties()
     composite.saveToFile(designFilename)
     updateName(designFilename, designName, ["designs", "1"])
     copyAsJson(designFilename, 'design')
-    composite = pychain.material.Composite()    
-    composite.loadFromFile(designFilename)
-    return composite
