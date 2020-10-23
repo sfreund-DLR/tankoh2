@@ -2,6 +2,7 @@
 
 import os, sys
 import numpy as np
+import datetime
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotPuckFF
@@ -99,12 +100,13 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, bandWidth, 
     if show or save:
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
                           *results)
-    print(f'iterations {iterations}')
+    return iterations
 
 def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
+    startTime= datetime.datetime.now()
     layersToWind = 15
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
@@ -168,7 +170,7 @@ def main():
     # #############################################################################
     # run winding simulation
     # #############################################################################
-    designLayers(vessel, layersToWind, minPolarOpening, puckProperties, bandWidth, burstPressure, runDir)
+    iterations = designLayers(vessel, layersToWind, minPolarOpening, puckProperties, bandWidth, burstPressure, runDir)
 
     with open(windingFile, "w") as file:
         file.write('\t'.join(["Layer number", "Angle", "Polar opening"]) + '\n')
@@ -186,8 +188,6 @@ def main():
     windingResults.saveToFile(windingResultFilename)
     copyAsJson(windingResultFilename, 'wresults')
 
-    from tankoh2.utilities import getElementThicknesses
-    t = getElementThicknesses(vessel)
 
     # #############################################################################
     # run Evaluation
@@ -198,6 +198,9 @@ def main():
 
     #vessel.printSimulationStatus()
     composite.info()
+
+    duration = datetime.datetime.now() - startTime
+    log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
 
     log.info('FINISHED')
 
