@@ -13,7 +13,7 @@ import numpy as np
 from tankoh2 import log
 from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
-    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer
+    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
 from tankoh2.exception import Tankoh2Error
 from tankoh2.solver import getMaxFibreFailure
 
@@ -122,3 +122,22 @@ def optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, laye
                                   atol=tol)
     friction = popt.x
     return 10 ** friction, popt.fun, popt.nfev
+
+def optimizeNegativeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False):
+    """
+    optimize friction value for given polarOpening
+    using global optimizer scipy.optimize.differential_evolution
+    """
+    tol = 1e-15
+    args = (vessel, wendekreisradius, layerindex, verbose)
+    popt = differential_evolution(getPolarOpeningDiffHelicalUsingNegativeLogFriction,
+                                  bounds=[(-10, -3.6)],
+                                  args=[args],
+                                  strategy='best1bin',
+                                  mutation=1.9,
+                                  recombination=0.9,
+                                  seed=200,
+                                  tol=tol,
+                                  atol=tol)
+    friction = popt.x
+    return -1.*abs(10 ** friction), popt.fun, popt.nfev
