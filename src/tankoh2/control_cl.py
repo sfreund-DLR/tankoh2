@@ -72,9 +72,9 @@ def main():
 
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)
     log.info(f'{angles[0:layersToWind]}')
-    composite = getComposite(material, angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness, helixLayerThickenss,
-                             sectionAreaFibre, rovingWidth, numberOfRovings, tex,
-                             designFilename, tankname)
+    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness,
+                             helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovings,
+                             tex, designFilename, tankname)
 
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()

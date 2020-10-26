@@ -35,13 +35,12 @@ def readLayupData(filename):
     return np.array([angle_degree, singlePlyThickenss, wendekreisradien, krempenradien])
 
 
-def getComposite(material, angle_degree, singlePlyThickenss, hoopLayerThickness, helixLayerThickenss,
-                 sectionAreaFibre, rovingWidth, numberOfRovings, tex,
-                 designFilename=None, designName=None):
+def getComposite(angle_degree, singlePlyThickensses, hoopLayerThickness, helixLayerThickenss, material,
+                 sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename=None, designName=None):
     # create composite with layers
     composite = pychain.material.Composite()
 
-    for i, angle, plyThickness in zip(range(len(angle_degree)), angle_degree, singlePlyThickenss):  #
+    for i, angle, plyThickness in zip(range(len(angle_degree)), angle_degree, singlePlyThickensses):  #
         composite.appendLayer(angle, plyThickness, material, pychain.material.LAYER_TYPES.BAP)
         fvg = sectionAreaFibre / (rovingWidth * plyThickness)
         layer = composite.getOrthotropLayer(i)
