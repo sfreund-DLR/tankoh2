@@ -78,7 +78,12 @@ def getLiner(dome, length, linerFilename=None, linerName=None):
     # create a symmetric liner with dome information and cylinder length
     liner = pychain.winding.Liner()
     # spline for winding calculation is left on default of 1.0
-    liner.buildFromDome(dome, length, 1.0)
+    r = dome.cylinderRadius
+    lengthEstimate = (np.pi * r + length) # half circle + cylindrical length
+    desiredNodeNumber = 400
+    deltaLengthSpline = lengthEstimate / desiredNodeNumber / 2 # just use half side
+    #deltaLengthSpline = np.min([5.0, deltaLengthSpline]) # min since muwind has maximum of 5
+    liner.buildFromDome(dome, length, deltaLengthSpline)
 
     if linerFilename:
         liner.saveToFile(linerFilename)

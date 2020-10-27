@@ -13,9 +13,9 @@ import numpy as np
 from tankoh2 import log
 from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
-    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
+    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
 from tankoh2.exception import Tankoh2Error
-from tankoh2.solver import getMaxFibreFailure
+from tankoh2.solver import getMaxFibreFailureByAngle
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=False,
@@ -47,29 +47,33 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=Fal
     #r = angle / angle2
     return angle, funVal, iterations
 
-def minimizeUtilization(vessel, layerNumber, angleBounds, dropIndicies, puckProperties, burstPressure, verbose=False):
+def minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, puckProperties, burstPressure,
+                        targetFunction = getMaxFibreFailureByAngle, verbose=False):
     """Minimizes puck fibre failure criterion in a certain region of angles
 
     """
     tol = 1e-2
     args = [vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose]
     if 0:
-        popt = minimize_scalar(getMaxFibreFailure, method='bounded',
-                               bounds=angleBounds,  # bounds of the angle
+        popt = minimize_scalar(targetFunction, method='bounded',
+                               bounds=bounds,  # bounds of the angle
                                args=args,
                                options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     else:
-        popt = differential_evolution(getMaxFibreFailure,
-                                      bounds=(angleBounds,),
+        popt = differential_evolution(targetFunction,
+                                      bounds=(bounds,),
                                       args=[args],
                                       atol=tol*10)
     if not popt.success:
         raise Tankoh2Error('Could not finde optimal solution')
-    angle, funVal, iterations = popt.x, popt.fun, popt.nfev
-    if hasattr(angle, '__iter__'):
-        angle = angle[0]
-    windLayer(vessel, layerNumber, angle)
-    return angle, funVal, iterations
+    x, funVal, iterations = popt.x, popt.fun, popt.nfev
+    if hasattr(x, '__iter__'):
+        x = x[0]
+    if targetFunction is getMaxFibreFailureByAngle:
+        windLayer(vessel, layerNumber, x)
+    else:
+        windHoopLayer(vessel, layerNumber, x)
+    return x, funVal, iterations
 
 
 def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):

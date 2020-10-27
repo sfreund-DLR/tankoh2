@@ -33,6 +33,14 @@ def getAngleAndPolarOpeningDiffByAngle(angle, args):
         log.info(f'angle {angle}, target function val {funVal}, actualPolarOpening {actualPolarOpening}, targetPolarOpening {targetPolarOpening}')
     return funVal
 
+
+def windHoopLayer(vessel, layerNumber, shift = 0, verbose = False):
+    """wind up to the given layer(0-based count) and return polar opening angle"""
+    vessel.setLayerAngle(layerNumber, 90)
+    if shift:
+        vessel.setHoopLayerShift(layerNumber, shift, True)
+    vessel.runWindingSimulation(layerNumber + 1)
+
 def windLayer(vessel, layerNumber, angle=None, verbose = False):
     """wind up to the given layer(0-based count) and return polar opening angle"""
     if angle:

@@ -73,14 +73,14 @@ def getLayerThicknesses(vessel):
             layerElement = vesselLayer.getVesselLayerElement(elementNumber, False)
             layerThicknesses.append(layerElement.elementThickness)
         thicknesses.append(layerThicknesses)
-    thicknesses = pd.DataFrame(thicknesses)
-    # thicknesses.T.plot()
+    thicknesses = pd.DataFrame(thicknesses).T
+    # thicknesses.plot()
     return thicknesses
 
 
 def getElementThicknesses(vessel):
     """returns a vector with thicknesses of each element along the whole vessel"""
-    thicknesses = getLayerThicknesses(vessel)
+    thicknesses = getLayerThicknesses(vessel).T
     return thicknesses.sum()
 
 

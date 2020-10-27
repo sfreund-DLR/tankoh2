@@ -17,13 +17,25 @@ def getCriticalElementIdxAndPuckFF(vessel, puckProperties, dropRadiusIndex, burs
     """Returns the index of the most critical element
 
     """
-    dropIndicies = range(1, dropRadiusIndex)
+    dropIndicies = None
+    if dropRadiusIndex is not None:
+        dropIndicies = range(1, dropRadiusIndex)
     puckFF, puckIFF = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)
 
     # identify critical element
     layermax = puckFF.max().argmax()
     idxmax = puckFF.idxmax()[layermax]
     return idxmax, puckFF
+
+def _getLinearResults(vessel, burstPressure):
+    # build shell model for internal calculation
+    converter = pychain.mycrofem.VesselConverter()
+    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
+
+    # run linear solver
+    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
+    linerSolver.run(True)
+    return shellModel
 
 def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropIndicies=None):
     """
@@ -33,13 +45,7 @@ def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropInd
     :param layerNumber: 0-based
     :return:
     """
-    # build shell model for internal calculation
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
-
-    # run linear solver
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-    linerSolver.run(True)
+    shellModel = _getLinearResults(vessel, burstPressure)
 
     # get stresses in the fiber COS
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
@@ -75,8 +81,9 @@ def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropInd
     puckIFF = pandas.DataFrame(puckIFF, columns=[f'layer {layer}' for layer in range(puckIFF.shape[1])])
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
 
-def getMaxFibreFailure(angle, args):
-    """Return maximum fibre failure of the all layers after winding the given angle"""
+
+def getMaxFibreFailureByAngle(angle, args):
+    """Returns the maximum puck fibre failure index after setting and winding the given angle"""
     vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
@@ -84,12 +91,34 @@ def getMaxFibreFailure(angle, args):
         actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
         if actualPolarOpening is np.inf:
             return np.inf
-    maxPerElement = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max(axis=1)
-    maxFF = maxPerElement.max()
+    maxFF, maxIndex = _getMaxFibreFailure(args)
     if verbose:
-        maxIndex = maxPerElement.idxmax()
         log.info(f'angle {angle}, max fibre failure {maxFF}, index {maxIndex}')
     return maxFF
+
+
+def getMaxFibreFailureByShift(shift, args):
+    """Returns the maximum puck fibre failure index after setting and winding the given hoop layer shift"""
+    if hasattr(shift, '__iter__'):
+        shift = shift[0]
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
+    vessel.setHoopLayerShift(layerNumber, shift, True)
+    actualPolarOpening = windLayer(vessel, layerNumber, verbose=verbose)
+    if actualPolarOpening is np.inf:
+        return np.inf
+    maxFF, maxIndex = _getMaxFibreFailure(args)
+    if verbose:
+        log.info(f'hoop shift {shift}, max fibre failure {maxFF}, index {maxIndex}')
+    return maxFF
+
+
+def _getMaxFibreFailure(args):
+    """Return maximum fibre failure of the all layers after winding the given angle"""
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
+    maxPerElement = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max(axis=1)
+    maxIndex = maxPerElement.idxmax()
+    maxFF = maxPerElement.max()
+    return maxFF, maxIndex
 
 def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=None):
     """Calculates puck results and returns them as dataframe
@@ -99,17 +128,10 @@ def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=Non
     :param layerNumber: 0-based
     :return: 2-tuple with dataframes (fibre failure, inter fibre failure)
     """
-    # build shell model for internal calculation
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
-
-    # run linear solver
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-
     puck = pychain.failure.PuckFailureCriteria2D()
     puck.setPuckProperties(puckProperties)
-    linerSolver.run(True)
 
+    shellModel = _getLinearResults(vessel, burstPressure)
     # get stresses in the fiber COS (elemNr, layerNr)
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
     numberOfElements, numberOfLayers = S11.shape

@@ -42,7 +42,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     ax.legend()
 
     ax = next(axs)
-    plotPuckFF(show, filename, puckFF, ax)
+    plotDataFrame(show, filename, puckFF, ax)
 
     ax = next(axs)
     ax.set_title('puck inter fibre failure')
@@ -54,12 +54,12 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     if show:
         plt.show()
 
-def plotPuckFF(show, filename, puckFF, axes=None, vlines=None, vlineColors=None):
+def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None):
     """plots puck properties
 
     :param show: show the plot created
     :param filename: save the plot to filename
-    :param puckFF: dataframe with layers as columns and elementIds as index
+    :param dataframe: dataframe with layers as columns and elementIds as index
     :param axes: matplotlib axes object
     :param hlines: x-coordinates with a vertical line to draw
     """
@@ -70,15 +70,17 @@ def plotPuckFF(show, filename, puckFF, axes=None, vlines=None, vlineColors=None)
         ax = axes
 
     ax.set_title('puck fibre failure')
-    puckFF.plot(ax=ax)
-    ax.legend(loc='lower left')
+    dataframe.plot(ax=ax)
+    legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'lower left'}
+    ax.legend(**legendKwargs)
 
     if vlines is not None:
         if vlineColors is None:
             vlineColors = 'black'
-        plt.vlines(vlines, puckFF.min().min(), puckFF.max().max(), colors=vlineColors,linestyles='dashed')
+        plt.vlines(vlines, dataframe.min().min(), dataframe.max().max(), colors=vlineColors, linestyles='dashed')
 
     if axes is None:
+        plt.subplots_adjust(right=0.8)
         if filename:
             plt.savefig(filename)
         if show:
