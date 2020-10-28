@@ -8,6 +8,10 @@ import numpy as np
 from tankoh2.exception import Tankoh2Error
 
 
+def getAnglesFromVessel(vessel):
+    """returns a list with all angles from the vessel"""
+    return [np.rad2deg(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).clairaultAngle) for layerNumber in range(vessel.getNumberOfLayers())]
+
 def getRadiusByShiftOnMandrel(mandrel, startRadius, shift):
     """Calculates a shift along the mandrel surface in the dome section
 
@@ -64,6 +68,7 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
 def getLayerThicknesses(vessel):
     """returns a dataframe with thicknesses of each layer along the whole vessel"""
     thicknesses = []
+    columns = ['lay{}_{:04.1f}'.format(i, angle) for i, angle in enumerate(getAnglesFromVessel(vessel))]
     for layerNumber in range(vessel.getNumberOfLayers()):
         vesselLayer = vessel.getVesselLayer(layerNumber)
         mandrelOuter2 = vesselLayer.getOuterMandrel2()
@@ -74,6 +79,7 @@ def getLayerThicknesses(vessel):
             layerThicknesses.append(layerElement.elementThickness)
         thicknesses.append(layerThicknesses)
     thicknesses = pd.DataFrame(thicknesses).T
+    thicknesses.columns = columns
     # thicknesses.plot()
     return thicknesses
 

@@ -108,11 +108,11 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     iterations = 0
     liner = vessel.getLiner()
     dome = liner.getDome1()
+
     radiusDropThreshold = windLayer(vessel, layerNumber, 70)
     mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
     dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
     elementCount = mandrel.getRArray().shape[0]-1
-
     minAngle, _, _ = optimizeAngle(vessel, minPolarOpening, layerNumber, 1., False,
                                    targetFunction=getAngleAndPolarOpeningDiffByAngle)
 
@@ -120,32 +120,41 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     dropHoopIndexStart = np.argmax((-mandrel.getRArray()+rMax)>rMax*1e-4) - 10
     dropHoopIndexEnd = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.98))
     hoopOrHelicalIndex = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.99))
-
     maxHoopShift = mandrel.getLArray()[dropHoopIndexEnd] - liner.cylinderLength/2
-
-    # start with hoop layer
-    printLayer(layerNumber, verbose)
-    windLayer(vessel, layerNumber, 90)
-    anglesShifts.append((90.,0))
+    dropHoopIndicies = list(range(0, dropHoopIndexStart)) + list(range(dropHoopIndexEnd, elementCount))
+    dropHelicalIndicies = range(0, hoopOrHelicalIndex)
 
     # introduce layer up to the fitting. Optimize required angle
-    layerNumber += 1
     printLayer(layerNumber, verbose)
     angle, _, _ = optimizeAngle(vessel, minPolarOpening, layerNumber, minAngle, False,
                                 targetFunction=getNegAngleAndPolarOpeningDiffByAngle)
     anglesShifts.append((angle,0))
+    layerNumber += 1
+
+    # add hoop layer
+    resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
+                           dropHoopIndicies, maxHoopShift, verbose)
+    shift, funcVal, loopIt, newDesignIndex = resHoop
+    windHoopLayer(vessel, layerNumber, shift)
+    anglesShifts.append((90, shift))
+
+    #printLayer(layerNumber, verbose)
+    #windLayer(vessel, layerNumber, 90)
+    #anglesShifts.append((90.,0))
+
 
     # create other layers
     for layerNumber in range(layerNumber + 1, maxLayers):
         printLayer(layerNumber, verbose)
         elemIdxmax, puckFF = getCriticalElementIdxAndPuckFF(vessel, puckProperties, None, burstPressure)
 
-        puckFFConvergence, _ = getPuckLinearResults(vessel, puckProperties, burstPressure)
-        if puckFFConvergence.max().max() < 1:
+        if puckFF.max().max() < 1:
             if verbose:
                 log.info('End Iteration')
             # stop criterion reached
-            plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFFConvergence)
+            columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
+            puckFF.columns = columns
+            plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFF)
             layerNumber -= 1
             break
         elif layerNumber > maxLayers:
@@ -158,12 +167,11 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
 
         #  check zone of highest puck values
         if elemIdxmax < hoopOrHelicalIndex:
-            dropIndicies = list(range(0,dropHoopIndexStart)) + list(range(dropHoopIndexEnd,elementCount))
             resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                                   dropIndicies, maxHoopShift, verbose)
+                                   dropHoopIndicies, maxHoopShift, verbose)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                         minPolarOpening, dropIndicies, verbose)
-            if resHoop[1] * 1.25 < resHelical[1]: #  puck result with helical layer must be 1.25 times better
+                                         minPolarOpening, dropHoopIndicies, verbose)
+            if resHoop[1] < resHelical[1] * 1.25: #  puck result with helical layer must be 1.25 times better
                 # add hoop layer
                 shift, funcVal, loopIt, newDesignIndex = resHoop
                 windHoopLayer(vessel, layerNumber, shift)
@@ -173,15 +181,16 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
                 windLayer(vessel, layerNumber, angle)
                 anglesShifts.append((angle, 0))
         else:
-            dropIndicies = range(0, hoopOrHelicalIndex)
             angle, funcVal, loopIt, newDesignIndex = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                                                     minPolarOpening, dropIndicies, verbose)
+                                                                     minPolarOpening, dropHelicalIndicies, verbose)
 
             anglesShifts.append((angle,0))
         iterations += loopIt
-
-        plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFFConvergence, None,
-                      vlines=[elemIdxmax, hoopOrHelicalIndex, newDesignIndex], vlineColors=['red', 'black', 'green'])
+        columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts[:-1])]
+        puckFF.columns=columns
+        plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFF, None,
+                      vlines=[elemIdxmax, hoopOrHelicalIndex, newDesignIndex], vlineColors=['red', 'black', 'green'],
+                      title='puck fibre failure')
 
 
     vessel.finishWinding()
@@ -190,7 +199,10 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
                           *results)
         thicknesses = getLayerThicknesses(vessel)
-        plotDataFrame(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses)
+        columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts)]
+        thicknesses.columns=columns
+        plotDataFrame(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses,
+                      title='layer thicknesses')
 
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
@@ -230,19 +242,34 @@ def createWindingDesign(**kwargs):
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
-    pressure = 10.  # pressure in MPa (bar / 10.)
+    pressure = 5.  # pressure in MPa (bar / 10.)
     safetyFactor = 2.25
 
     # potential external inputs
-    burstPressure = kwargs['burstPressure'] if 'burstPressure' in kwargs else pressure * safetyFactor
-    dzyl = kwargs['dzyl'] if 'dzyl' in kwargs else 400.  # mm
-    lzylinder = kwargs['lzyl'] if 'lzyl' in kwargs else 500.  # mm
-    minPolarOpening = kwargs['minPolarOpening'] if 'minPolarOpening' in kwargs else 20  # mm
+    burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
+    dzyl = kwargs.get('dzyl', 400.)  # mm
+    minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
+    domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
+    runDir = kwargs.get('runDir', getRunDir())
+    if 'lzyl' in kwargs:
+        lzylinder = kwargs.get('lzyl', 500.)  # mm
+    else:
+        lzylByR = kwargs.get('lzylByR', 2.5)  # mm
+        lzylinder = lzylByR * dzyl/2
+
+
+    if 0:
+        # test pressure vessel vs cryo vessel
+        dzyl = 2000 #mm
+        lzylinder = 4000 #mm
+        minPolarOpening = dzyl/2/10
+        burstPressure = 25
+        runDir = kwargs.get('runDir', getRunDir(f'_{burstPressure}MPa'))
+
 
     # input files
     materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
     # output files
-    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
     vesselFilename = os.path.join(runDir, tankname + ".vessel")
@@ -251,7 +278,7 @@ def createWindingDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    dome = getDome(dzyl / 2., minPolarOpening, pychain.winding.DOME_TYPES.CIRCLE) # ISOTENSOID
+    dome = getDome(dzyl / 2., minPolarOpening, domeType)
     liner = getLiner(dome, lzylinder, linerFilename, tankname)
 
     # ###########################################
@@ -264,7 +291,6 @@ def createWindingDesign(**kwargs):
     compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
                              sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname]
     composite = getComposite(angles, *compositeArgs)
-    #compositeArgs = [helixLayerThickenss, material, pychain.material.LAYER_TYPES.BAP]
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
@@ -273,6 +299,7 @@ def createWindingDesign(**kwargs):
     # #############################################################################
     # run winding simulation
     # #############################################################################
+    vessel.saveToFile(vesselFilename)  # save vessel
     frpMass, volume, area, composite, iterations, anglesShifts = designLayers(vessel, layersToWind, minPolarOpening,
                                                                 puckProperties, burstPressure, runDir,
                                                                 composite, compositeArgs, verbose)
@@ -307,7 +334,11 @@ def createWindingDesign(**kwargs):
 
     log.info('FINISHED')
 
-    return frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers()
+    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles']
+    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), [a for a,_ in anglesShifts]
+    with open(os.path.join(runDir, 'results.txt'), 'w') as f:
+        f.write(indent([resultNames, results]))
+    return results
 
 
 if __name__ == '__main__':

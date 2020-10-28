@@ -53,8 +53,9 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
         plt.savefig(filename)
     if show:
         plt.show()
+    plt.close(fig)
 
-def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None):
+def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None):
     """plots puck properties
 
     :param show: show the plot created
@@ -69,7 +70,8 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
     else:
         ax = axes
 
-    ax.set_title('puck fibre failure')
+    if title:
+        ax.set_title(title)
     dataframe.plot(ax=ax)
     legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'lower left'}
     ax.legend(**legendKwargs)
@@ -80,11 +82,12 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         plt.vlines(vlines, dataframe.min().min(), dataframe.max().max(), colors=vlineColors, linestyles='dashed')
 
     if axes is None:
-        plt.subplots_adjust(right=0.8)
+        plt.subplots_adjust(right=0.75, left=0.08)
         if filename:
             plt.savefig(filename)
         if show:
             plt.show()
+        plt.close(fig)
 
 def getTimeString(useMilliSeconds=False):
     """returns a time string of the format: yyyymmdd_hhmmss"""

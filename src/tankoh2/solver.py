@@ -156,8 +156,9 @@ def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=Non
             failures = np.array(failures)
         puckFF.append(failures[:,0])
         puckIFF.append(failures[:,1])
-    puckFF = pandas.DataFrame(np.array(puckFF), columns=[f'lay{layer}' for layer in range(numberOfLayers)])
-    puckIFF = pandas.DataFrame(np.array(puckIFF), columns=[f'lay{layer}' for layer in range(numberOfLayers)])
+    columns = ['lay{}'.format(i) for i in range(numberOfLayers)]
+    puckFF = pandas.DataFrame(np.array(puckFF), columns=columns)
+    puckIFF = pandas.DataFrame(np.array(puckIFF), columns=columns)
     if dropIndicies is not None:
         puckFF.drop(dropIndicies, inplace=True)
         puckIFF.drop(dropIndicies, inplace=True)
