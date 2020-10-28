@@ -15,8 +15,10 @@ from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunc
 from fa_pyutils.service.systemutils import getRunDir
 
 from tankoh2.control_sf import createWindingDesign
-from tankoh2 import programDir, log
+from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent
+
+dome = 'circle'  # isotensoid  circle
 
 class TankWinder(AbstractTargetFunction):
     """"""
@@ -24,7 +26,7 @@ class TankWinder(AbstractTargetFunction):
 
     def __init__(self, lb, ub, runDir):
         """"""
-        resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers']
+        resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles']
         AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNames)
         self.doParallelization = []
         self.runDir = runDir
@@ -34,21 +36,23 @@ class TankWinder(AbstractTargetFunction):
         """call function for the model"""
         runDir = getRunDir(basePath=os.path.join(self.runDir),useMilliSeconds=True)
         r, lzyl, burstPressure = parameters
-        result = createWindingDesign(dzyl=r*2, lzyl=lzyl, burstPressure=burstPressure,
-                                     minPolarOpening = r/10, runDir=runDir)
+
+        result = createWindingDesign(dzyl=r*2, lzylByR=lzyl, burstPressure=burstPressure,
+                                     minPolarOpening = r/10, runDir=runDir,
+                                     domeType = pychain.winding.DOME_TYPES.ISOTENSOID if dome=='isotensoid' else pychain.winding.DOME_TYPES.CIRCLE)
         return result
 
 
 def main():
-    sampleFile = 'C:/PycharmProjects/tankoh2/tmp/doe_20201027_181202_isotensoid/sampleX.txt'
-    numberOfSamples = 101
+    sampleFile = '' + 'C:/PycharmProjects/tankoh2/tmp/doe_isotensoid_20201028_210108/sampleX.txt'
+    numberOfSamples = 41
 
     startTime = datetime.datetime.now()
     safetyFactor = 2.25
-    lb = OrderedDict([('r',200.),('lzyl',800.),('dp',0.05*safetyFactor)])  # [mm, - , MPa]
-    ub = OrderedDict([('r',3000.),('lzyl',12000.),('dp',1.*safetyFactor)])
+    lb = OrderedDict([('r',200.),('lzylByR',.5),('dp',0.05*safetyFactor)])  # [mm, - , MPa]
+    ub = OrderedDict([('r',2000.),('lzylByR',7.),('dp',1.*safetyFactor)])
     names = list(lb.keys())
-    runDir = getRunDir('doe_circle', basePath=os.path.join(programDir,'tmp'))
+    runDir = getRunDir(f'doe_{dome}', basePath=os.path.join(programDir,'tmp'))
 
     winder = TankWinder(lb,ub, runDir)
     if sampleFile:
@@ -57,9 +61,10 @@ def main():
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
+    print(sampleX.shape)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
-    sampleY = getY(sampleX, winder, verbose=True)
+    sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)
 
     # store samples
     lcvt.yToFile(os.path.join(runDir, 'sampleY.txt'), winder, sampleY)
