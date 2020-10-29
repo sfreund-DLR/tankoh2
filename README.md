@@ -2,16 +2,31 @@
 Design and optimization of H2 tanks using [muChain](https://www.mefex.de/software/)
 
 ## Features 
-- anticipated
-  - material/layup read/write
-  - setup of a tank model
-  - define optimization function
-  - perform optimization using scipy optimizers
+
+- Material/layup read/write
+- Create dome and liner from zylindrical length and radius or using a dome contour
+- Setup of a vessel model
+- Optimization of each layer with respect to minimizing puck fibre failure
+- Create and run DOE with support of DLR tools (delismm, fa_pyutils)
+- Planned features:
+  - Global optimization of 
+    - All angles of helical layers
+    - All hoop layer shifts
+    - Target: mass minimization
+    - Constraint: puck fibre failure
+  - Improved DOE: Liner and fitting adjustment w.r.t. vessel geometry
+  - Abaqus: introduction of the abaqus solver at the end of the optimization process
 
 ## Installation
 
 ### Requirements
-Requirements from myChain:
+
+Python Packages:
+- Numpy
+- Scipy
+- Pandas
+
+Requirements from [muChain](https://www.mefex.de/software/):
 - Python 3.6 (x64) + Numpy 1.16.2
 - Python 3.8 (x64) + Numpy 1.19.1
 
@@ -22,6 +37,14 @@ Get tankoh2 from
 ```
 https://github.com/sfreund-DLR/tankoh2.git
 ```
+In the folder `/src/tankoh2/`, create a the file `settings.json`
+and include the path to [muChain](https://www.mefex.de/software/) like this:
+
+```
+{
+  "mycropychainPath": "<path_to_muChain>"
+}
+```
 
 ### Test the installation
 In python execute: 
@@ -29,6 +52,7 @@ In python execute:
 ```
 import tankoh2
 ```
+
    
 
 ## Contributing to _tankoh2_

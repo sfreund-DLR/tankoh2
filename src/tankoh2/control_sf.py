@@ -250,7 +250,7 @@ def createWindingDesign(**kwargs):
     dzyl = kwargs.get('dzyl', 400.)  # mm
     minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
     domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
-    runDir = kwargs.get('runDir', getRunDir())
+    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     if 'lzyl' in kwargs:
         lzylinder = kwargs.get('lzyl', 500.)  # mm
     else:
