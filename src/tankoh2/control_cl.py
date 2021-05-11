@@ -1,5 +1,9 @@
 """control a tank optimization"""
 
+import sys
+
+sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_2_x64/MyCrOChain_Version_0_95_2_x64/abaqus_interface_0_95')
+
 import os
 import numpy as np
 from scipy.optimize import curve_fit
@@ -12,15 +16,19 @@ from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLength
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
+import mymodels.myvesselAxSolid as vesselAxSolid    
+#from builtins import True
 
 def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
+    servicepressure = 700. #bar
+    saftyFactor = 1.
     layersToWind = 48
     optimizeWindingHelical = True
     optimizeWindingHoop = False
-    
+        
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
@@ -31,7 +39,7 @@ def main():
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
-    numberOfRovings = 1
+    numberOfRovings = 10 #1
     bandWidth = rovingWidth * numberOfRovings
     log.info(f'winding using {numberOfRovings} robings with {rovingWidth}mm resulting in bandwith of {bandWidth}')
     tex = 446  # g / km
@@ -50,6 +58,9 @@ def main():
     windingFile = os.path.join(runDir, tankname + "_realised_winding.txt")
     vesselFilename = os.path.join(runDir, tankname + ".vessel")
     windingResultFilename = os.path.join(runDir, tankname + ".wresults")
+    
+    print('runDir', runDir)
+    print('dataDir', dataDir)
     
     #print(getLengthContourPath(domeContourFilename, 24., 51.175/2., 1))
 
@@ -225,23 +236,44 @@ def main():
     modelOptions.modelName = tankname + "_Vessel"
     modelOptions.jobName = tankname + "_Job"
     modelOptions.windingResultsFileName = tankname
-    modelOptions.useMaterialPhi = False
+    modelOptions.useMaterialPhi = False # false uses micromechanical estimations of fvg effect an porperties
     modelOptions.fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALTY
-    modelOptions.globalMeshSize = 0.25
-    modelOptions.pressureInBar = 300.0
+    modelOptions.frictionFitting = 0.3
+    modelOptions.globalMeshSize = 2.0
+    modelOptions.pressureInBar = servicepressure
+    modelOptions.saveCAE = True
+    modelOptions.buildMandrel1 = True
+    modelOptions.buildMandrel2 = False
+    
+    
 
     # write abaqus scripts
     scriptGenerator = pychain.abaqus.AbaqusVesselScriptGenerator()
     scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Build.py"), settings, modelOptions)
     scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Eval.py"), settings, modelOptions)
 
+    # create vessel model according to version 95_2 documentation 'Axis-Symmetric Vessel Model'
+    
+    #create vessel model
+    vesselAxSolid = mymodels.myvesselAxSolidContacts  
+    model = vesselAxSolid.MyVesselAxSolid(modelName = tankname + "_Vessel", umat = True, buildFitting = True, saveCAE = True, useMaterialPhi = False, buildLiner = True)
+    #load winding results
+    model.loadData(tankname)
+    #build mandrel 1
+    model.buildOnlyMandrel1(servicepressure, 1, friction = 0.3, fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALT)
+    #mesh model
+    model.mesh(2.0)
+    #export inp file
+    model.exportInp(tankname + "_Job")    
+    
+
     import matplotlib.pylab as plt
 
-    fig = plt.figure()
-    ax = fig.gca()
-    ax.plot(S11[:, 0])
-    ax.plot(S11[:, 1])
-    ax.plot(S11[:, 2])
+#    fig = plt.figure()
+ #   ax = fig.gca()
+ #   ax.plot(S11[:, 0])
+ #   ax.plot(S11[:, 1])
+ #   ax.plot(S11[:, 2])
     # plt.show()
 
     log.info('FINISHED')

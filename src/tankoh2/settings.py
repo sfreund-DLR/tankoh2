@@ -28,11 +28,13 @@ def applySettings(filename=None):
     with open(filename, 'r') as f:
         settings = json.load(f)
     pyVersionString = sys.version[0]+sys.version[2]
-    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}_x64')
-    abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
+    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
+    #abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
+    abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95')
 
     log.info(f'Append mycropychain path to sys path: {pythonApiPath}')
     sys.path.append(pythonApiPath)
+    
     # import API - MyCrOChain GUI with activiated TCP-Connector needed
     try:
         import mycropychain as pychain
