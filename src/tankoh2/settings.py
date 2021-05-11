@@ -31,6 +31,7 @@ def applySettings(filename=None):
     pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}_x64')
     abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
 
+    log.info(f'Append mycropychain path to sys path: {pythonApiPath}')
     sys.path.append(pythonApiPath)
     # import API - MyCrOChain GUI with activiated TCP-Connector needed
     try:
