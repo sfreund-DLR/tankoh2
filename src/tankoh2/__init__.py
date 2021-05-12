@@ -21,4 +21,11 @@ log = logging.root
 # make mycropychain available
 applySettings()
 pychain = None
-import mycropychain as pychain
+
+try:
+    import mycropychain as pychain
+except ModuleNotFoundError:
+    if sys.version_info.minor == '6':
+        import mycropychain36 as pychain
+    else:  # sys.version_info.minor == '8'
+        import mycropychain38 as pychain

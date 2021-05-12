@@ -27,8 +27,17 @@ def applySettings(filename=None):
 
     with open(filename, 'r') as f:
         settings = json.load(f)
-    pyVersionString = sys.version[0]+sys.version[2]
-    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
+    major, minor = str(sys.version_info.major), str(sys.version_info.minor)
+    pyVersionString = major+minor
+    # v 0.90c
+    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}_x64')
+    if not os.path.exists(pythonApiPath):
+        # v 0.95.2
+        pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
+        if not os.path.exists(pythonApiPath):
+            # v0.95.3
+            pyVersionString = f'{major}_{minor}'
+            pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\{pyVersionString}')
     #abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
     abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95')
 
@@ -39,12 +48,19 @@ def applySettings(filename=None):
     try:
         import mycropychain as pychain
     except ModuleNotFoundError:
-        raise Tankoh2Error('Could not find package "mycropychain". Please check the path to mycropychain in the '
-                           'settings file.')
-    else:
-        if len(pychain.__dict__) < 10:
-            # len(pychain.__dict__) was 8 on failure and 17 on success
-            raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
+        try:
+            if minor == '6':
+                import mycropychain36 as pychain
+            else: # minor == '8'
+                import mycropychain38 as pychain
+        except ModuleNotFoundError:
+
+            raise Tankoh2Error('Could not find package "mycropychain". Please check the path to mycropychain in the '
+                               'settings file.')
+        else:
+            if len(pychain.__dict__) < 10:
+                # len(pychain.__dict__) was 8 on failure and 17 on success
+                raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
 
         # set general path information
         global myCrOSettings
