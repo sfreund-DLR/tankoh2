@@ -21,6 +21,9 @@ from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent
 
 dome = 'circle'  # isotensoid  circle
+safetyFactor = 1  # 2.25
+lb = OrderedDict([('r', 500.), ('lzylByR', 0.5), ('dp', 0.15 * safetyFactor)])  # [mm, - , MPa]
+ub = OrderedDict([('r', 2000.), ('lzylByR', 7.), ('dp', 0.5 * safetyFactor)])
 
 
 class TankWinder(AbstractTargetFunction):
@@ -45,36 +48,44 @@ class TankWinder(AbstractTargetFunction):
                                      domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE)
         return result
 
+volumeFunc = lambda r, lzylByR: (4 / 3 * np.pi * r ** 3 + r * lzylByR * np.pi * r ** 2)
+"""[m**3]"""
 
-def plotGeometryRange(radii, lzylByRs):
+def plotGeometryRange(radii, lzylByRs, plotDir='', show=False, samples=None):
     """
 
     :param radii: tuple with min and max radius [mm]
     :param lzylByRs: tuple with min and max lzylByR [-]
     :return: None
     """
-    volumeFunc = lambda r, lzylByR: (4 / 3 * np.pi * r ** 3 + r * lzylByR * np.pi * r ** 2)
-    """[m**3]"""
+    radii = np.array(radii) / 1e3  # convert to m
+    if samples is not None:
+        samplesR, samplesLzylByR = samples[:2, :]
+        samplesR /= 1e3
 
-    fig = plt.figure()
-    ax = fig.add_subplot(1, 1, 1)
-    ax.set_yscale("log")
-    ax.set_title("Parameter bounds")
-    ax.set_xlabel('Radius [m]')
-    ax.set_ylabel('Volume [m^3]')
-    #plt.grid(True)
-    color = 'tab:blue'
-    for lzylByR in [lzylByRs]:
-        x = np.linspace(*radii,11)
-        volumes = [volumeFunc(r, lzylByR) for r in x]
-        ax.plot(x, volumes, color=color, label=f'lzylByR={lzylByR}')
-        color = 'tab:orange'
-    plt.show()
+    fig = plt.figure(figsize=(15,6))
+    axes = [fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)]
+    axes[1].set_yscale("log")
+    for ax in axes:
+        ax.set_title("Parameter bounds")
+        ax.set_xlabel('Radius [m]')
+        ax.set_ylabel('Volume [m^3]')
+        color = 'tab:blue'
+        for lzylByR in lzylByRs:
+            x = np.linspace(*radii,11)
+            volumes = [volumeFunc(r, lzylByR) for r in x]
+            ax.plot(x, volumes, color=color, label=f'lzylByR={lzylByR}')
+            color = 'tab:orange'
+        ax.legend()
+        if samples is not None:
+            volumes = volumeFunc(samplesR, samplesLzylByR)
+            ax.scatter(samplesR, volumes, label=f'samples')
 
+    if plotDir:
+        plt.savefig(plotDir+'/geometryRange.png')
+    if show:
+        plt.show()
 
-safetyFactor = 1  # 2.25
-lb = OrderedDict([('r', 200.), ('lzylByR', 0.5), ('dp', 0.15 * safetyFactor)])  # [mm, - , MPa]
-ub = OrderedDict([('r', 2000.), ('lzylByR', 7.), ('dp', 0.5 * safetyFactor)])
 
 
 def main():
@@ -92,6 +103,8 @@ def main():
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
+    plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']], plotDir=runDir, samples=sampleX)
+    return
     print(sampleX.shape)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
@@ -115,7 +128,7 @@ def main():
 
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         main()
     else:
-        plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']])
+        plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']], show=True)
