@@ -16,7 +16,7 @@ from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLength
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
-import mymodels.myvesselAxSolid as vesselAxSolid    
+#import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
 
 def main():
@@ -26,6 +26,7 @@ def main():
     servicepressure = 700. #bar
     saftyFactor = 1.
     layersToWind = 48
+    #layersToWind = 5
     optimizeWindingHelical = True
     optimizeWindingHoop = False
         
@@ -248,23 +249,23 @@ def main():
     
 
     # write abaqus scripts
-    scriptGenerator = pychain.abaqus.AbaqusVesselScriptGenerator()
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Build.py"), settings, modelOptions)
-    scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Eval.py"), settings, modelOptions)
+    #scriptGenerator = pychain.abaqus.AbaqusVesselScriptGenerator()
+    #scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Build.py"), settings, modelOptions)
+    #scriptGenerator.writeVesselAxSolidBuildScript(os.path.join(runDir, tankname + "_Eval.py"), settings, modelOptions)
 
     # create vessel model according to version 95_2 documentation 'Axis-Symmetric Vessel Model'
     
     #create vessel model
-    vesselAxSolid = mymodels.myvesselAxSolidContacts  
-    model = vesselAxSolid.MyVesselAxSolid(modelName = tankname + "_Vessel", umat = True, buildFitting = True, saveCAE = True, useMaterialPhi = False, buildLiner = True)
+    #vesselAxSolid = mymodels.myvesselAxSolidContacts  
+    #model = vesselAxSolid.MyVesselAxSolid(modelName = tankname + "_Vessel", umat = True, buildFitting = True, saveCAE = True, useMaterialPhi = False, buildLiner = True)
     #load winding results
-    model.loadData(tankname)
+    #model.loadData(tankname)
     #build mandrel 1
-    model.buildOnlyMandrel1(servicepressure, 1, friction = 0.3, fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALT)
+    #model.buildOnlyMandrel1(servicepressure, 1, friction = 0.3, fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALT)
     #mesh model
-    model.mesh(2.0)
+    #model.mesh(2.0)
     #export inp file
-    model.exportInp(tankname + "_Job")    
+    #model.exportInp(tankname + "_Job")    
     
 
     import matplotlib.pylab as plt
