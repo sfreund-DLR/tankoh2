@@ -1,8 +1,9 @@
 """control a tank optimization"""
 
 import sys
+import statistics
 
-sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_2_x64/MyCrOChain_Version_0_95_2_x64/abaqus_interface_0_95')
+sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
 
 import os
 import numpy as np
@@ -11,7 +12,7 @@ from scipy.optimize import curve_fit
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir
 from tankoh2.settings import myCrOSettings as settings
-from tankoh2.utilities import updateName, getRadiusByShiftOnMandrel
+from tankoh2.utilities import updateName, getRadiusByShiftOnMandrel, changeSimulationOptions
 from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
@@ -25,9 +26,9 @@ def main():
     # #########################################################################################
     servicepressure = 700. #bar
     saftyFactor = 1.
-    layersToWind = 48
+    layersToWind = 48 #48
     #layersToWind = 5
-    optimizeWindingHelical = True
+    optimizeWindingHelical = True #True
     optimizeWindingHoop = False
         
     tankname = 'NGT-BIT-2020-09-16'
@@ -40,16 +41,27 @@ def main():
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
-    numberOfRovings = 10 #1
-    bandWidth = rovingWidth * numberOfRovings
-    log.info(f'winding using {numberOfRovings} robings with {rovingWidth}mm resulting in bandwith of {bandWidth}')
+    numberOfRovingsHelical = 18 # 18
+    numberOfRovingsHoop = 18
+    bandWidthHelical = rovingWidth * numberOfRovingsHelical
+    bandWidthHoop = rovingWidth * numberOfRovingsHoop
+    log.info(f'for helical winding using {numberOfRovingsHelical} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHelical}')
+    log.info(f'for hoop winding using {numberOfRovingsHoop} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHoop}')
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
+    hoopRisePerBandwidth = 1./36. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer
+    
+    # Set thickness solver options
+    # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
+    minThicknessValue = 0.1 
+    hoopLayerCompressionStart = 0.5 
 
     # input files
     layupDataFilename = os.path.join(dataDir, "Winding_" + tankname + ".txt")
-    materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
+    #materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
+    materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")
     # output files
     runDir = getRunDir()
@@ -85,7 +97,7 @@ def main():
     angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)
     log.info(f'{angles[0:layersToWind]}')
     composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness,
-                             helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovings,
+                             helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
                              tex, designFilename, tankname)
 
     # create vessel and set liner and composite
@@ -111,14 +123,14 @@ def main():
         # Hoop Layer
         if abs(angle - 90.) < 1e-8:
             #po_goal = krempenradius
-            po_goal = lzylinder/2. - anzHoop*rovingWidth
+            po_goal = hoopStart + lzylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
             anzHoop = anzHoop+1
             #po_goal = wendekreisradius
-            log.info(f'apply layer {i+1} with angle {angle}, Sollwendekreisradius {po_goal}')
+            log.info(f'apply layer {i+1} with angle {angle}, and hoop position {po_goal}')
             if optimizeWindingHoop:                
                 
                 shift, err_wk, iterations = optimizeHoopShiftForPolarOpeningX(vessel, po_goal, layerindex)
-                log.info(f'{iterations} iterations. Shift is {shift} resulting in a polar opening error of {err_wk} '
+                log.info(f'{iterations} iterations. Shift is {shift} resulting in a hoop position error {err_wk} '
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')                
             else:
                 # winding without optimization, but direct correction of shift
@@ -135,11 +147,11 @@ def main():
             # global arr_fric, arr_wk
             # arr_fric = []
             # arr_wk = []
-            po_goal = wendekreisradius
+            po_goal = max(wendekreisradius, polarOpening) # prevent bandmiddle path corssing polar opening
             log.info(f'apply layer {i+1} with band mid path at polar opening of {po_goal}')
-            po_goal = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerindex - 1).getOuterMandrel1(), wendekreisradius, bandWidth)
-            log.info(f'apply layer {i+1} with angle {angle} with band outer path at polar opening {po_goal}')
-            log.info(f'radius difference is {po_goal-wendekreisradius}, {bandWidth}')
+            po = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerindex - 1).getOuterMandrel1(), wendekreisradius, bandWidthHelical)
+            log.info(f'applied layer {i+1} with angle {angle} without friction with band outer path at polar opening {po}')
+            log.info(f'radius difference is {po-wendekreisradius} with bandwith {bandWidthHelical}')
             
             # firts estimation with no frcition
             vessel.setLayerFriction(layerindex, 0., True)
@@ -204,10 +216,24 @@ def main():
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
+    
+    
+    # manipulate .vessel-file and run winding simulation again 
+    changeSimulationOptions(vesselFilename, layersToWind, minThicknessValue, hoopLayerCompressionStart)
+
+    # re-run winding simulation with modified simulation options
+    vessel.loadFromFile(vesselFilename)
+    vessel.finishWinding()
+    
 
     # save winding results
     windingResults = pychain.winding.VesselWindingResults()
     windingResults.buildFromVessel(vessel)
+    
+    statistics = vessel.calculateVesselStatistics()
+    #print("working pressure", statistics.burstPressure)
+    #import inspect
+    #print("statistics", inspect.getmembers(statistics))
     windingResults.saveToFile(windingResultFilename)
 
     # #############################################################################
@@ -215,17 +241,17 @@ def main():
     # #############################################################################
 
 #    build shell model for internal calculation
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, 10)
+    #converter = pychain.mycrofem.VesselConverter()
+    #shellModel = converter.buildAxShellModell(vessel, 10)
 
 #    run linear solver
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-    linerSolver.run(True)
+    #linerSolver = pychain.mycrofem.LinearSolver(shellModel)
+    #linerSolver.run(True)
 
 #    get stresses in the fiber COS
-    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
+    #S11, S22, S12 = shellModel.calculateLayerStressesBottom()
 #    get  x coordinates (element middle)
-    xCoords = shellModel.getElementCoordsX()
+    #xCoords = shellModel.getElementCoordsX()
 
     # #############################################################################
     # run ABAQUS
@@ -233,18 +259,18 @@ def main():
 
 
     # create model options for abaqus calculation
-    modelOptions = pychain.mycrofem.VesselFEMModelOptions()
-    modelOptions.modelName = tankname + "_Vessel"
-    modelOptions.jobName = tankname + "_Job"
-    modelOptions.windingResultsFileName = tankname
-    modelOptions.useMaterialPhi = False # false uses micromechanical estimations of fvg effect an porperties
-    modelOptions.fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALTY
-    modelOptions.frictionFitting = 0.3
-    modelOptions.globalMeshSize = 2.0
-    modelOptions.pressureInBar = servicepressure
-    modelOptions.saveCAE = True
-    modelOptions.buildMandrel1 = True
-    modelOptions.buildMandrel2 = False
+    #modelOptions = pychain.mycrofem.VesselFEMModelOptions()
+    #modelOptions.modelName = tankname + "_Vessel"
+    #modelOptions.jobName = tankname + "_Job"
+    #modelOptions.windingResultsFileName = tankname
+    #modelOptions.useMaterialPhi = False # false uses micromechanical estimations of fvg effect an porperties
+    #modelOptions.fittingContactWinding = pychain.mycrofem.CONTACT_TYPE.PENALTY
+    #modelOptions.frictionFitting = 0.3
+    #modelOptions.globalMeshSize = 2.0
+    #modelOptions.pressureInBar = servicepressure
+    #modelOptions.saveCAE = True
+    #modelOptions.buildMandrel1 = True
+    #modelOptions.buildMandrel2 = False
     
     
 

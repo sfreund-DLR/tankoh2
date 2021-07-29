@@ -27,7 +27,6 @@ def applySettings(filename=None):
 
     with open(filename, 'r') as f:
         settings = json.load(f)
-<<<<<<< HEAD
     major, minor = str(sys.version_info.major), str(sys.version_info.minor)
     pyVersionString = major+minor
     # v 0.90c
@@ -39,11 +38,6 @@ def applySettings(filename=None):
             # v0.95.3
             pyVersionString = f'{major}_{minor}'
             pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\{pyVersionString}')
-=======
-    pyVersionString = sys.version[0]+sys.version[2]
-    print('pyVersion', pyVersionString)
-    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
->>>>>>> 6ff21b7 (settings -- get folder of abaqus_interface from current muChain version)
     #abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
     abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95')
 
