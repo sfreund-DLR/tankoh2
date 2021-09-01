@@ -50,10 +50,10 @@ def getComposite(angle_degree, singlePlyThickensses, hoopLayerThickness, helixLa
         layer.windingProperties.coverage = 1.
         if angle == 90.:
             layer.windingProperties.isHoop = True
-            layer.windingProperties.cylinderThickness = hoopLayerThickness
+            layer.windingProperties.cylinderThickness = plyThickness#hoopLayerThickness
             layer.windingProperties.numberOfRovings = numberOfRovingsHoop
         else:
-            layer.windingProperties.cylinderThickness = helixLayerThickenss            
+            layer.windingProperties.cylinderThickness = plyThickness#helixLayerThickenss            
             layer.windingProperties.numberOfRovings = numberOfRovingsHelical
 
     saveComposite(composite, designFilename, designName)

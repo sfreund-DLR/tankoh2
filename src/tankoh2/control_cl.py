@@ -27,22 +27,24 @@ def main():
     servicepressure = 700. #bar
     saftyFactor = 1.
     layersToWind = 48 #48
-    #layersToWind = 5
-    optimizeWindingHelical = True #True
+    
+    optimizeWindingHelical = False ##True
     optimizeWindingHoop = False
         
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
     dzyl = 400.  # mm
     polarOpening = 48./2.  # mm
-    lzylinder = 500.  # mm
+    lzylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
-    helixLayerThickenss = 0.129
+    helixLayerThickenss = 0.129  
+    
     rovingWidth = 3.175
-    numberOfRovingsHelical = 18 # 18
-    numberOfRovingsHoop = 18
+    numberOfRovingsHelical = 6 # 18
+    numberOfRovingsHoop = 6 #18
+    
     bandWidthHelical = rovingWidth * numberOfRovingsHelical
     bandWidthHoop = rovingWidth * numberOfRovingsHoop
     log.info(f'for helical winding using {numberOfRovingsHelical} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHelical}')
@@ -50,8 +52,9 @@ def main():
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    log.info(f'section fibre area within roving is {sectionAreaFibre}')
     hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
-    hoopRisePerBandwidth = 1./36. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer
+    hoopRisePerBandwidth = 1./12. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer
     
     # Set thickness solver options
     # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
