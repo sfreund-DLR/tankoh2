@@ -265,6 +265,7 @@ def getPropsFromJson(materialPath, materialName):
                 v_23 = materialJson["materials"][str(materialnr)]["umatProperties"]["data_sets"][str(temp)]["fatigueProperties"]["v_23"]
 
 
+                print('eta', eta)
 
                 props = np.append(props, [E11, E22, E33, G12, G13, G23, nu12, nu13, nu23, Xt, Yt, Yt, Xc, Yc, Yc, S12, S12, S12, beta_2_11t, beta_2_11c, beta_2_22t, beta_2_22c, 
                 beta_2_33t, beta_2_33c, beta_2_12 , beta_2_13 , beta_2_23 , beta_1_11t, beta_1_11c, beta_1_22t, beta_1_22c, beta_1_33t, beta_1_33c, beta_1_12 , beta_1_13 , beta_1_23 , 
@@ -302,7 +303,7 @@ def getNumberOfLayerParts(layerPartPrefix):
 
     return nLayerParts
 
-def createUMATmaterials(model, layerMaterialPrefix, materialPath, materialName, nDepvar, degr_fac):
+def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac):
 
 #   create material card for UMAT from material props from given json file
 #
@@ -313,24 +314,44 @@ def createUMATmaterials(model, layerMaterialPrefix, materialPath, materialName, 
     print("*** START GENERATE UMAT MATERIAL CARDS ***")  
 
     materials = model.materials    
+    sections = model.sections
     materialProps = getPropsFromJson(materialPath, materialName)
     print('props', materialProps)
 
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
     for key in materials.keys():        
-        if key[0:len(layerMaterialPrefix)] == layerMaterialPrefix:            
+        #print('key', key)
+        if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
             material = materials[key]            
             propsTemp = materialProps.copy()
+            if not key[0:len(UMATprefix)] == UMATprefix and len(UMATprefix)>0:
+                newKey = UMATprefix+'_'+key
+                sectionkey = key
+            else:
+                newKey = key  
+                sectionkey = newKey[13:len(newKey)]
+
+            #print('nexKey', newKey)
+            #print('sectionKEy', sectionkey)
 
             #get band angle from material description
             materialDescription= material.description
-            keyword = 'Mean Angle: '
-            before_keyword, keyword, after_keyword = materialDescription.partition(keyword)            
-            keyword = 'Clairault'
-            before_keyword, keyword, after_keyword = after_keyword.partition(keyword)                
-            angle_str = before_keyword.replace(',', '')
-            angle = float(angle_str)            
+            if 'Mean Angle' in materialDescription: # for Models generated from muWind
+                keyword = 'Mean Angle: '
+                before_keyword, keyword, after_keyword = materialDescription.partition(keyword)            
+                keyword = 'Clairault'
+                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)                
+                angle_str = before_keyword.replace(',', '')
+                angle = float(angle_str)      
+            elif 'Beta' in materialDescription: # for models generated from WoundCompositeModeller
+                keyword = 'Beta = '
+                before_keyword, keyword, after_keyword = materialDescription.partition(keyword)
+                keyword = ' ****'
+                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)
+                angle_str = before_keyword
+                #print(angle_str)
+                angle = float(angle_str)   
             
             # append angle and degradation factor to props
             propsTemp = np.append(propsTemp, [angle])
@@ -341,19 +362,24 @@ def createUMATmaterials(model, layerMaterialPrefix, materialPath, materialName, 
                 material.UserMaterial(mechanicalConstants = propsTemp)
 
             except:
-                material.UserMaterial(mechanicalConstants = propsTemp)     
-                #print('no UMAT')       
+                print('no UMAT, will be created')
+                material.UserMaterial(mechanicalConstants = propsTemp)                        
             try: 
                 del material.depvar
                 material.Depvar(n=nDepvar)              
             except:
-                #print('no UMAT')       
+                print('no UMAT, will be created')
                 material.Depvar(n=nDepvar)  
 
             try:     
                 del material.elastic
             except:
-                print('Elastic Props already deleted')                   
+                print('Elastic Props already deleted')           
+
+# ---------- rename material to trigger UMAT     
+            if len(UMATprefix) > 0:           
+                materials.changeKey(fromName=key, toName=newKey)
+                sections[sectionkey].setValues(material=newKey, thickness=None)                        
 
 def getAngleBetweenEdges(edges, partVertices):
 

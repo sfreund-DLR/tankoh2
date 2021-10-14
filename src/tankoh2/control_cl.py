@@ -52,6 +52,7 @@ def main():
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    print(sectionAreaFibre)
     log.info(f'section fibre area within roving is {sectionAreaFibre}')
     hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
     hoopRisePerBandwidth = 1./12. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer

@@ -15,7 +15,9 @@ import json
 import mesh
 from datetime import datetime
 
-from continueVesselCAE import reMeshVessel, loadDomeContourToSketch, applyPeropdicBCs, createUMATmaterials
+import importlib
+import continueVesselCAE as cvc
+cvc = reload(cvc)
 
 def getModel(projectname):  
 
@@ -41,7 +43,8 @@ def main():
 
 # ------- general    
     #modelname = 'NGT-BIT-2020-09-16_Solid3D'
-    modelname = 'NGT-BIT-2020-09-16_AxSolid'
+    #modelname = 'NGT-BIT-2020-09-16_AxSolid'
+    modelname = 'CcH2_Subscale_Axis'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"
     layerPartPrefix = 'Layer'
     rzylinder = 200. # radius of cylindrical part
@@ -54,9 +57,11 @@ def main():
     createLiner = False
 
 # ------- Material
-    layerMaterialPrefix = 'Layer'
+    #layerMaterialPrefix = 'Layer'
+    layerMaterialPrefix = 'WCM_Tank1_Mat1_Bin'
     materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//CFRP_T700SC_LY556.json"
     materialName = "CFRP_T700SC_LY556"
+    UMATprefix = "MCD_SHOKRIEH"    
     nDepvar = 312 # number of solution dependen variables
     degr_fac = 0.01 # degradation factor for material properties after failure initiation
     createUMAT = True    
@@ -83,16 +88,16 @@ def main():
     getModel(modelname)
     
     if remesh == True:
-        reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle)
+        cvc.reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle)
 
     if createLiner == True:
-        loadDomeContourToSketch(domefile, rzylinder, lzylinder, linerthickness)
+        cvc.loadDomeContourToSketch(domefile, rzylinder, lzylinder, linerthickness)
     
     if createUMAT == True:
-        createUMATmaterials(model, layerMaterialPrefix, materialPath, materialName, nDepvar, degr_fac)
+        cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac)
 
     if createPeriodicBCs:
-        applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets)
+        cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets)
 
     # step definition
     # generate output
