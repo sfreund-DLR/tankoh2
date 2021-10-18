@@ -59,7 +59,7 @@ def main():
     
     # Set thickness solver options
     # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
-    minThicknessValue = 0.1 
+    minThicknessValue = 0.2
     hoopLayerCompressionStart = 0.5 
 
     # input files

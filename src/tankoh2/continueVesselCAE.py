@@ -303,7 +303,7 @@ def getNumberOfLayerParts(layerPartPrefix):
 
     return nLayerParts
 
-def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac):
+def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles):
 
 #   create material card for UMAT from material props from given json file
 #
@@ -379,7 +379,13 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
 # ---------- rename material to trigger UMAT     
             if len(UMATprefix) > 0:           
                 materials.changeKey(fromName=key, toName=newKey)
-                sections[sectionkey].setValues(material=newKey, thickness=None)                        
+                sections[sectionkey].setValues(material=newKey, thickness=None)           
+            
+            if AbqMATinAcuteTriangles:
+                setABQUMATinAcuteTriangles(sectionkey)
+
+def setABQUMATinAcuteTriangles(sectionkey):             
+    
 
 def getAngleBetweenEdges(edges, partVertices):
 
@@ -417,7 +423,7 @@ def getAngleBetweenEdges(edges, partVertices):
 def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle):
 
 #   sets mesh seeds at the leyer edges which represent the layer thickness
-#   sets wedge elements for regions with are limited by edges with very small angles (e.g. narrow ends of layers)
+#   sets wedge elements for regions which are limited by edges with very small angles (e.g. narrow ends of layers)
 #
 #   return  none
 #
