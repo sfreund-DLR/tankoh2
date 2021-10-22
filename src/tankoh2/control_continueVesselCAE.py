@@ -43,7 +43,7 @@ def main():
 
 # ------- general    
     #modelname = 'NGT-BIT-2020-09-16_Solid3D'
-    modelname = 'NGT-BIT-2020-10-18_AxSolid'
+    modelname = 'NGT-BIT-2020-10-21_AxSolid'
     #modelname = 'CcH2_Subscale_Axis'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"
     layerPartPrefix = 'Layer'

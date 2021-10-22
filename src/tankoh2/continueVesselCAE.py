@@ -187,7 +187,7 @@ def getPropsFromJson(materialPath, materialName):
             nTemps = materialJson["materials"][str(materialnr)]["umatProperties"]["number_of_temperatures"]            
             
             props = np.empty(0)
-            print(props)
+            #print(props)
             
             for temp in range(1, nTemps+1):
                 
@@ -265,7 +265,7 @@ def getPropsFromJson(materialPath, materialName):
                 v_23 = materialJson["materials"][str(materialnr)]["umatProperties"]["data_sets"][str(temp)]["fatigueProperties"]["v_23"]
 
 
-                print('eta', eta)
+                #print('eta', eta)
 
                 props = np.append(props, [E11, E22, E33, G12, G13, G23, nu12, nu13, nu23, Xt, Yt, Yt, Xc, Yc, Yc, S12, S12, S12, beta_2_11t, beta_2_11c, beta_2_22t, beta_2_22c, 
                 beta_2_33t, beta_2_33c, beta_2_12 , beta_2_13 , beta_2_23 , beta_1_11t, beta_1_11c, beta_1_22t, beta_1_22c, beta_1_33t, beta_1_33c, beta_1_12 , beta_1_13 , beta_1_23 , 
@@ -278,7 +278,7 @@ def getPropsFromJson(materialPath, materialName):
                 #lambda_1_11, lambda_1_22, lambda_1_33, lambda_1_12, lambda_1_13, lambda_1_23, lambda_2_11, lambda_2_22, lambda_2_33, lambda_2_12, lambda_2_13, lambda_2_23, A_11, B_11, A_22, 
                 #B_22, A_33, B_33, A_12, B_12, A_13, B_13, A_23, B_23, eta, u_11, u_22, u_33, u_12, u_13, u_23, v_11, v_22, v_33, v_12, v_13, v_23, Temp])
 
-    print(props)    
+    #print(props)    
 
     return props
 
@@ -316,11 +316,11 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
     materials = model.materials    
     sections = model.sections
     materialProps = getPropsFromJson(materialPath, materialName)
-    print('props', materialProps)
+    #print('props', materialProps)
 
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
-    for key in materials.keys():        
+    for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
         #print('key', key)
         if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
             material = materials[key]            
@@ -332,60 +332,169 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
                 newKey = key  
                 sectionkey = newKey[13:len(newKey)]
 
+            # store ABQ-Definition-Properties
+            #AbqMatProps = material.elastic.table
+
             #print('nexKey', newKey)
-            #print('sectionKEy', sectionkey)
+            #print('sectionkey', sectionkey)
 
             #get band angle from material description
             materialDescription= material.description
-            if 'Mean Angle' in materialDescription: # for Models generated from muWind
-                keyword = 'Mean Angle: '
-                before_keyword, keyword, after_keyword = materialDescription.partition(keyword)            
-                keyword = 'Clairault'
-                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)                
-                angle_str = before_keyword.replace(',', '')
-                angle = float(angle_str)      
-            elif 'Beta' in materialDescription: # for models generated from WoundCompositeModeller
-                keyword = 'Beta = '
-                before_keyword, keyword, after_keyword = materialDescription.partition(keyword)
-                keyword = ' ****'
-                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)
-                angle_str = before_keyword
-                #print(angle_str)
-                angle = float(angle_str)   
+            angle = getBandAngleFromMaterialDescription(materialDescription)
             
             # append angle and degradation factor to props
             propsTemp = np.append(propsTemp, [angle])
             propsTemp = np.append(propsTemp, [degr_fac])
-                                    
-            try:
-                del material.userMaterial
-                material.UserMaterial(mechanicalConstants = propsTemp)
 
-            except:
-                print('no UMAT, will be created')
-                material.UserMaterial(mechanicalConstants = propsTemp)                        
-            try: 
-                del material.depvar
-                material.Depvar(n=nDepvar)              
-            except:
-                print('no UMAT, will be created')
-                material.Depvar(n=nDepvar)  
+            # genereate Material with UMAT definition but also keep Abaqus-Standardmaterial definition for
+            # use in triangle elements
+            UmatMaterial = model.Material(name = newKey, description = materialDescription)                                      
+            UmatMaterial.UserMaterial(mechanicalConstants = propsTemp) 
+            UmatMaterial.Depvar(n=nDepvar)  
+            
+            #try:
+            #    del material.userMaterial
+            #    material.UserMaterial(mechanicalConstants = propsTemp)
+#
+            #except:
+            #    print('no UMAT, will be created')
+            #    material.UserMaterial(mechanicalConstants = propsTemp)                        
+            #try: 
+            #    del material.depvar
+            #    material.Depvar(n=nDepvar)              
+            #except:
+            #    print('no UMAT, will be created')
+            #    material.Depvar(n=nDepvar)  
 
-            try:     
-                del material.elastic
-            except:
-                print('Elastic Props already deleted')           
+#            try:     
+#                del material.elastic
+#            except:
+#                print('Elastic Props already deleted')           
 
 # ---------- rename material to trigger UMAT     
-            if len(UMATprefix) > 0:           
-                materials.changeKey(fromName=key, toName=newKey)
-                sections[sectionkey].setValues(material=newKey, thickness=None)           
+#            if len(UMATprefix) > 0:           
+#                material.changeKey(fromName=key, toName=newKey)
+#                sections[sectionkey].setValues(material=newKey, thickness=None)           
             
-            if AbqMATinAcuteTriangles:
-                setABQUMATinAcuteTriangles(sectionkey)
+            if AbqMATinAcuteTriangles:   
+                # check which mandrel current section belongs to; this is defined within the section name "Layer_X_M1_xyz"--> mandrel 1, "..._M2_..." --> Mandrel 2
+                keyword = '_M'
+                before_keyword, keyword, after_keyword = sectionkey.partition(keyword)   # 1_xyz or 2_xyz                                
+                keyword = "_"                 
+                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)  # now before_keyword gives the Mandrel number                                                            
+                setABQUMATinAcuteTriangles(model, 'Mandrel'+before_keyword, sectionkey, materialDescription)
+                
+def setABQUMATinAcuteTriangles(model, partname, sectionkey, materialDescription):         
 
-def setABQUMATinAcuteTriangles(sectionkey):             
+# assigns Abaqus Standard Material to very acute triangle elements
+# empty material definition is definded; Elastic material behaviour with specific
+# material constants has to be added later; band angle is given in material description
+#
+#   return: none
+#
+#   input   sectionkey  :   section key of section containing elements for check and replace material [name string]
+#   input   model    : model object    
+
+    #print('serach for bad shaped triangles in material assignment '+sectionkey)
+    part = model.parts[partname]
+    elements = part.sets[sectionkey].elements
+    i = -1
+    for element in elements:        
+        i = i+1
+        if str(element.type) == "CAX3":
+            #print ('triangle element with label', element.label)              
+            edges = element.getElemEdges()            
+            angle = getAngleBetweenMeshEdges(edges, part.vertices)
+            #print (angle)
+            if angle < 15.:                
+                part.Set(name = sectionkey+'_ABQMAT', elements = (part.sets[sectionkey].elements[i:i+1], ))                                
+                #model.Material(name = sectionkey+'_ABQMAT', description = materialDescription)                
+                #model.materials[sectionkey+'_ABQMAT'].Elastic(type = ENGINEERING_CONSTANTS, table = AbqMatProps)
+                model.HomogeneousSolidSection(material=sectionkey, name=sectionkey+'_ABQMAT', thickness=None)
+                part.SectionAssignment(region=part.sets[sectionkey+'_ABQMAT'], sectionName=sectionkey+'_ABQMAT')
+            #print('----------------------')
+
+def getElasticPropsFromMaterialDescription(materialDescription):
+
+    keyword = 'elasticPropsUD'
+    before_keyword, keyword, after_keyword = materialDescription.partition(keyword)            
+    keyword = ':'
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    keyword = '['
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    keyword = ']'
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)                
+    keyword = ','
+    before_keyword, keyword, after_keyword = before_keyword.partition(keyword)            
+    E1 = float(before_keyword)    
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    E2 = float(before_keyword)
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    G12 = float(before_keyword)
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    nu12 = float(before_keyword)
+    before_keyword, keyword, after_keyword = after_keyword.partition(keyword)            
+    nu23 = float(before_keyword)
+
+    return E1, E2, G12, nu12, nu23
+
+
+def getBandAngleFromMaterialDescription(materialDescription):    
     
+    if 'Mean Angle' in materialDescription: # for Models generated from muWind
+        keyword = 'Mean Angle: '
+        before_keyword, keyword, after_keyword = materialDescription.partition(keyword)            
+        keyword = 'Clairault'
+        before_keyword, keyword, after_keyword = after_keyword.partition(keyword)                
+        angle_str = before_keyword.replace(',', '')
+        angle = float(angle_str)      
+    elif 'Beta' in materialDescription: # for models generated from WoundCompositeModeller
+        keyword = 'Beta = '
+        before_keyword, keyword, after_keyword = materialDescription.partition(keyword)
+        keyword = ' ****'
+        before_keyword, keyword, after_keyword = after_keyword.partition(keyword)
+        angle_str = before_keyword
+        #print(angle_str)
+        angle = float(angle_str)  
+
+    return angle
+
+def getAngleBetweenMeshEdges(edges, partVertices):
+
+# calculates the angle between given edges in Abaqus Model
+#
+#   return: angle between edges in degree
+#
+#   input   edges           : list/array of MeshEdge objects
+#   input   partVertices    : all vertices of the part the edges belongs to
+
+    slopes = []
+    alphas = []
+
+    for edge in edges:
+        EdgeNodes = edge.getNodes()                
+        x0 = EdgeNodes[0].coordinates[0]
+        y0 = EdgeNodes[0].coordinates[1]
+        x1 = EdgeNodes[1].coordinates[0]
+        y1 = EdgeNodes[1].coordinates[1]
+        
+        xmin = min(x0,x1)
+        ymin = min(y0,y1)
+        xmax = max(x0,x1)
+        ymax = max(y0,y1)
+
+        if abs((ymax - ymin)) > 0:
+            slopes.append((xmax-xmin)/(ymax-ymin))
+        else:
+            slopes.append((ymax-ymin)/(xmax-xmin))
+    
+    alphas.append(np.arctan(abs((slopes[0]-slopes[1])/(1+slopes[0]*slopes[1]))))
+    alphas.append(np.arctan(abs((slopes[0]-slopes[2])/(1+slopes[0]*slopes[2]))))
+    alphas.append(np.arctan(abs((slopes[1]-slopes[2])/(1+slopes[1]*slopes[2]))))    
+
+    alpha = min(alphas)
+
+    return (alpha*180)/np.pi
 
 def getAngleBetweenEdges(edges, partVertices):
 
@@ -458,7 +567,7 @@ def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle
             axialBottomEdge = partEdges.getByBoundingBox(-10000., -10000., -0.01, 10000., 10000., 0.01, )  
             part.deleteSeeds(regions=(axialBottomEdge, ))
             
-            # get geonetric expanion of part // min and max coordinates
+            # get geometric expanion of part // min and max coordinates
             boundingBoxMax = partGeometry["boundingBox"][1]
             maxVertexY = boundingBoxMax[1]
 

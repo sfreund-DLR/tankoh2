@@ -67,7 +67,7 @@ def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.IS
         dome.setPoints(x, r)
     return dome
 
-def getLiner(dome, length, linerFilename=None, linerName=None):
+def getLiner(dome, length, linerFilename=None, linerName=None, Symmetric=True, dome2 = None):
     """Creates a liner
     :param dome: dome instance
     :param length: zylindrical length of liner
@@ -75,22 +75,35 @@ def getLiner(dome, length, linerFilename=None, linerName=None):
     :param linerName: name of the liner written to the file
     :return:
     """
+        
     # create a symmetric liner with dome information and cylinder length
     liner = pychain.winding.Liner()
+    print(dir(pychain.winding.Liner))
+      
     # spline for winding calculation is left on default of 1.0
     r = dome.cylinderRadius
     lengthEstimate = (np.pi * r + length) # half circle + cylindrical length
     desiredNodeNumber = 500
     deltaLengthSpline = lengthEstimate / desiredNodeNumber / 2 # just use half side
-    #deltaLengthSpline = np.min([5.0, deltaLengthSpline]) # min since muwind has maximum of 5
-    liner.buildFromDome(dome, length, deltaLengthSpline)
+    #deltaLengthSpline = np.min([5.0, deltaLengthSpline]) # min since muwind has maximum of 5        
+    
+    if Symmetric == False:
+        print("Creat unsymmetric vessel")            
+        if dome2 != None:
+            liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
+        else:
+            print("Error: contour of second dome is missing!")
+    else:
+        print("Creat symmetric vessel")
+        liner.buildFromDome(dome, length, deltaLengthSpline)
+    
 
-    if linerFilename:
+    if linerFilename:        
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
-        copyAsJson(linerFilename, 'liner')
-        liner = pychain.winding.Liner()
+        copyAsJson(linerFilename, 'liner')      
         liner.loadFromFile(linerFilename)
+        
     return liner
 
 # def getLengthContourPath(domeContourFilename, r1, r2, ninc):

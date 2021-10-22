@@ -2,6 +2,7 @@
 
 import sys
 import statistics
+#from builtins import
 
 sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
 
@@ -24,11 +25,12 @@ def main():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
+    symmetricTank = False
     servicepressure = 700. #bar
     saftyFactor = 1.
     layersToWind = 48 #48
     
-    optimizeWindingHelical = False ##True
+    optimizeWindingHelical = True #False
     optimizeWindingHoop = False
         
     tankname = 'NGT-BIT-2020-09-16'
@@ -41,9 +43,10 @@ def main():
     hoopLayerThickness = 0.125
     helixLayerThickenss = 0.129  
     
+    
     rovingWidth = 3.175
-    numberOfRovingsHelical = 6 # 18
-    numberOfRovingsHoop = 6 #18
+    numberOfRovingsHelical = 18
+    numberOfRovingsHoop = 18
     
     bandWidthHelical = rovingWidth * numberOfRovingsHelical
     bandWidthHoop = rovingWidth * numberOfRovingsHoop
@@ -67,9 +70,13 @@ def main():
     #materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
     materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")
+    if symmetricTank == False:
+        dome2ContourFilename = os.path.join(dataDir, "Dome2_contour_" + tankname + "_48mm.txt")
     # output files
     runDir = getRunDir()
     fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
+    if symmetricTank == False:
+        fileNameReducedDome2Contour = os.path.join(runDir, f"Dome2_contour_{tankname}_reduced.dcon")
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
     windingFile = os.path.join(runDir, tankname + "_realised_winding.txt")
@@ -88,7 +95,12 @@ def main():
                                 dpoints, fileNameReducedDomeContour)
     dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
-    liner = getLiner(dome, lzylinder, linerFilename, tankname)
+    if symmetricTank == False:
+        x, r = getReducedDomePoints(dome2ContourFilename,
+                                dpoints, fileNameReducedDome2Contour)
+        dome2 = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+                   x, r)
+    liner = getLiner(dome, lzylinder, linerFilename, tankname, Symmetric=symmetricTank, dome2=dome2)
 
     # ###########################################
     # Create material
@@ -142,6 +154,8 @@ def main():
                 vessel.runWindingSimulation(layerindex + 1)     
                 coor = po_goal - vessel.getPolarOpeningX(layerindex, True)
                 vessel.setHoopLayerShift(layerindex, coor, True)
+                if symmetricTank == False:
+                    vessel.setHoopLayerShift(layerindex, -coor, False) # shift in opposite direction on opposite dome/mandrel
                 vessel.runWindingSimulation(layerindex + 1)     
 
         # Helix layer
