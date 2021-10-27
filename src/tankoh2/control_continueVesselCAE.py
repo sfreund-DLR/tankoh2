@@ -43,7 +43,7 @@ def main():
 
 # ------- general    
     #modelname = 'NGT-BIT-2020-09-16_Solid3D'
-    modelname = 'NGT-BIT-2020-10-21_AxSolid'
+    modelname = 'NGT-BIT-2020-10-15_AxSolid'
     #modelname = 'CcH2_Subscale_Axis'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"
     layerPartPrefix = 'Layer'
@@ -65,7 +65,12 @@ def main():
     AbqMATinAcuteTriangles = True # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
     degr_fac = 0.01 # degradation factor for material properties after failure initiation
-    createUMAT = True    
+    createUMAT = False    
+
+# ------------------- rename Material
+    oldChars = '_ABQMAT'
+    newChars = ''
+    renameMaterials = True
 
 # ------- Mesh    # remeshes with given number of elements per liner thickness (elementsPerLayerThickness) and wedge elements in very narrow regions (minAngle)
 # set to reduced integration
@@ -96,6 +101,10 @@ def main():
     
     if createUMAT == True:
         cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles)
+
+    if renameMaterials:
+        cvc.renameMaterials(model, oldChars, newChars)
+
 
     if createPeriodicBCs:
         cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets)

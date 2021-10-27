@@ -29,6 +29,8 @@ def getModel(projectname):
     global assembly
     assembly = model.rootAssembly
 
+    return model, parts, assembly
+
 def getInnerDomeContour(ys, xs, linerthickness, rzylinder):
 
 #   generates the inner dome conture form the given outer dome contur
@@ -303,6 +305,30 @@ def getNumberOfLayerParts(layerPartPrefix):
 
     return nLayerParts
 
+def renameMaterials(model, oldChars, newChars):
+
+#   change prefix and/or appendix in material names
+
+#   Input 
+#       string  oldPrefix       Prefix in Material name that should be replaced with a new prefix
+#       string  newPrefix       new prefix in material name that sould  replace the old one
+#       string  oldAppendix     Appendix in Material name that should be replaced with a new appendix
+#       string  newAppendix     new appendix in material name that sould replace the old one
+# Return
+#   none
+
+    print("*** RENAME MATERIALS ***") 
+    print("-- cange "+oldChars+" to "+newChars)     
+    
+    materials = model.materials    
+    sections = model.sections
+
+    for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]        
+        if oldChars in key:                        
+            newkey = key. replace(oldChars, newChars)
+            materials.changeKey(fromName=key, toName=newkey)
+            sections[key].setValues(material=newkey, thickness=None)    
+
 def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles):
 
 #   create material card for UMAT from material props from given json file
@@ -321,7 +347,7 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
     for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
-        #print('key', key)
+        print('key', key)
         if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
             material = materials[key]            
             propsTemp = materialProps.copy()
@@ -335,8 +361,8 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
             # store ABQ-Definition-Properties
             #AbqMatProps = material.elastic.table
 
-            #print('nexKey', newKey)
-            #print('sectionkey', sectionkey)
+            print('nexKey', newKey)
+            print('sectionkey', sectionkey)
 
             #get band angle from material description
             materialDescription= material.description
@@ -371,10 +397,10 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
 #            except:
 #                print('Elastic Props already deleted')           
 
-# ---------- rename material to trigger UMAT     
-#            if len(UMATprefix) > 0:           
-#                material.changeKey(fromName=key, toName=newKey)
-#                sections[sectionkey].setValues(material=newKey, thickness=None)           
+# ---------- Assign UMAT to section definition rename material to trigger UMAT    
+            if len(UMATprefix) > 0:           
+                #material.changeKey(fromName=key, toName=newKey)
+                sections[sectionkey].setValues(material=newKey, thickness=None)           
             
             if AbqMATinAcuteTriangles:   
                 # check which mandrel current section belongs to; this is defined within the section name "Layer_X_M1_xyz"--> mandrel 1, "..._M2_..." --> Mandrel 2
@@ -407,11 +433,16 @@ def setABQUMATinAcuteTriangles(model, partname, sectionkey, materialDescription)
             angle = getAngleBetweenMeshEdges(edges, part.vertices)
             #print (angle)
             if angle < 15.:                
-                part.Set(name = sectionkey+'_ABQMAT', elements = (part.sets[sectionkey].elements[i:i+1], ))                                
-                #model.Material(name = sectionkey+'_ABQMAT', description = materialDescription)                
-                #model.materials[sectionkey+'_ABQMAT'].Elastic(type = ENGINEERING_CONSTANTS, table = AbqMatProps)
-                model.HomogeneousSolidSection(material=sectionkey, name=sectionkey+'_ABQMAT', thickness=None)
-                part.SectionAssignment(region=part.sets[sectionkey+'_ABQMAT'], sectionName=sectionkey+'_ABQMAT')
+                var1 = False
+                
+                if var1:
+                    # change Material only for triangle element to Abq-Standard
+                    part.Set(name = sectionkey+'_ABQMAT', elements = (part.sets[sectionkey].elements[i:i+1], ))                                
+                    model.HomogeneousSolidSection(material=sectionkey, name=sectionkey+'_ABQMAT', thickness=None)
+                    part.SectionAssignment(region=part.sets[sectionkey+'_ABQMAT'], sectionName=sectionkey+'_ABQMAT')
+                else:
+                    # change Material of whole section the element belongs to --> also for neighbouring elements Material is changed to Abq-Standard
+                    model.sections[sectionkey].setValues(material=sectionkey, thickness=None)
             #print('----------------------')
 
 def getElasticPropsFromMaterialDescription(materialDescription):
