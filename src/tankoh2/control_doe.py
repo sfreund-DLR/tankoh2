@@ -22,9 +22,11 @@ from tankoh2.service import indent
 
 dome = 'circle'  # isotensoid  circle
 safetyFactor = 1  # 2.25
-lb = OrderedDict([('r', 500.), ('lzylByR', 0.5), ('dp', 0.15 * safetyFactor)])  # [mm, - , MPa]
-ub = OrderedDict([('r', 2000.), ('lzylByR', 7.), ('dp', 0.5 * safetyFactor)])
+lb = OrderedDict([('r', 500.), ('lzylByR', 0.01), ('dp', 0.13 * safetyFactor)])  # [mm, - , MPa]
+ub = OrderedDict([('r', 1600.), ('lzylByR', 12.), ('dp', 0.5 * safetyFactor)])
+useFibreFailure = False
 
+numberOfSamples = 201
 
 class TankWinder(AbstractTargetFunction):
     """"""
@@ -36,7 +38,7 @@ class TankWinder(AbstractTargetFunction):
         AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNames)
         self.doParallelization = []
         self.runDir = runDir
-        self.allowFailedSample = False
+        self.allowFailedSample = True
 
     def _call(self, parameters):
         """call function for the model"""
@@ -45,7 +47,8 @@ class TankWinder(AbstractTargetFunction):
 
         result = createWindingDesign(dzyl=r * 2, lzylByR=lzyl, burstPressure=burstPressure,
                                      minPolarOpening=r / 10, runDir=runDir,
-                                     domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE)
+                                     domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
+                                     useFibreFailure = useFibreFailure)
         return result
 
 volumeFunc = lambda r, lzylByR: (4 / 3 * np.pi * r ** 3 + r * lzylByR * np.pi * r ** 2)
@@ -61,7 +64,7 @@ def plotGeometryRange(radii, lzylByRs, plotDir='', show=False, samples=None):
     radii = np.array(radii) / 1e3  # convert to m
     if samples is not None:
         samplesR, samplesLzylByR = samples[:2, :]
-        samplesR /= 1e3
+        samplesR = samplesR / 1e3
 
     fig = plt.figure(figsize=(15,6))
     axes = [fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)]
@@ -89,12 +92,12 @@ def plotGeometryRange(radii, lzylByRs, plotDir='', show=False, samples=None):
 
 
 def main():
-    sampleFile = ''  # + 'C:/PycharmProjects/tankoh2/tmp/doe_isotensoid_20201028_210108/sampleX.txt'
-    numberOfSamples = 201
+    sampleFile = ''   + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
 
     startTime = datetime.datetime.now()
     names = list(lb.keys())
-    runDir = getRunDir(f'doe_{dome}', basePath=os.path.join(programDir, 'tmp'))
+    runDir = getRunDir(f'doe_{dome}_{"puckff" if useFibreFailure else "puckiff"}',
+                       basePath=os.path.join(programDir, 'tmp'))
 
     winder = TankWinder(lb, ub, runDir)
     if sampleFile:
@@ -104,8 +107,6 @@ def main():
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
     plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']], plotDir=runDir, samples=sampleX)
-    return
-    print(sampleX.shape)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
     sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)

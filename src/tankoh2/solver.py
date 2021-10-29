@@ -7,13 +7,16 @@ from tankoh2 import pychain, log
 from tankoh2.winding import windLayer
 
 
-def getCriticalElementIdx(vessel, puckProperties, radiusDropThreshold, burstPressure):
+def getCriticalElementIdx(puck):
     """Returns the index of the most critical element
 
+    :param puck: 2d array defining puckFF or puckIFF for each element and layer
     """
-    return getCriticalElementIdxAndPuckFF(vessel, puckProperties, radiusDropThreshold, burstPressure)[0]
+    # identify critical element
+    layermax = puck.max().argmax()
+    return puck.idxmax()[layermax]
 
-def getCriticalElementIdxAndPuckFF(vessel, puckProperties, dropRadiusIndex, burstPressure):
+def getPuck(vessel, puckProperties, dropRadiusIndex, burstPressure):
     """Returns the index of the most critical element
 
     """
@@ -22,15 +25,16 @@ def getCriticalElementIdxAndPuckFF(vessel, puckProperties, dropRadiusIndex, burs
         dropIndicies = range(1, dropRadiusIndex)
     puckFF, puckIFF = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)
 
-    # identify critical element
-    layermax = puckFF.max().argmax()
-    idxmax = puckFF.idxmax()[layermax]
-    return idxmax, puckFF
+    return puckFF, puckIFF
 
 def _getLinearResults(vessel, burstPressure):
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
+    try:
+        shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
+    except: # catch Boost.Python.ArgumentError
+        # v >= 0.95
+        shellModel = converter.buildAxShellModell(vessel, burstPressure, True)  # pressure in MPa (bar / 10.)
 
     # run linear solver
     linerSolver = pychain.mycrofem.LinearSolver(shellModel)

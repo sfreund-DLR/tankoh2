@@ -4,6 +4,7 @@ import os, sys
 import numpy as np
 import datetime
 
+import tankoh2.utilities
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, getTimeString
 from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses
@@ -12,7 +13,7 @@ from tankoh2.material import getMaterial, getComposite, readLayupData, saveCompo
 from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
     getAngleAndPolarOpeningDiffByAngle
 from tankoh2.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.solver import getLinearResults, getCriticalElementIdx, getCriticalElementIdxAndPuckFF, \
+from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getPuckLinearResults, getMaxFibreFailureByShift
 from tankoh2.exception import Tankoh2Error
 
@@ -72,8 +73,22 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     return shift, funcVal, loopIt, newDesignIndex
 
 def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressure, runDir,
-                 composite, compositeArgs, verbose):
+                 composite, compositeArgs, verbose, useFibreFailure):
     """
+        :param vessel: vessel instance of mywind
+        :param maxLayers: maximum numbers of layers
+        :param minPolarOpening: min polar opening where fitting is attached [mm]
+        :param puckProperties: puckProperties instance of mywind
+        :param burstPressure: burst pressure [MPa]
+        :param runDir: directory where to store results
+        :param composite: composite instance of mywind
+        :param compositeArgs: properties defining the composite:
+            thicknesses, hoopLayerThickness, helixLayerThickenss, material,
+            sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
+        :param verbose: flag if verbose output is needed
+        :param useFibreFailure: flag, use fibre failure or inter fibre failure
+        :return: frpMass, volume, area, composite, iterations, anglesShifts
+
     Strategy:
     #. Start with hoop layer
     #. Second layer:
@@ -146,15 +161,18 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     # create other layers
     for layerNumber in range(layerNumber + 1, maxLayers):
         printLayer(layerNumber, verbose)
-        elemIdxmax, puckFF = getCriticalElementIdxAndPuckFF(vessel, puckProperties, None, burstPressure)
+        puckFF, puckIFF = getPuck(vessel, puckProperties, None, burstPressure)
+        puck = puckFF if useFibreFailure else puckIFF
+        elemIdxmax = getCriticalElementIdx(puck)
 
-        if puckFF.max().max() < 1:
+        if puck.max().max() < 1:
             if verbose:
                 log.info('End Iteration')
             # stop criterion reached
             columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
-            puckFF.columns = columns
-            plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFF)
+            puck.columns = columns
+            plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puck,
+                          yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
             layerNumber -= 1
             break
         elif layerNumber > maxLayers:
@@ -187,10 +205,10 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
             anglesShifts.append((angle,0))
         iterations += loopIt
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts[:-1])]
-        puckFF.columns=columns
-        plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puckFF, None,
+        puck.columns=columns
+        plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puck, None,
                       vlines=[elemIdxmax, hoopOrHelicalIndex, newDesignIndex], vlineColors=['red', 'black', 'green'],
-                      title='puck fibre failure')
+                      yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
 
 
     vessel.finishWinding()
@@ -202,7 +220,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts)]
         thicknesses.columns=columns
         plotDataFrame(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses,
-                      title='layer thicknesses')
+                      yLabel='layer thicknesses')
 
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
@@ -238,18 +256,20 @@ def createWindingDesign(**kwargs):
     helixLayerThickenss = 0.129
     rovingWidth = 3.175
     numberOfRovings = 4
-    bandWidth = rovingWidth * numberOfRovings
+    #bandWidth = rovingWidth * numberOfRovings
     tex = 446  # g / km
     rho = 1.78  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
     pressure = 5.  # pressure in MPa (bar / 10.)
-    safetyFactor = 2.25
 
     # potential external inputs
+    useFibreFailure = kwargs.get('useFibreFailure', True)
+    safetyFactor = kwargs.get('safetyFactor', 2.25)
     burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
     dzyl = kwargs.get('dzyl', 400.)  # mm
     minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
     domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
+    domeX, domeR = kwargs.get('domeContour', (None, None)) # CIRCLE; ISOTENSOID
     runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     if 'lzyl' in kwargs:
         lzylinder = kwargs.get('lzyl', 500.)  # mm
@@ -278,8 +298,10 @@ def createWindingDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    dome = getDome(dzyl / 2., minPolarOpening, domeType)
+    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
     liner = getLiner(dome, lzylinder, linerFilename, tankname)
+    fitting = liner.getFitting(False)
+    fitting.r3 = 40.
 
     # ###########################################
     # Create material
@@ -289,7 +311,7 @@ def createWindingDesign(**kwargs):
 
     angles, thicknesses, = [90.] * 2, [helixLayerThickenss] * 2
     compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
-                             sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname]
+                     sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname]
     composite = getComposite(angles, *compositeArgs)
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
@@ -300,9 +322,10 @@ def createWindingDesign(**kwargs):
     # run winding simulation
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
+    tankoh2.utilities.copyAsJson(vesselFilename, 'vessel')
     frpMass, volume, area, composite, iterations, anglesShifts = designLayers(vessel, layersToWind, minPolarOpening,
                                                                 puckProperties, burstPressure, runDir,
-                                                                composite, compositeArgs, verbose)
+                                                                composite, compositeArgs, verbose, useFibreFailure)
 
     np.savetxt(os.path.join(runDir, 'angles_shifts.txt'), anglesShifts)
     # save vessel
@@ -342,4 +365,21 @@ def createWindingDesign(**kwargs):
 
 
 if __name__ == '__main__':
-    createWindingDesign()
+    if 1:
+        from existingdesigns import hymodDesign
+        createWindingDesign(**hymodDesign)
+    else:
+        results=[]
+        lengths = np.linspace(1000.,6000,11)
+            #np.array([1]) * 1000
+        for l in lengths:
+            r=createWindingDesign(useFibreFailure=False,
+                                safetyFactor=1.,
+                                burstPressure=.5,
+                                domeType = pychain.winding.DOME_TYPES.ISOTENSOID,
+                                lzyl=l,
+                                dzyl=2400,
+                                #minPolarOpening=30.,
+                                )
+            results.append(r)
+        print(indent(results))

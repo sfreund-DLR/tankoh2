@@ -42,6 +42,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     ax.legend()
 
     ax = next(axs)
+    ax.set_title('puck fibre failure')
     plotDataFrame(show, filename, puckFF, ax)
 
     ax = next(axs)
@@ -55,7 +56,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
         plt.show()
     plt.close(fig)
 
-def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None):
+def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None, yLabel=None):
     """plots puck properties
 
     :param show: show the plot created
@@ -70,11 +71,12 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
     else:
         ax = axes
 
-    if title:
-        ax.set_title(title)
     dataframe.plot(ax=ax)
     legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'lower left'}
     ax.legend(**legendKwargs)
+    ax.set(xlabel='Contour coordinate',
+           ylabel='' if yLabel is None else yLabel,
+           title='' if title is None else title)
 
     if vlines is not None:
         if vlineColors is None:
@@ -82,7 +84,7 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         plt.vlines(vlines, dataframe.min().min(), dataframe.max().max(), colors=vlineColors, linestyles='dashed')
 
     if axes is None:
-        plt.subplots_adjust(right=0.75, left=0.08)
+        plt.subplots_adjust(right=0.75, left=0.10)
         if filename:
             plt.savefig(filename)
         if show:
