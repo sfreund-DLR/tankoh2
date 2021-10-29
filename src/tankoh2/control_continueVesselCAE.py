@@ -65,12 +65,12 @@ def main():
     AbqMATinAcuteTriangles = True # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
     degr_fac = 0.01 # degradation factor for material properties after failure initiation
-    createUMAT = False    
+    createUMAT = True    
 
 # ------------------- rename Material
     oldChars = '_ABQMAT'
     newChars = ''
-    renameMaterials = True
+    renameMaterials = False
 
 # ------- Mesh    # remeshes with given number of elements per liner thickness (elementsPerLayerThickness) and wedge elements in very narrow regions (minAngle)
 # set to reduced integration

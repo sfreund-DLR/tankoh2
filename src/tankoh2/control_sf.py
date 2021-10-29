@@ -249,18 +249,19 @@ def createWindingDesign(**kwargs):
 
     # band pattern not recognized
 
-    layersToWind = 100
-    tankname = 'exact_h2'
+    layersToWind = kwargs.get('maxlayers', 100)
+    tankname =  kwargs.get('tankname', 'exact_h2')
     dataDir = os.path.join(programDir, 'data')
-    hoopLayerThickness = 0.125
-    helixLayerThickenss = 0.129
-    rovingWidth = 3.175
-    numberOfRovings = 4
+    hoopLayerThickness = kwargs.get('hoopLayerThickness', 0.125)
+    helixLayerThickenss =kwargs.get('helixLayerThickenss', 0.129)
+    rovingWidth = kwargs.get('rovingWidth', 3.175)
+    numberOfRovings = kwargs.get('numberOfRovings', 4)
     #bandWidth = rovingWidth * numberOfRovings
-    tex = 446  # g / km
-    rho = 1.78  # g / cm^3
+    tex = 446 # g / km
+    rho = kwargs.get('fibreDensity', 1.78)  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
-    pressure = 5.  # pressure in MPa (bar / 10.)
+    pressure = kwargs.get('pressure', 5.)  # pressure in MPa (bar / 10.)
+    materialname = kwargs.get('materialname', 'CFRP_HyMod')
 
     # potential external inputs
     useFibreFailure = kwargs.get('useFibreFailure', True)
@@ -288,7 +289,7 @@ def createWindingDesign(**kwargs):
 
 
     # input files
-    materialFilename = os.path.join(dataDir, "CFRP_HyMod.json")
+    materialFilename = os.path.join(dataDir, materialname+".json")
     # output files
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
@@ -311,7 +312,7 @@ def createWindingDesign(**kwargs):
 
     angles, thicknesses, = [90.] * 2, [helixLayerThickenss] * 2
     compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
-                     sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname]
+                     sectionAreaFibre, rovingWidth, numberOfRovings, numberOfRovings, tex, designFilename, tankname]
     composite = getComposite(angles, *compositeArgs)
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()

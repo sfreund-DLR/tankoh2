@@ -2,6 +2,8 @@
 
 import sys
 import statistics
+from tankoh2.existingdesigns import NGTBITDesign
+#from builtins import True, False
 #from builtins import
 
 sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
@@ -18,10 +20,12 @@ from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLength
 from tankoh2.material import getMaterial, getComposite, readLayupData
 from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
+from tankoh2.control_sf import createWindingDesign
+import tankoh2.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
 
-def main():
+def builtVesselAsBuilt():
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -321,6 +325,38 @@ def main():
  #   ax.plot(S11[:, 1])
  #   ax.plot(S11[:, 2])
     # plt.show()
+    
+def builtVesselByOptimizedDesign(design, domeContourFilename):
+    
+    
+    # create liner x,r data
+    x, r = getReducedDomePoints(domeContourFilename,
+                                dpoints, fileNameReducedDomeContour)
+    
+    # start design optimization with specified design and given (x,r)-liner contour data
+    createWindingDesign(**design, domeContour = (x,r))
+
+def main():
+
+#
+#    What do you want to do?
+#
+# - As-Built of existing vessel    
+    AsBuilt = False
+
+# - Optimized Design regarding sepcific parameters
+    createDesign = True
+    design = NGTBITDesign
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")    
+    
+
+
+    if AsBuilt: 
+        builtVesselAsBuilt()        
+    
+    if createDesign:
+        builtVesselByOptimizedDesign(design, domeContourFilename)
+        
 
     log.info('FINISHED')
 
