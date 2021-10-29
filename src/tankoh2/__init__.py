@@ -23,8 +23,10 @@ applySettings()
 pychain = None
 
 try:
+    # v <= 0.90
     import mycropychain as pychain
 except ModuleNotFoundError:
+    # v > 0.90
     if sys.version_info.minor == '6':
         import mycropychain36 as pychain
     else:  # sys.version_info.minor == '8'

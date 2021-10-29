@@ -47,7 +47,7 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
     """Calculates a shift along the mandrel surface in the dome section
 
     :param mandrel: mandrel obj
-    :param startRadius: radius on mandrel where the shift should be applied
+    :param startLength: length on mandrel where the shift should be applied
     :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
     :return: 4-tuple with scalar or vector entires depending on parameter "shift"
         x-coordinate, radius, length, nearestElementIndicies

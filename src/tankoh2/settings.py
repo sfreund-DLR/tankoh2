@@ -45,9 +45,12 @@ def applySettings(filename=None):
     sys.path.append(pythonApiPath)
     
     # import API - MyCrOChain GUI with activiated TCP-Connector needed
+    pychainActive = True
     try:
+        # v <= 0.90
         import mycropychain as pychain
     except ModuleNotFoundError:
+        # v > 0.90
         try:
             if minor == '6':
                 import mycropychain36 as pychain
@@ -59,14 +62,19 @@ def applySettings(filename=None):
                                'settings file.')
         else:
             if len(pychain.__dict__) < 10:
-                # len(pychain.__dict__) was 8 on failure and 17 on success
-                raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
+                pychainActive = False
+    else:
+        if len(pychain.__dict__) < 10:
+            pychainActive = False
+
+    if not pychainActive:
+        # len(pychain.__dict__) was 8 on failure and 17 on success
+        raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
 
         # set general path information
         global myCrOSettings
         myCrOSettings = pychain.utility.MyCrOSettings()
         myCrOSettings.abaqusPythonLibPath = abaqusPythonLibPath
-
 
 def writeSettingsExample():
     """writes an example for settings"""

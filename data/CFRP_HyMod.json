@@ -3,7 +3,7 @@
     "materials": {
         "1": {
             "name": "CFRP_HyMod",
-            "uuid": "00000000-0000-0000-0000-00defaultCFK",
+            "uuid": "00000000-0000-0000-0000-00CFRP_HyMod",
             "failure_type": 2,
             "phi": 0.62,
             "elasticProperties": {
@@ -65,7 +65,11 @@
                 "G": 1185.0,
                 "type": 0,
                 "alpha": 0.0,
-                "costsPerKilo": 0.0
+                "costsPerKilo": 0.0,
+                "componentA": "ComponentA",
+                "componentB": "ComponentB",
+                "partsPerWeightA": 0,
+                "partsPerWeightB": 0
             },
             "color": {
                 "red": 255,
