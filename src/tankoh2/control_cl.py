@@ -95,12 +95,13 @@ def main():
                                 dpoints, fileNameReducedDomeContour)
     dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
+    dome2 = None
     if symmetricTank == False:
         x, r = getReducedDomePoints(dome2ContourFilename,
                                 dpoints, fileNameReducedDome2Contour)
         dome2 = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
-    liner = getLiner(dome, lzylinder, linerFilename, tankname, Symmetric=symmetricTank, dome2=dome2)
+    liner = getLiner(dome, lzylinder, linerFilename, tankname, dome2=dome2)
 
     # ###########################################
     # Create material

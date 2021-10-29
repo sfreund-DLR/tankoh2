@@ -2,7 +2,9 @@
 
 import numpy as np
 
+
 from tankoh2 import pychain
+from tankoh2.service import log
 from tankoh2.exception import Tankoh2Error
 from tankoh2.utilities import updateName, copyAsJson
 
@@ -67,7 +69,7 @@ def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.IS
         dome.setPoints(x, r)
     return dome
 
-def getLiner(dome, length, linerFilename=None, linerName=None, Symmetric=True, dome2 = None):
+def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None):
     """Creates a liner
     :param dome: dome instance
     :param length: zylindrical length of liner
@@ -78,7 +80,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, Symmetric=True, d
         
     # create a symmetric liner with dome information and cylinder length
     liner = pychain.winding.Liner()
-    print(dir(pychain.winding.Liner))
+    log.info(dir(pychain.winding.Liner))
       
     # spline for winding calculation is left on default of 1.0
     r = dome.cylinderRadius
@@ -87,14 +89,11 @@ def getLiner(dome, length, linerFilename=None, linerName=None, Symmetric=True, d
     deltaLengthSpline = lengthEstimate / desiredNodeNumber / 2 # just use half side
     #deltaLengthSpline = np.min([5.0, deltaLengthSpline]) # min since muwind has maximum of 5        
     
-    if Symmetric == False:
-        print("Creat unsymmetric vessel")            
-        if dome2 != None:
-            liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
-        else:
-            print("Error: contour of second dome is missing!")
+    if dome2 is not None:
+        log.info("Creat unsymmetric vessel")
+        liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
     else:
-        print("Creat symmetric vessel")
+        log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
     
 
