@@ -120,3 +120,23 @@ def updateName(jsonFilename, name, objsName, attrName='name'):
     item[attrName] = name
     with open(jsonFilename, "w") as jsonFile:
         json.dump(data, jsonFile, indent=4)
+        
+def changeSimulationOptions(vesselFilename, nLayers, minThicknessValue, hoopLayerCompressionStart):
+    """changes simulation options for all layers by modifying .vessel (json) file  
+
+    The given json file vesselFilename will be updated in place
+
+    :param vesselFilename: name of vessel file (*.vessel)
+    :param nLayers: number of layers to be wind
+    
+    """
+    
+    with open(vesselFilename) as jsonFile:
+        data = json.load(jsonFile)
+    
+    for n in range(1, nLayers+1):        
+        data["vessel"]["simulationOptions"]["thicknessOptions"][str(n)]["minThicknessValue"] = minThicknessValue
+        data["vessel"]["simulationOptions"]["thicknessOptions"][str(n)]["hoopLayerCompressionStart"] = hoopLayerCompressionStart
+    
+    with open(vesselFilename, "w") as jsonFile:
+        json.dump(data, jsonFile, indent=4)        

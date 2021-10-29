@@ -23,7 +23,7 @@
                     "gammaB": 0.0,
                     "tauB": 0.0,
                     "GTanB": 0.0
-                }
+                }                
             },
             "thermalProperties": {
                 "alpha_1": 0.0,
