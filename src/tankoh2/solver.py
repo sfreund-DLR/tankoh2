@@ -14,7 +14,7 @@ def getCriticalElementIdx(puck):
     """
     # identify critical element
     layermax = puck.max().argmax()
-    return puck.idxmax()[layermax]
+    return puck.idxmax()[layermax], layermax
 
 def getPuck(vessel, puckProperties, dropRadiusIndex, burstPressure):
     """Returns the index of the most critical element

@@ -6,7 +6,7 @@ import datetime
 
 import tankoh2.utilities
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, getTimeString
+from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, getTimeString, plotContour
 from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
@@ -130,11 +130,12 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     elementCount = mandrel.getRArray().shape[0]-1
     minAngle, _, _ = optimizeAngle(vessel, minPolarOpening, layerNumber, 1., False,
                                    targetFunction=getAngleAndPolarOpeningDiffByAngle)
+    plotContour(False,  os.path.join(runDir, f'contour.png'), mandrel.getXArray(), mandrel.getRArray())
 
     rMax = mandrel.getRArray()[0]
     dropHoopIndexStart = np.argmax((-mandrel.getRArray()+rMax)>rMax*1e-4) - 10
     dropHoopIndexEnd = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.98))
-    hoopOrHelicalIndex = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.99))
+    hoopOrHelicalIndex = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.995))
     maxHoopShift = mandrel.getLArray()[dropHoopIndexEnd] - liner.cylinderLength/2
     dropHoopIndicies = list(range(0, dropHoopIndexStart)) + list(range(dropHoopIndexEnd, elementCount))
     dropHelicalIndicies = range(0, hoopOrHelicalIndex)
@@ -163,7 +164,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         printLayer(layerNumber, verbose)
         puckFF, puckIFF = getPuck(vessel, puckProperties, None, burstPressure)
         puck = puckFF if useFibreFailure else puckIFF
-        elemIdxmax = getCriticalElementIdx(puck)
+        elemIdxmax, layermax = getCriticalElementIdx(puck)
 
         if puck.max().max() < 1:
             if verbose:
@@ -175,8 +176,6 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
                           yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
             layerNumber -= 1
             break
-        elif layerNumber > maxLayers:
-            raise Tankoh2Error('Reached max layers. You need to specify more initial layers')
 
         # add one layer
         composite = getComposite([a for a,_ in anglesShifts]+[90], [compositeArgs[2]]*(layerNumber+1), *compositeArgs[1:])
@@ -184,7 +183,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         resetVesselAnglesShifts(anglesShifts, vessel)
 
         #  check zone of highest puck values
-        if elemIdxmax < hoopOrHelicalIndex:
+        if anglesShifts[layermax][0] > 89:
             resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
                                    dropHoopIndicies, maxHoopShift, verbose)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
@@ -209,6 +208,8 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puck, None,
                       vlines=[elemIdxmax, hoopOrHelicalIndex, newDesignIndex], vlineColors=['red', 'black', 'green'],
                       yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
+    else:
+        log.warning('Reached max layers. You need to specify more initial layers')
 
 
     vessel.finishWinding()
@@ -242,7 +243,7 @@ def createWindingDesign(**kwargs):
     # #########################################################################################
 
     log.info('='*100)
-    log.info('createWindingDesign with these parameters: '+str(kwargs))
+    log.info('createWindingDesign with these parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
     # design constants AND not recognized issues
@@ -270,7 +271,7 @@ def createWindingDesign(**kwargs):
     dzyl = kwargs.get('dzyl', 400.)  # mm
     minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
     domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
-    domeX, domeR = kwargs.get('domeContour', (None, None)) # CIRCLE; ISOTENSOID
+    domeX, domeR = kwargs.get('domeContour', (None, None)) # (x,r)
     runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     if 'lzyl' in kwargs:
         lzylinder = kwargs.get('lzyl', 500.)  # mm

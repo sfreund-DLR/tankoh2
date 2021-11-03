@@ -310,7 +310,7 @@ def builtVesselByOptimizedDesign(design, domeContourFilename):
                                 dpoints, fileNameReducedDomeContour)
     
     # start design optimization with specified design and given (x,r)-liner contour data
-    createWindingDesign(**design, domeContour = (x,r))
+    createWindingDesign(**design, domeContour = (x,r), runDir=runDir)
 
 def main():
 
