@@ -1,7 +1,7 @@
 """some service functions"""
 
 import functools
-import pandas
+import pandas as pd
 import numpy as np
 import io, math
 import itertools,re
@@ -9,6 +9,7 @@ import os
 from datetime import datetime
 import time
 import matplotlib.pylab as plt
+from matplotlib.figure import Figure
 
 from tankoh2 import programDir, log
 
@@ -56,7 +57,23 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
         plt.show()
     plt.close(fig)
 
-def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None, yLabel=None):
+def plotContour(show, filename, x, r):
+    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
+    df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
+    plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r')
+    df = pd.DataFrame(np.array([r]).T, columns=['r'], index=pd.Index(x))
+    plotDataFrame(show, None, df, axes=axs[1], title='Contour', yLabel='r', xLabel='x')
+
+    plt.axis('scaled')
+
+    if filename:
+        plt.savefig(filename)
+    if show:
+        plt.show()
+    plt.close(fig)
+
+def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None,
+                  yLabel=None, xLabel='Contour coordinate'):
     """plots puck properties
 
     :param show: show the plot created
@@ -74,14 +91,15 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
     dataframe.plot(ax=ax)
     legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'lower left'}
     ax.legend(**legendKwargs)
-    ax.set(xlabel='Contour coordinate',
+    ax.set(xlabel=xLabel,
            ylabel='' if yLabel is None else yLabel,
            title='' if title is None else title)
 
     if vlines is not None:
         if vlineColors is None:
             vlineColors = 'black'
-        plt.vlines(vlines, dataframe.min().min(), dataframe.max().max(), colors=vlineColors, linestyles='dashed')
+        ymin, ymax = dataframe.min().min(), dataframe.max().max()
+        plt.vlines(vlines, ymin, ymax + 0.1*(ymax-ymin), colors=vlineColors, linestyles='dashed')
 
     if axes is None:
         plt.subplots_adjust(right=0.75, left=0.10)
