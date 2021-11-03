@@ -25,55 +25,28 @@ import tankoh2.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
 
-def builtVesselAsBuilt():
+def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
+                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
-    symmetricTank = False
-    servicepressure = 700. #bar
-    saftyFactor = 1.
-    layersToWind = 48 #48
-    
-    optimizeWindingHelical = True #False
-    optimizeWindingHoop = False
-        
-    tankname = 'NGT-BIT-2020-09-16'
-    dataDir = os.path.join(programDir, 'data')
-    dzyl = 400.  # mm
-    polarOpening = 48./2.  # mm
-    lzylinder = 500.  # mm    
-    dpoints = 4  # data points for liner contour
-    defaultLayerthickness = 0.125
-    hoopLayerThickness = 0.125
-    helixLayerThickenss = 0.129  
-    
-    
-    rovingWidth = 3.175
-    numberOfRovingsHelical = 18
-    numberOfRovingsHoop = 18
+
+
+    log.info(f'built tank with polar opening of {polarOpening}')
     
     bandWidthHelical = rovingWidth * numberOfRovingsHelical
     bandWidthHoop = rovingWidth * numberOfRovingsHoop
     log.info(f'for helical winding using {numberOfRovingsHelical} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHelical}')
-    log.info(f'for hoop winding using {numberOfRovingsHoop} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHoop}')
-    tex = 446  # g / km
-    rho = 1.78  # g / cm^3
+    log.info(f'for hoop winding using {numberOfRovingsHoop} rovings with {rovingWidth}mm resulting in bandwith of {bandWidthHoop}')    
     sectionAreaFibre = tex / (1000. * rho)
     print(sectionAreaFibre)
     log.info(f'section fibre area within roving is {sectionAreaFibre}')
-    hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
-    hoopRisePerBandwidth = 1./12. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer
-    
-    # Set thickness solver options
-    # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
-    minThicknessValue = 0.2
-    hoopLayerCompressionStart = 0.5 
 
     # input files
     layupDataFilename = os.path.join(dataDir, "Winding_" + tankname + ".txt")
     #materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
-    materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")
+    materialFilename = os.path.join(dataDir, "CFRP_T700SC_LY556.json")    
     if symmetricTank == False:
         dome2ContourFilename = os.path.join(dataDir, "Dome2_contour_" + tankname + "_48mm.txt")
     # output files
@@ -87,8 +60,6 @@ def builtVesselAsBuilt():
     vesselFilename = os.path.join(runDir, tankname + ".vessel")
     windingResultFilename = os.path.join(runDir, tankname + ".wresults")
     
-    print('runDir', runDir)
-    print('dataDir', dataDir)
     
     #print(getLengthContourPath(domeContourFilename, 24., 51.175/2., 1))
 
@@ -329,7 +300,12 @@ def builtVesselAsBuilt():
 def builtVesselByOptimizedDesign(design, domeContourFilename):
     
     
+    tankname = design.get('tankname')
+    
     # create liner x,r data
+    dpoints = 4
+    runDir = getRunDir()
+    fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
     x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
     
@@ -343,16 +319,59 @@ def main():
 #
 # - As-Built of existing vessel    
     AsBuilt = False
+    
+    
+    # --- Parameters for As-Built
+    symmetricTank = True
+    servicepressure = 700. #bar
+    saftyFactor = 1.
+    layersToWind = 48 #48
+    
+    optimizeWindingHelical = True #False
+    optimizeWindingHoop = False
+        
+    tankname = 'NGT-BIT-2020-09-16'
+    dataDir = os.path.join(programDir, 'data')
+    dzyl = 400.  # mm
+    polarOpening = 46./2.  # mm
+    lzylinder = 500.  # mm    
+    dpoints = 4  # data points for liner contour
+    defaultLayerthickness = 0.125
+    hoopLayerThickness = 0.125
+    helixLayerThickenss = 0.129  
+    
+    
+    rovingWidth = 3.175
+    numberOfRovingsHelical = 18
+    numberOfRovingsHoop = 18
+    
+    tex = 446  # g / km
+    rho = 1.78  # g / cm^3
+    
+    hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
+    hoopRisePerBandwidth = 1./12. # shift of hoopRisePerBandwidth*bandwidthhoop per hoop layer
+    
+    # Set thickness solver options
+    # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
+    minThicknessValue = 0.2
+    hoopLayerCompressionStart = 0.5 
+    
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
+
 
 # - Optimized Design regarding sepcific parameters
     createDesign = True
     design = NGTBITDesign
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + "_48mm.txt")    
+    tankname = design.get('tankname')    
+    dataDir = os.path.join(programDir, 'data')
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")    
     
 
 
     if AsBuilt: 
-        builtVesselAsBuilt()        
+        builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
+                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
     if createDesign:
         builtVesselByOptimizedDesign(design, domeContourFilename)

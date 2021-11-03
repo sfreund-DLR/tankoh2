@@ -44,9 +44,8 @@ def main():
 # ------- general    
     #modelname = 'NGT-BIT-2020-09-16_Solid3D'
     modelname = 'NGT-BIT-2020-10-15_AxSolid'
-    #modelname = 'CcH2_Subscale_Axis'
-    domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"
-    layerPartPrefix = 'Layer'
+    modelname = 'CcH2_Subscale_Axis'
+    domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"    
     rzylinder = 200. # radius of cylindrical part
     lzylinder = 500. # length of cylindrical part
     nMandrels = 1 # number of mandrels
@@ -58,13 +57,13 @@ def main():
 
 # ------- Material
     layerMaterialPrefix = 'Layer'
-    #layerMaterialPrefix = 'WCM_Tank1_Mat1_Bin'
-    materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//CFRP_T700SC_LY556.json"
-    materialName = "CFRP_T700SC_LY556"
+    layerMaterialPrefix = 'WCM_Tank1_Mat1_Bin'
+    materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//CFRP_HyMod.json"
+    materialName = "CFRP_HyMod"
     UMATprefix = "MCD_SHOKRIEH"    
-    AbqMATinAcuteTriangles = True # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
+    AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
-    degr_fac = 0.01 # degradation factor for material properties after failure initiation
+    degr_fac = 0.1 # degradation factor for material properties after failure initiation
     createUMAT = True    
 
 # ------------------- rename Material

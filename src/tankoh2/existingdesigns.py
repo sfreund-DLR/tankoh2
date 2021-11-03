@@ -12,12 +12,12 @@ hymodDesign = dict([('burstPressure', 77.85),
                     ])
 
 
-NGTBITDesign = dict([('tankname', 'NGT-BIT_optimized'), 
-                     ('pressure', 7),                                        
+NGTBITDesign = dict([('tankname', 'NGT-BIT-2020-09-16'), 
+                     ('pressure', 70),                                        
                     # Geometry
-                    ('minPolarOpening', 24),
+                    ('minPolarOpening', 23),
                     ('dzyl', 400.),
-                    ('lzyl', 1500.),                    
+                    ('lzyl', 500.),                    
                     # design philosophy
                     ('safetyFactor', 2.0),
                     ('useFibreFailure', True), 
@@ -27,11 +27,11 @@ NGTBITDesign = dict([('tankname', 'NGT-BIT_optimized'),
                     ('hoopLayerThickness', 0.125),
                     ('helixLayerThickenss', 0.129),
                     ('rovingWidth', 3.175),
-                    ('numberOfRovings', 2),
+                    ('numberOfRovings', 4),
                     #('tex', int(446)),
                     ('fibreDensity', 1.78),
                     # optimizer settings
-                    ('maxlayers', 10)                                                            
+                    ('maxlayers', 200)                                                            
                     ])
 
 
