@@ -356,8 +356,9 @@ def createWindingDesign(**kwargs):
 
     log.info('FINISHED')
 
-    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles']
-    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), [a for a,_ in anglesShifts]
+    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
+    angles, hoopLayerShifts = np.array(anglesShifts).T
+    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), angles, hoopLayerShifts
     with open(os.path.join(runDir, 'results.txt'), 'w') as f:
         f.write(indent([resultNames, results]))
     return results
