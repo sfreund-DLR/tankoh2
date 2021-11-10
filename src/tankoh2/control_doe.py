@@ -34,7 +34,7 @@ class TankWinder(AbstractTargetFunction):
 
     def __init__(self, lb, ub, runDir):
         """"""
-        resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles']
+        resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShifts']
         AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNames)
         self.doParallelization = []
         self.runDir = runDir

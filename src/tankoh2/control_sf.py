@@ -247,47 +247,44 @@ def createWindingDesign(**kwargs):
     log.info('createWindingDesign with these parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
-    # design constants AND not recognized issues
-
-    # band pattern not recognized
-
-    layersToWind = kwargs.get('maxlayers', 100)
+    # General
     tankname =  kwargs.get('tankname', 'exact_h2')
+    nodeNumber = kwargs.get('nodeNumber', 500)  # might not exactly be matched due to approximations
     dataDir = os.path.join(programDir, 'data')
-    hoopLayerThickness = kwargs.get('hoopLayerThickness', 0.125)
-    helixLayerThickenss =kwargs.get('helixLayerThickenss', 0.129)
-    rovingWidth = kwargs.get('rovingWidth', 3.175)
-    numberOfRovings = kwargs.get('numberOfRovings', 4)
-    #bandWidth = rovingWidth * numberOfRovings
-    tex = 446 # g / km
-    rho = kwargs.get('fibreDensity', 1.78)  # g / cm^3
-    sectionAreaFibre = tex / (1000. * rho)
-    pressure = kwargs.get('pressure', 5.)  # pressure in MPa (bar / 10.)
-    materialname = kwargs.get('materialname', 'CFRP_HyMod')
+    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
 
-    # potential external inputs
-    useFibreFailure = kwargs.get('useFibreFailure', True)
-    safetyFactor = kwargs.get('safetyFactor', 2.25)
-    burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
-    dzyl = kwargs.get('dzyl', 400.)  # mm
-    minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
+    # Optimization
+    layersToWind = kwargs.get('maxlayers', 100)
+
+    # Geometry
     domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
     domeX, domeR = kwargs.get('domeContour', (None, None)) # (x,r)
-    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
+    minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
+    dzyl = kwargs.get('dzyl', 400.)  # mm
     if 'lzyl' in kwargs:
         lzylinder = kwargs.get('lzyl', 500.)  # mm
     else:
         lzylByR = kwargs.get('lzylByR', 2.5)  # mm
         lzylinder = lzylByR * dzyl/2
 
+    # Design
+    safetyFactor = kwargs.get('safetyFactor', 2.25)
+    pressure = kwargs.get('pressure', 5.)  # pressure in MPa (bar / 10.)
+    burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
+    useFibreFailure = kwargs.get('useFibreFailure', True)
 
-    if 0:
-        # test pressure vessel vs cryo vessel
-        dzyl = 2000 #mm
-        lzylinder = 4000 #mm
-        minPolarOpening = dzyl/2/10
-        burstPressure = 25
-        runDir = kwargs.get('runDir', getRunDir(f'_{burstPressure}MPa'))
+    # Material
+    materialname = kwargs.get('materialname', 'CFRP_HyMod')
+
+    # Fiber roving parameter
+    hoopLayerThickness = kwargs.get('hoopLayerThickness', 0.125)
+    helixLayerThickenss =kwargs.get('helixLayerThickenss', 0.129)
+    rovingWidth = kwargs.get('rovingWidth', 3.175)
+    numberOfRovings = kwargs.get('numberOfRovings', 4)
+    #bandWidth = rovingWidth * numberOfRovings
+    tex = kwargs.get('tex', 446) # g / km
+    rho = kwargs.get('fibreDensity', 1.78)  # g / cm^3
+    sectionAreaFibre = tex / (1000. * rho)
 
 
     # input files
@@ -302,7 +299,7 @@ def createWindingDesign(**kwargs):
     # Create Liner
     # #########################################################################################
     dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
-    liner = getLiner(dome, lzylinder, linerFilename, tankname)
+    liner = getLiner(dome, lzylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r3 = 40.
 
@@ -360,8 +357,9 @@ def createWindingDesign(**kwargs):
 
     log.info('FINISHED')
 
-    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles']
-    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), [a for a,_ in anglesShifts]
+    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
+    angles, hoopLayerShifts = np.array(anglesShifts).T
+    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), angles, hoopLayerShifts
     with open(os.path.join(runDir, 'results.txt'), 'w') as f:
         f.write(indent([resultNames, results]))
     return results

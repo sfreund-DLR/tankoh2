@@ -80,10 +80,10 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
     :param filename: save the plot to filename
     :param dataframe: dataframe with layers as columns and elementIds as index
     :param axes: matplotlib axes object
-    :param hlines: x-coordinates with a vertical line to draw
+    :param vlines: x-coordinates with a vertical line to draw
     """
     if axes is None:
-        fig = plt.figure()
+        fig = plt.figure(figsize=(15,9))
         ax = fig.gca()
     else:
         ax = axes

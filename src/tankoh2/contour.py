@@ -48,6 +48,13 @@ def getReducedDomePoints(contourFilename, spacing, contourOutFilename=None):
                 contour.write(str(Xvec[i]) + ',' + str(rVec[i]) + '\n')
     return Xvec, rVec
 
+def domeContourLength(dome):
+    """Returns the contour length of a dome"""
+    contourCoords = np.array([dome.getXCoords(), dome.getRCoords()]).T
+    contourDiffs = contourCoords[1:,:] - contourCoords[:-1]
+    contourLength = np.sum(np.linalg.norm(contourDiffs, axis=1))
+    return contourLength
+
 def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.ISOTENSOID,
             x=None, r=None):
     """
@@ -71,7 +78,7 @@ def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.IS
         dome.setPoints(x, r)
     return dome
 
-def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None):
+def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nodeNumber = 500):
     """Creates a liner
     :param dome: dome instance
     :param length: zylindrical length of liner
@@ -85,12 +92,12 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None):
     log.info(dir(pychain.winding.Liner))
       
     # spline for winding calculation is left on default of 1.0
-    r = dome.cylinderRadius
-    lengthEstimate = (np.pi * r + length) # half circle + cylindrical length
-    desiredNodeNumber = 500
-    deltaLengthSpline = lengthEstimate / desiredNodeNumber / 2 # just use half side
-    #deltaLengthSpline = np.min([5.0, deltaLengthSpline]) # min since muwind has maximum of 5        
-    
+    if dome2:
+        contourLength = length + domeContourLength(dome) + domeContourLength(dome2)
+    else:
+        contourLength = length / 2 + domeContourLength(dome)  # use half model (one dome, half cylinder)
+    deltaLengthSpline = contourLength / nodeNumber # just use half side
+
     if dome2 is not None:
         log.info("Creat unsymmetric vessel")
         liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
@@ -98,8 +105,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None):
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
     
-
-    if linerFilename:        
+    if linerFilename:
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
         copyAsJson(linerFilename, 'liner')      
