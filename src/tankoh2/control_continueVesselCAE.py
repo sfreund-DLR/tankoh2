@@ -43,8 +43,9 @@ def main():
 
 # ------- general    
     #modelname = 'NGT-BIT-2020-09-16_Solid3D'
-    modelname = 'NGT-BIT-2020-10-15_AxSolid'
-    modelname = 'CcH2_Subscale_Axis'
+    #modelname = 'NGT-BIT-2020-10-15_AxSolid'
+    #modelname = 'CcH2_Subscale_Axis'
+    modelname = "NGT-BIT-OPT-2021-11-05_AxSolid"
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"    
     rzylinder = 200. # radius of cylindrical part
     lzylinder = 500. # length of cylindrical part
@@ -57,14 +58,16 @@ def main():
 
 # ------- Material
     layerMaterialPrefix = 'Layer'
-    layerMaterialPrefix = 'WCM_Tank1_Mat1_Bin'
-    materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//CFRP_HyMod.json"
-    materialName = "CFRP_HyMod"
+    #layerMaterialPrefix = 'WCM_Tank1_Mat1_Bin'
+    #materialName = "CFRP_HyMod"
+    materialName = "CFRP_T700SC_LY556"
+    materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//"+materialName+".json"
     UMATprefix = "MCD_SHOKRIEH"    
-    AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
+    AbqMATinAcuteTriangles = True # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
-    degr_fac = 0.1 # degradation factor for material properties after failure initiation
-    createUMAT = True    
+    degr_fac = 1.0 # degradation factor for material properties after failure initiation
+    createUMAT = True
+    removeUMAT = False
 
 # ------------------- rename Material
     oldChars = '_ABQMAT'
@@ -100,6 +103,9 @@ def main():
     
     if createUMAT == True:
         cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles)
+
+    if removeUMAT == True:
+        cvc.removeUMAT(model)
 
     if renameMaterials:
         cvc.renameMaterials(model, oldChars, newChars)

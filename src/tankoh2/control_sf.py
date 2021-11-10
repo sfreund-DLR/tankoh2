@@ -134,7 +134,8 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
 
     rMax = mandrel.getRArray()[0]
     dropHoopIndexStart = np.argmax((-mandrel.getRArray()+rMax)>rMax*1e-4) - 10
-    dropHoopIndexEnd = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.98))
+    #dropHoopIndexEnd = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.98))
+    dropHoopIndexEnd = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.74))
     hoopOrHelicalIndex = np.argmin(np.abs(mandrel.getRArray() - dome.cylinderRadius*0.995))
     maxHoopShift = mandrel.getLArray()[dropHoopIndexEnd] - liner.cylinderLength/2
     dropHoopIndicies = list(range(0, dropHoopIndexStart)) + list(range(dropHoopIndexEnd, elementCount))

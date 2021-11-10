@@ -27,8 +27,8 @@ NGTBITDesign = dict([('tankname', 'NGT-BIT-2020-09-16'),
                     ('hoopLayerThickness', 0.125),
                     ('helixLayerThickenss', 0.129),
                     ('rovingWidth', 3.175),
-                    ('numberOfRovings', 4),
-                    #('tex', int(446)),
+                    ('numberOfRovings', 12),
+                    ('tex', 800),
                     ('fibreDensity', 1.78),
                     # optimizer settings
                     ('maxlayers', 200)                                                            
