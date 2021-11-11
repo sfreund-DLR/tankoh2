@@ -15,8 +15,9 @@ from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpening
 from tankoh2.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getPuckLinearResults, getMaxFibreFailureByShift
-from tankoh2.exception import Tankoh2Error
+from tankoh2.existingdesigns import defaultDesign
 
+resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
 
 def printLayer(layerNumber, verbose = False):
     sep = '\n' + '=' * 80
@@ -237,7 +238,6 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
 
 def createWindingDesign(**kwargs):
     startTime = datetime.datetime.now()
-    verbose = False
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -246,45 +246,51 @@ def createWindingDesign(**kwargs):
     log.info('createWindingDesign with these parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
+    kwargs['runDir'] = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
+    designArgs = defaultDesign.copy()
+    designArgs.update(kwargs)
+
     # General
-    tankname =  kwargs.get('tankname', 'exact_h2')
-    nodeNumber = kwargs.get('nodeNumber', 500)  # might not exactly be matched due to approximations
-    dataDir = os.path.join(programDir, 'data')
-    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
+    tankname = designArgs['tankname']
+    nodeNumber = designArgs['nodeNumber']  # might not exactly be matched due to approximations
+    dataDir = designArgs['dataDir']
+    runDir = designArgs['runDir']
+    verbose = designArgs['verbose']
 
     # Optimization
-    layersToWind = kwargs.get('maxlayers', 100)
+    layersToWind = designArgs['maxlayers']
 
     # Geometry
-    domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
-    domeX, domeR = kwargs.get('domeContour', (None, None)) # (x,r)
-    minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
-    dzyl = kwargs.get('dzyl', 400.)  # mm
-    if 'lzyl' in kwargs:
-        lzylinder = kwargs.get('lzyl', 500.)  # mm
+    domeType = designArgs['domeType'] # CIRCLE; ISOTENSOID
+    domeX, domeR = designArgs['domeContour'] # (x,r)
+    minPolarOpening = designArgs['minPolarOpening']  # mm
+    dzyl = designArgs['dzyl']  # mm
+    if 'lzyl' in designArgs:
+        lzylinder = designArgs['lzyl']  # mm
     else:
-        lzylByR = kwargs.get('lzylByR', 2.5)  # mm
+        lzylByR = designArgs['lzylByR']  # mm
         lzylinder = lzylByR * dzyl/2
 
     # Design
-    safetyFactor = kwargs.get('safetyFactor', 2.25)
-    pressure = kwargs.get('pressure', 5.)  # pressure in MPa (bar / 10.)
-    burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
-    useFibreFailure = kwargs.get('useFibreFailure', True)
+    safetyFactor = designArgs['safetyFactor']
+    pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
+    burstPressure = designArgs['burstPressure']
+    useFibreFailure = designArgs['useFibreFailure']
 
     # Material
-    materialname = kwargs.get('materialname', 'CFRP_HyMod')
+    materialname = designArgs['materialname']
 
     # Fiber roving parameter
-    hoopLayerThickness = kwargs.get('hoopLayerThickness', 0.125)
-    helixLayerThickenss =kwargs.get('helixLayerThickenss', 0.129)
-    rovingWidth = kwargs.get('rovingWidth', 3.175)
-    numberOfRovings = kwargs.get('numberOfRovings', 4)
+    hoopLayerThickness = designArgs['hoopLayerThickness']
+    helixLayerThickenss =designArgs['helixLayerThickenss']
+    rovingWidth = designArgs['rovingWidth']
+    numberOfRovings = designArgs['numberOfRovings']
     #bandWidth = rovingWidth * numberOfRovings
-    tex = kwargs.get('tex', 446) # g / km
-    rho = kwargs.get('fibreDensity', 1.78)  # g / cm^3
+    tex = designArgs['tex'] # g / km
+    rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
 
+    saveParametersAndResults(designArgs)
 
     # input files
     materialFilename = os.path.join(dataDir, materialname+".json")
@@ -322,11 +328,13 @@ def createWindingDesign(**kwargs):
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
     tankoh2.utilities.copyAsJson(vesselFilename, 'vessel')
-    frpMass, volume, area, composite, iterations, anglesShifts = designLayers(vessel, layersToWind, minPolarOpening,
-                                                                puckProperties, burstPressure, runDir,
-                                                                composite, compositeArgs, verbose, useFibreFailure)
+    results = designLayers(vessel, layersToWind, minPolarOpening,
+                           puckProperties, burstPressure, runDir,
+                           composite, compositeArgs, verbose, useFibreFailure)
 
-    np.savetxt(os.path.join(runDir, 'angles_shifts.txt'), anglesShifts)
+
+    frpMass, volume, area, composite, iterations, anglesShifts = results
+    saveParametersAndResults(designArgs, results)
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -356,7 +364,6 @@ def createWindingDesign(**kwargs):
 
     log.info('FINISHED')
 
-    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
     angles, hoopLayerShifts = np.array(anglesShifts).T
     results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), angles, hoopLayerShifts
     with open(os.path.join(runDir, 'results.txt'), 'w') as f:
@@ -364,12 +371,25 @@ def createWindingDesign(**kwargs):
     return results
 
 
+def saveParametersAndResults(inputKwArgs, results=None):
+    filename = 'all_parameters_and_results.txt'
+    runDir = inputKwArgs.get('runDir')
+    with open(os.path.join(runDir, filename), 'w') as f:
+        f.write('INPUTS\n\n')
+        f.write(indent(inputKwArgs.items()))
+        if results is None:
+            return
+        f.write('\n\nOUTPUTS\n\n')
+        f.write(indent(zip([resultNames, results])))
+        f.write('\n'+indent([resultNames, results]))
+
+
 if __name__ == '__main__':
     if 1:
         from existingdesigns import hymodDesign
         createWindingDesign(**hymodDesign)
     else:
-        results=[]
+        rs=[]
         lengths = np.linspace(1000.,6000,11)
             #np.array([1]) * 1000
         for l in lengths:
@@ -381,5 +401,5 @@ if __name__ == '__main__':
                                 dzyl=2400,
                                 #minPolarOpening=30.,
                                 )
-            results.append(r)
+            rs.append(r)
         print(indent(results))
