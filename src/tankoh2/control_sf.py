@@ -365,8 +365,6 @@ def createWindingDesign(**kwargs):
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
 
-    with open(os.path.join(runDir, 'results.txt'), 'w') as f:
-        f.write(indent([resultNames, results]))
     return results
 
 
