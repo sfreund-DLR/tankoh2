@@ -4,40 +4,40 @@ import os
 
 from tankoh2 import programDir, pychain
 
-defaultDesign = ([
-                  # General
-                  ('tankname', 'exact_h2'),
-                  ('nodeNumber', 500),  # might not exactly be matched due to approximations
-                  ('dataDir', os.path.join(programDir, 'data')),
-                  ('verbose', False),
+defaultDesign = OrderedDict([
+                             # General
+                             ('tankname', 'exact_h2'),
+                             ('nodeNumber', 500),  # might not exactly be matched due to approximations
+                             ('dataDir', os.path.join(programDir, 'data')),
+                             ('verbose', False),
 
-                  # Optimization
-                  ('maxlayers', 100),
+                             # Optimization
+                             ('maxlayers', 100),
 
-                  # Geometry
-                  ('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
-                  ('domeContour', (None, None)),  # (x,r)
-                  ('minPolarOpening', 20),  # mm
-                  ('dzyl', 400.),  # mm
-                  ('lzylByR', 2.5),
+                             # Geometry
+                             ('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
+                             ('domeContour', (None, None)),  # (x,r)
+                             ('minPolarOpening', 20),  # mm
+                             ('dzyl', 400.),  # mm
+                             ('lzylByR', 2.5),
 
-                  # Design
-                  ('safetyFactor', 2.25),
-                  ('pressure', 5.),  # pressure in MPa (bar / 10.)
-                  ('useFibreFailure', True),
+                             # Design
+                             ('safetyFactor', 2.25),
+                             ('pressure', 5.),  # pressure in MPa (bar / 10.)
+                             ('useFibreFailure', True),
 
-                  # Material
-                  ('materialname', 'CFRP_HyMod'),
+                             # Material
+                             ('materialname', 'CFRP_HyMod'),
 
-                  # Fiber roving parameter
-                  ('hoopLayerThickness', 0.125),
-                  ('helixLayerThickenss', 0.129),
-                  ('rovingWidth', 3.175),
-                  ('numberOfRovings', 4),
-                  # bandWidth = rovingWidth * numberOfRovings
-                  ('tex', 446),  # g / km
-                  ('fibreDensity', 1.78),  # g / cm^3
-                  ])
+                             # Fiber roving parameter
+                             ('hoopLayerThickness', 0.125),
+                             ('helixLayerThickenss', 0.129),
+                             ('rovingWidth', 3.175),
+                             ('numberOfRovings', 4),
+                             # bandWidth = rovingWidth * numberOfRovings
+                             ('tex', 446),  # g / km
+                             ('fibreDensity', 1.78),  # g / cm^3
+                             ])
 
 # HyMod
 # 12mm thickness in cylindrical section
