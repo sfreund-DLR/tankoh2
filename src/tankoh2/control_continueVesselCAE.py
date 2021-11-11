@@ -63,11 +63,11 @@ def main():
     materialName = "CFRP_T700SC_LY556"
     materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//"+materialName+".json"
     UMATprefix = "MCD_SHOKRIEH"    
-    AbqMATinAcuteTriangles = True # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
+    AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
     degr_fac = 1.0 # degradation factor for material properties after failure initiation
-    createUMAT = True
-    removeUMAT = False
+    createUMAT = False
+    removeUMAT = True
 
 # ------------------- rename Material
     oldChars = '_ABQMAT'

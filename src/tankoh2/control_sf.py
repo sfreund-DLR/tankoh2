@@ -184,12 +184,12 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         resetVesselAnglesShifts(anglesShifts, vessel)
 
         #  check zone of highest puck values
-        if anglesShifts[layermax][0] > 89:
+        if (anglesShifts[layermax][0] > 89):
             resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
                                    dropHoopIndicies, maxHoopShift, verbose)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
                                          minPolarOpening, dropHoopIndicies, verbose)
-            if resHoop[1] < resHelical[1] * 1.25: #  puck result with helical layer must be 1.25 times better
+            if resHoop[1] < resHelical[1] * 1.25: #  puck result with helical layer must be 1.25 times better 
                 # add hoop layer
                 shift, funcVal, loopIt, newDesignIndex = resHoop
                 windHoopLayer(vessel, layerNumber, shift)
