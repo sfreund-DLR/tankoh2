@@ -15,8 +15,10 @@ from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpening
 from tankoh2.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getPuckLinearResults, getMaxFibreFailureByShift
-from tankoh2.exception import Tankoh2Error
+from tankoh2.existingdesigns import defaultDesign
 
+resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultUnits = ['kg', 'dm^2', 'm^2', 'mm', '', '', 's', '°', 'mm']
 
 def printLayer(layerNumber, verbose = False):
     sep = '\n' + '=' * 80
@@ -233,12 +235,11 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     areaDome = np.pi * (r[:-1] + r[1:]) * np.sqrt((r[:-1] - r[1:]) ** 2 + (x[:-1] - x[1:]) ** 2)
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * np.sum(areaDome)  # [mm**2]
     area *= 1e-6  # [m**2]
-    return frpMass, volume, area, composite, iterations, anglesShifts
+    return frpMass, volume, area, composite, iterations, *(np.array(anglesShifts).T)
 
 
 def createWindingDesign(**kwargs):
     startTime = datetime.datetime.now()
-    verbose = False
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -247,45 +248,51 @@ def createWindingDesign(**kwargs):
     log.info('createWindingDesign with these parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
+    kwargs['runDir'] = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
+    designArgs = defaultDesign.copy()
+    designArgs.update(kwargs)
+
     # General
-    tankname =  kwargs.get('tankname', 'exact_h2')
-    nodeNumber = kwargs.get('nodeNumber', 500)  # might not exactly be matched due to approximations
-    dataDir = os.path.join(programDir, 'data')
-    runDir = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
+    tankname = designArgs['tankname']
+    nodeNumber = designArgs['nodeNumber']  # might not exactly be matched due to approximations
+    dataDir = designArgs['dataDir']
+    runDir = designArgs['runDir']
+    verbose = designArgs['verbose']
 
     # Optimization
-    layersToWind = kwargs.get('maxlayers', 100)
+    layersToWind = designArgs['maxlayers']
 
     # Geometry
-    domeType = kwargs.get('domeType', pychain.winding.DOME_TYPES.ISOTENSOID) # CIRCLE; ISOTENSOID
-    domeX, domeR = kwargs.get('domeContour', (None, None)) # (x,r)
-    minPolarOpening = kwargs.get('minPolarOpening', 20)  # mm
-    dzyl = kwargs.get('dzyl', 400.)  # mm
-    if 'lzyl' in kwargs:
-        lzylinder = kwargs.get('lzyl', 500.)  # mm
-    else:
-        lzylByR = kwargs.get('lzylByR', 2.5)  # mm
-        lzylinder = lzylByR * dzyl/2
+    domeType = designArgs['domeType'] # CIRCLE; ISOTENSOID
+    domeX, domeR = designArgs['domeContour'] # (x,r)
+    minPolarOpening = designArgs['minPolarOpening']  # mm
+    dzyl = designArgs['dzyl']  # mm
+    if 'lzyl' not in designArgs:
+        designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
+    lzylinder = designArgs['lzyl']  # mm
 
     # Design
-    safetyFactor = kwargs.get('safetyFactor', 2.25)
-    pressure = kwargs.get('pressure', 5.)  # pressure in MPa (bar / 10.)
-    burstPressure = kwargs.get('burstPressure', pressure * safetyFactor)
-    useFibreFailure = kwargs.get('useFibreFailure', True)
+    safetyFactor = designArgs['safetyFactor']
+    pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
+    if 'burstPressure' not in designArgs:
+        designArgs['burstPressure'] = safetyFactor * pressure
+    burstPressure = designArgs['burstPressure']
+    useFibreFailure = designArgs['useFibreFailure']
 
     # Material
-    materialname = kwargs.get('materialname', 'CFRP_HyMod')
+    materialname = designArgs['materialname']
 
     # Fiber roving parameter
-    hoopLayerThickness = kwargs.get('hoopLayerThickness', 0.125)
-    helixLayerThickenss =kwargs.get('helixLayerThickenss', 0.129)
-    rovingWidth = kwargs.get('rovingWidth', 3.175)
-    numberOfRovings = kwargs.get('numberOfRovings', 4)
+    hoopLayerThickness = designArgs['hoopLayerThickness']
+    helixLayerThickenss =designArgs['helixLayerThickenss']
+    rovingWidth = designArgs['rovingWidth']
+    numberOfRovings = designArgs['numberOfRovings']
     #bandWidth = rovingWidth * numberOfRovings
-    tex = kwargs.get('tex', 446) # g / km
-    rho = kwargs.get('fibreDensity', 1.78)  # g / cm^3
+    tex = designArgs['tex'] # g / km
+    rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
 
+    saveParametersAndResults(designArgs)
 
     # input files
     materialFilename = os.path.join(dataDir, materialname+".json")
@@ -323,11 +330,14 @@ def createWindingDesign(**kwargs):
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
     tankoh2.utilities.copyAsJson(vesselFilename, 'vessel')
-    frpMass, volume, area, composite, iterations, anglesShifts = designLayers(vessel, layersToWind, minPolarOpening,
-                                                                puckProperties, burstPressure, runDir,
-                                                                composite, compositeArgs, verbose, useFibreFailure)
+    results = designLayers(vessel, layersToWind, minPolarOpening,
+                           puckProperties, burstPressure, runDir,
+                           composite, compositeArgs, verbose, useFibreFailure)
 
-    np.savetxt(os.path.join(runDir, 'angles_shifts.txt'), anglesShifts)
+    frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
+    duration = datetime.datetime.now() - startTime
+    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
+    saveParametersAndResults(designArgs, results)
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -352,25 +362,36 @@ def createWindingDesign(**kwargs):
         # vessel.printSimulationStatus()
         composite.info()
 
-    duration = datetime.datetime.now() - startTime
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
-
     log.info('FINISHED')
 
-    resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
-    angles, hoopLayerShifts = np.array(anglesShifts).T
-    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), angles, hoopLayerShifts
-    with open(os.path.join(runDir, 'results.txt'), 'w') as f:
-        f.write(indent([resultNames, results]))
     return results
 
+
+def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
+    filename = 'all_parameters_and_results.txt'
+    runDir = inputKwArgs.get('runDir')
+    outputStr = [
+        'INPUTS\n\n',
+        indent(inputKwArgs.items())
+    ]
+    if results is not None:
+        outputStr += ['\n\nOUTPUTS\n\n',
+                      indent(zip(resultNames, resultUnits, results))]
+    logFunc = log.info if verbose else log.debug
+    logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
+
+    if results is not None:
+        outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
+    with open(os.path.join(runDir, filename), 'w') as f:
+        f.write(''.join(outputStr))
 
 if __name__ == '__main__':
     if 1:
         from existingdesigns import hymodDesign
-        createWindingDesign(**hymodDesign)
+        createWindingDesign(**defaultDesign)
     else:
-        results=[]
+        rs=[]
         lengths = np.linspace(1000.,6000,11)
             #np.array([1]) * 1000
         for l in lengths:
@@ -382,5 +403,5 @@ if __name__ == '__main__':
                                 dzyl=2400,
                                 #minPolarOpening=30.,
                                 )
-            results.append(r)
+            rs.append(r)
         print(indent(results))
