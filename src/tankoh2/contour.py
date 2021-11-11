@@ -68,7 +68,7 @@ def getDome(cylinderRadius, polarOpening, domeType=pychain.winding.DOME_TYPES.IS
     # build  dome
     dome = pychain.winding.Dome()
     dome.buildDome(cylinderRadius, polarOpening, domeType)
-    log.info(f'polar opening vaules {r[-1], polarOpening}')
+    log.info(f'Polar opening {polarOpening}')
              
     if x is not None and r is not None:
         if not np.allclose(r[0], cylinderRadius):
