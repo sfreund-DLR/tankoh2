@@ -17,7 +17,8 @@ from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getPuckLinearResults, getMaxFibreFailureByShift
 from tankoh2.existingdesigns import defaultDesign
 
-resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShift']
+resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultUnits = ['kg', 'dm^2', 'm^2', 'mm', '', '', 's', '°', 'mm']
 
 def printLayer(layerNumber, verbose = False):
     sep = '\n' + '=' * 80
@@ -234,7 +235,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     areaDome = np.pi * (r[:-1] + r[1:]) * np.sqrt((r[:-1] - r[1:]) ** 2 + (x[:-1] - x[1:]) ** 2)
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * np.sum(areaDome)  # [mm**2]
     area *= 1e-6  # [m**2]
-    return frpMass, volume, area, composite, iterations, anglesShifts
+    return frpMass, volume, area, composite, iterations, *(np.array(anglesShifts).T)
 
 
 def createWindingDesign(**kwargs):
@@ -266,15 +267,15 @@ def createWindingDesign(**kwargs):
     domeX, domeR = designArgs['domeContour'] # (x,r)
     minPolarOpening = designArgs['minPolarOpening']  # mm
     dzyl = designArgs['dzyl']  # mm
-    if 'lzyl' in designArgs:
-        lzylinder = designArgs['lzyl']  # mm
-    else:
-        lzylByR = designArgs['lzylByR']  # mm
-        lzylinder = lzylByR * dzyl/2
+    if 'lzyl' not in designArgs:
+        designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
+    lzylinder = designArgs['lzyl']  # mm
 
     # Design
     safetyFactor = designArgs['safetyFactor']
     pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
+    if 'burstPressure' not in designArgs:
+        designArgs['burstPressure'] = safetyFactor * pressure
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
 
@@ -333,8 +334,9 @@ def createWindingDesign(**kwargs):
                            puckProperties, burstPressure, runDir,
                            composite, compositeArgs, verbose, useFibreFailure)
 
-
-    frpMass, volume, area, composite, iterations, anglesShifts = results
+    frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
+    duration = datetime.datetime.now() - startTime
+    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
@@ -360,35 +362,36 @@ def createWindingDesign(**kwargs):
         # vessel.printSimulationStatus()
         composite.info()
 
-    duration = datetime.datetime.now() - startTime
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
-
     log.info('FINISHED')
 
-    angles, hoopLayerShifts = np.array(anglesShifts).T
-    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), angles, hoopLayerShifts
     with open(os.path.join(runDir, 'results.txt'), 'w') as f:
         f.write(indent([resultNames, results]))
     return results
 
 
-def saveParametersAndResults(inputKwArgs, results=None):
+def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
-    with open(os.path.join(runDir, filename), 'w') as f:
-        f.write('INPUTS\n\n')
-        f.write(indent(inputKwArgs.items()))
-        if results is None:
-            return
-        f.write('\n\nOUTPUTS\n\n')
-        f.write(indent(zip([resultNames, results])))
-        f.write('\n'+indent([resultNames, results]))
+    outputStr = [
+        'INPUTS\n\n',
+        indent(inputKwArgs.items())
+    ]
+    if results is not None:
+        outputStr += ['\n\nOUTPUTS\n\n',
+                      indent(zip(resultNames, resultUnits, results))]
+    logFunc = log.info if verbose else log.debug
+    logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
+    if results is not None:
+        outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
+    with open(os.path.join(runDir, filename), 'w') as f:
+        f.write(''.join(outputStr))
 
 if __name__ == '__main__':
     if 1:
         from existingdesigns import hymodDesign
-        createWindingDesign(**hymodDesign)
+        createWindingDesign(**defaultDesign)
     else:
         rs=[]
         lengths = np.linspace(1000.,6000,11)
