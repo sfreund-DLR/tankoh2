@@ -329,6 +329,17 @@ def renameMaterials(model, oldChars, newChars):
             materials.changeKey(fromName=key, toName=newkey)
             sections[key].setValues(material=newkey, thickness=None)    
 
+def removeUMAT(model):
+
+    print("*** REMOVE UMAT AND RE-ASSIGN ABQ-MATERIAL ***")  
+
+    materials = model.materials    
+    sections = model.sections
+
+    for sectionkey in sections.keys():
+        sections[sectionkey].setValues(material=sectionkey, thickness=None) 
+
+
 def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles):
 
 #   create material card for UMAT from material props from given json file
@@ -347,7 +358,7 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
     for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
-        print('key', key)
+        #print('key', key)
         if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
             material = materials[key]            
             propsTemp = materialProps.copy()
@@ -361,8 +372,8 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
             # store ABQ-Definition-Properties
             #AbqMatProps = material.elastic.table
 
-            print('nexKey', newKey)
-            print('sectionkey', sectionkey)
+            #print('nexKey', newKey)
+            #print('sectionkey', sectionkey)
 
             #get band angle from material description
             materialDescription= material.description
