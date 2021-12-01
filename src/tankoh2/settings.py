@@ -69,8 +69,8 @@ def applySettings(filename=None):
 
     if not pychainActive:
         # len(pychain.__dict__) was 8 on failure and 17 on success
-        raise Tankoh2Error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
-
+        log.error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
+    else:
         # set general path information
         global myCrOSettings
         myCrOSettings = pychain.utility.MyCrOSettings()
