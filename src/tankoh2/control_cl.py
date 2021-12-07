@@ -2,7 +2,7 @@
 
 import sys
 import statistics
-from tankoh2.existingdesigns import NGTBITDesign
+from tankoh2.existingdesigns import kautextDesign, NGTBITDesign
 #from builtins import True, False
 #from builtins import
 
@@ -305,12 +305,14 @@ def builtVesselByOptimizedDesign(design, domeContourFilename):
     # create liner x,r data
     dpoints = 4
     runDir = getRunDir()
-    fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
-    x, r = getReducedDomePoints(domeContourFilename,
+    if domeContourFilename == None:
+        createWindingDesign(**design)
+    else:
+        fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
+        x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
-    
-    # start design optimization with specified design and given (x,r)-liner contour data
-    createWindingDesign(**design, domeContour = (x,r), runDir=runDir)
+        # start design optimization with specified design and given (x,r)-liner contour data
+        createWindingDesign(**design, domeContour = (x,r), runDir=runDir)
 
 def main():
 
@@ -361,10 +363,12 @@ def main():
 
 # - Optimized Design regarding sepcific parameters
     createDesign = True
-    design = NGTBITDesign
+    #design = tankoh2.existingdesigns.NGTBITDesign
+    design = kautextDesign
     tankname = design.get('tankname')    
     dataDir = os.path.join(programDir, 'data')
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")    
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
+    #domeContourFilename = None    
     
 
 

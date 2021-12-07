@@ -72,4 +72,40 @@ NGTBITDesign = OrderedDict([('tankname', 'NGT-BIT-2020-09-16'),
                             ('maxlayers', 200)
                             ])
 
+kautextDesign = OrderedDict([
+                             # General
+                             ('tankname', 'Kautext'),
+                             #('nodeNumber', 500),  # might not exactly be matched due to approximations
+                             ('dataDir', os.path.join(programDir, 'data')),
+                             ('verbose', False),
+
+                             # Optimization
+                             ('maxlayers', 100),
+
+                             # Geometry
+                             #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
+                             #('domeContour', (None, None)),  # (x,r)
+                             ('minPolarOpening', 4.572604469),  # mm
+                             ('dzyl', 260.),  # mm
+                             ('lzyl', 588.), #mm
+                             #('lzylByR', 2.5),
+
+                             # Design
+                             ('safetyFactor', 2.0),
+                             ('pressure', 70.),  # pressure in MPa (bar / 10.)
+                             ('useFibreFailure', True),
+
+                             # Material
+                             ('materialname', 'CFRP_T700SC_LY556'),
+
+                             # Fiber roving parameter
+                             ('hoopLayerThickness', 0.125),
+                             ('helixLayerThickenss', 0.129),
+                             ('rovingWidth', 3.175),
+                             ('numberOfRovings', 12),
+                             # bandWidth = rovingWidth * numberOfRovings
+                             ('tex', 800),  # g / km
+                             ('fibreDensity', 1.78),  # g / cm^3
+                             ])
+
 
