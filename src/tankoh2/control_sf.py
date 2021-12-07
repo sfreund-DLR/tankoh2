@@ -284,7 +284,7 @@ def createWindingDesign(**kwargs):
 
     # Fiber roving parameter
     hoopLayerThickness = designArgs['hoopLayerThickness']
-    helixLayerThickenss =designArgs['helixLayerThickenss']
+    helixLayerThickenss = designArgs['helixLayerThickenss']
     rovingWidth = designArgs['rovingWidth']
     numberOfRovings = designArgs['numberOfRovings']
     #bandWidth = rovingWidth * numberOfRovings
@@ -371,6 +371,7 @@ def createWindingDesign(**kwargs):
 def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
+    np.set_printoptions(linewidth=np.inf) # to put arrays in one line
     outputStr = [
         'INPUTS\n\n',
         indent(inputKwArgs.items())
@@ -385,11 +386,21 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
         outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
     with open(os.path.join(runDir, filename), 'w') as f:
         f.write(''.join(outputStr))
+    np.set_printoptions(linewidth=75) # reset to default
 
 if __name__ == '__main__':
-    if 1:
+    if 0:
         from existingdesigns import hymodDesign
         createWindingDesign(**defaultDesign)
+    elif 0:
+        createWindingDesign(pressure=5)
+    elif 1:
+        from tankoh2.contourcreator import getCountourConical
+        designArgs = defaultDesign.copy()
+        x,r = getCountourConical(designArgs['minPolarOpening'], 60, designArgs['dzyl']/2, 140)
+        designArgs['domeContour'] = x,r
+        designArgs['dzyl'] = r[0] * 2
+        createWindingDesign(**designArgs)
     else:
         rs=[]
         lengths = np.linspace(1000.,6000,11)

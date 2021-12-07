@@ -26,8 +26,11 @@ try:
     # v <= 0.90
     import mycropychain as pychain
 except ModuleNotFoundError:
-    # v > 0.90
-    if sys.version_info.minor == '6':
-        import mycropychain36 as pychain
-    else:  # sys.version_info.minor == '8'
-        import mycropychain38 as pychain
+    try:
+        # v > 0.90
+        if sys.version_info.minor == '6':
+            import mycropychain36 as pychain
+        else:  # sys.version_info.minor == '8'
+            import mycropychain38 as pychain
+    except ModuleNotFoundError:
+        log.error('Colud not load mycropychain package')

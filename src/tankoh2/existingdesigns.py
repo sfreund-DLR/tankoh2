@@ -15,7 +15,7 @@ defaultDesign = OrderedDict([
                              ('maxlayers', 100),
 
                              # Geometry
-                             ('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
+                             ('domeType', None),  # default: ISOTENSOID (OR CIRCLE) in pychain.winding.DOME_TYPES
                              ('domeContour', (None, None)),  # (x,r)
                              ('minPolarOpening', 20),  # mm
                              ('dzyl', 400.),  # mm
