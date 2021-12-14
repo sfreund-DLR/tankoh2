@@ -15,9 +15,9 @@ defaultDesign = OrderedDict([
                              ('maxlayers', 100),
 
                              # Geometry
-                             ('domeType', None),  # default: ISOTENSOID (OR CIRCLE) in pychain.winding.DOME_TYPES
+                             ('domeType', 'ISOTENSOID'),  # [isotensoid, circle], if None isotensoid is used
                              ('domeContour', (None, None)),  # (x,r)
-                             ('minPolarOpening', 20),  # mm
+                             ('minPolarOpening', 20),  # mm, radius
                              ('dzyl', 400.),  # mm
                              ('lzylByR', 2.5),
 
@@ -43,7 +43,8 @@ defaultDesign = OrderedDict([
 # 12mm thickness in cylindrical section
 #
 
-hymodDesign = OrderedDict([('burstPressure', 77.85),
+hymodDesign = OrderedDict([('tankname', 'hymodDesign'),
+                           ('burstPressure', 77.85),
                            ('lzyl', 1000.),
                            ('minPolarOpening', 23),
                            ('dzyl', 300.)
@@ -71,5 +72,18 @@ NGTBITDesign = OrderedDict([('tankname', 'NGT-BIT-2020-09-16'),
                             # optimizer settings
                             ('maxlayers', 200)
                             ])
+
+vphDesign1 = OrderedDict([('tankname', 'vph_design1'),
+                          ('lzyl', 3218.8),
+                          ('dzyl', 1200.*2),
+                          ('safetyFactor', 2.25 * 1.1),
+                          #('pressure', .2),  # pressure in MPa (bar / 10.)
+                          ('minPolarOpening', 120),
+                          ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
+                          ('pressure', .2),
+                          ])
+
+
+
 
 

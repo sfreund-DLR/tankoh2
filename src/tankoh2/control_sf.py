@@ -6,7 +6,7 @@ import datetime
 
 import tankoh2.utilities
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, getTimeString, plotContour
+from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, plotContour, plotThicknesses, getTimeString
 from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
@@ -223,8 +223,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         thicknesses = getLayerThicknesses(vessel)
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts)]
         thicknesses.columns=columns
-        plotDataFrame(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses,
-                      yLabel='layer thicknesses')
+        plotThicknesses(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses)
 
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
@@ -251,6 +250,12 @@ def createWindingDesign(**kwargs):
     kwargs['runDir'] = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     designArgs = defaultDesign.copy()
     designArgs.update(kwargs)
+    removeIfIncluded = [('lzylByR', 'lzyl'),
+                        ('pressure', 'burstPressure'),
+                        ('safetyFactor', 'burstPressure')]
+    for removeIt, included in removeIfIncluded:
+        if included in designArgs:
+            designArgs.pop(removeIt)
 
     # General
     tankname = designArgs['tankname']
@@ -272,9 +277,9 @@ def createWindingDesign(**kwargs):
     lzylinder = designArgs['lzyl']  # mm
 
     # Design
-    safetyFactor = designArgs['safetyFactor']
-    pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
     if 'burstPressure' not in designArgs:
+        safetyFactor = designArgs['safetyFactor']
+        pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
         designArgs['burstPressure'] = safetyFactor * pressure
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
@@ -384,8 +389,10 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
 
     if results is not None:
         outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
+    outputStr = ''.join(outputStr)
     with open(os.path.join(runDir, filename), 'w') as f:
-        f.write(''.join(outputStr))
+        f.write(outputStr)
+    log.info('Inputs, Outputs:\n'+ outputStr)
     np.set_printoptions(linewidth=75) # reset to default
 
 if __name__ == '__main__':
@@ -394,6 +401,9 @@ if __name__ == '__main__':
         createWindingDesign(**defaultDesign)
     elif 0:
         createWindingDesign(pressure=5)
+    elif 1:
+        from tankoh2.existingdesigns import vphDesign1
+        createWindingDesign(**vphDesign1)
     elif 1:
         from tankoh2.contourcreator import getCountourConical
         designArgs = defaultDesign.copy()
