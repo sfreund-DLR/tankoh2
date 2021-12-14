@@ -23,6 +23,7 @@ defaultDesign = OrderedDict([
 
                              # Design
                              ('safetyFactor', 2.25),
+                             ('valveReleaseFactor', 1.1), # factor for the valve release at burst pressure
                              ('pressure', 5.),  # pressure in MPa (bar / 10.)
                              ('useFibreFailure', True),
 
@@ -76,11 +77,10 @@ NGTBITDesign = OrderedDict([('tankname', 'NGT-BIT-2020-09-16'),
 vphDesign1 = OrderedDict([('tankname', 'vph_design1'),
                           ('lzyl', 3218.8),
                           ('dzyl', 1200.*2),
-                          ('safetyFactor', 2.25 * 1.1),
-                          #('pressure', .2),  # pressure in MPa (bar / 10.)
+                          ('safetyFactor', 2.25),
+                          ('pressure', .2),  # pressure in MPa (bar / 10.)
                           ('minPolarOpening', 120),
                           ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
-                          ('pressure', .2),
                           ])
 
 

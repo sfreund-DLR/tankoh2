@@ -252,7 +252,9 @@ def createWindingDesign(**kwargs):
     designArgs.update(kwargs)
     removeIfIncluded = [('lzylByR', 'lzyl'),
                         ('pressure', 'burstPressure'),
-                        ('safetyFactor', 'burstPressure')]
+                        ('safetyFactor', 'burstPressure'),
+                        ('valveReleaseFactor', 'burstPressure'),
+                        ]
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
             designArgs.pop(removeIt)
@@ -280,7 +282,8 @@ def createWindingDesign(**kwargs):
     if 'burstPressure' not in designArgs:
         safetyFactor = designArgs['safetyFactor']
         pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
-        designArgs['burstPressure'] = safetyFactor * pressure
+        valveReleaseFactor = designArgs['valveReleaseFactor']
+        designArgs['burstPressure'] = safetyFactor * pressure * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
 
