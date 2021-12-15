@@ -25,6 +25,8 @@ defaultDesign = OrderedDict([
     ('safetyFactor', 2.25),
     ('valveReleaseFactor', 1.1),  # factor for the valve release at burst pressure
     ('pressure', 5.),  # pressure in MPa (bar / 10.)
+    ('useHydrostaticPressure', True),  # according to 25.963 (d)
+    ('tankLocation', 'wing_at_engine'),  # [wing_no_engine, wing_at_engine, fuselage]
     ('useFibreFailure', True),
 
     # Material

@@ -4,10 +4,9 @@ import os, sys
 import numpy as np
 import datetime
 
-import tankoh2.utilities
 from tankoh2 import programDir, log, pychain
 from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, plotContour, plotThicknesses, getTimeString
-from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses
+from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses, getHydrostaticPressure
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
 from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
@@ -254,6 +253,8 @@ def createWindingDesign(**kwargs):
                         ('pressure', 'burstPressure'),
                         ('safetyFactor', 'burstPressure'),
                         ('valveReleaseFactor', 'burstPressure'),
+                        ('useHydrostaticPressure', 'burstPressure'),
+                        ('tankLocation', 'burstPressure'),
                         ]
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
@@ -277,13 +278,18 @@ def createWindingDesign(**kwargs):
     if 'lzyl' not in designArgs:
         designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
     lzylinder = designArgs['lzyl']  # mm
+    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
+    length = lzylinder + 2 * dome.domeLength
 
     # Design
     if 'burstPressure' not in designArgs:
         safetyFactor = designArgs['safetyFactor']
         pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
         valveReleaseFactor = designArgs['valveReleaseFactor']
-        designArgs['burstPressure'] = safetyFactor * pressure * valveReleaseFactor
+        useHydrostaticPressure = designArgs['useHydrostaticPressure']
+        tankLocation = designArgs['tankLocation']
+        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dzyl) if useHydrostaticPressure else 0.
+        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
 
@@ -313,7 +319,6 @@ def createWindingDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
     liner = getLiner(dome, lzylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r3 = 40.
@@ -337,7 +342,7 @@ def createWindingDesign(**kwargs):
     # run winding simulation
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
-    tankoh2.utilities.copyAsJson(vesselFilename, 'vessel')
+    copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, minPolarOpening,
                            puckProperties, burstPressure, runDir,
                            composite, compositeArgs, verbose, useFibreFailure)

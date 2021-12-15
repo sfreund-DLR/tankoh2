@@ -9,6 +9,7 @@ import json
 import shutil
 import pandas as pd
 import numpy as np
+from scipy import interpolate
 
 from tankoh2.exception import Tankoh2Error
 
@@ -125,26 +126,79 @@ def updateName(jsonFilename, name, objsName, attrName='name'):
     item[attrName] = name
     with open(jsonFilename, "w") as jsonFile:
         json.dump(data, jsonFile, indent=4)
-        
+
 def changeSimulationOptions(vesselFilename, nLayers, minThicknessValue, hoopLayerCompressionStart):
-    """changes simulation options for all layers by modifying .vessel (json) file  
+    """changes simulation options for all layers by modifying .vessel (json) file
 
     The given json file vesselFilename will be updated in place
 
     :param vesselFilename: name of vessel file (*.vessel)
     :param nLayers: number of layers to be wind
-    
+
     """
-    
+
     with open(vesselFilename) as jsonFile:
         data = json.load(jsonFile)
-    
-    for n in range(1, nLayers+1):        
+
+    for n in range(1, nLayers+1):
         data["vessel"]["simulationOptions"]["thicknessOptions"][str(n)]["minThicknessValue"] = minThicknessValue
         data["vessel"]["simulationOptions"]["thicknessOptions"][str(n)]["hoopLayerCompressionStart"] = hoopLayerCompressionStart
-    
+
     with open(vesselFilename, "w") as jsonFile:
-        json.dump(data, jsonFile, indent=4)        
+        json.dump(data, jsonFile, indent=4)
+
+# properties at equilibrium pressure
+lh2Properties = pd.DataFrame(
+    np.array([[13.96, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 33.19],
+              [0.00770, 0.00789, 0.0215, 0.0481, 0.0932, 0.163, 0.264, 0.403, 0.585, 0.850, 1.12, 1.33],
+              [76.91, 76.87, 75.12, 73.22, 71.11, 68.73, 66.00, 62.80, 58.92, 53.84, 45.64, 30.12]]).T,
+    columns=['T', 'p', 'roh'])  # 'T [K]', 'p [Mpa]', 'roh [kg/m^3]'
+gh2Properties = pd.DataFrame(
+    np.array([[13.96, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 33.19],
+              [0.0077, 0.00789, 0.0215, 0.0481, 0.0932, 0.163, 0.264, 0.403, 0.585, 0.85, 1.12, 1.33],
+              [0.1362, 0.1391, 0.338, 0.688, 1.243, 2.067, 3.244, 4.9, 7.258, 10.81, 17.5, 30.12]]).T,
+    columns=['T', 'p', 'roh'])  # 'T [K]', 'p [Mpa]', 'roh [kg/m^3]'
+rhoLh2 = interpolate.interp1d(lh2Properties['T'], lh2Properties['roh'])
+rhoGh2 = interpolate.interp1d(gh2Properties['T'], gh2Properties['roh'])
+pressureLh2 = interpolate.interp1d(lh2Properties['T'], lh2Properties['p'])
+pressureGh2 = interpolate.interp1d(gh2Properties['T'], gh2Properties['p'])
+g = 9.81
+
+def getHydrostaticPressure(tankLocation, length, diameter, baffleDist = None):
+    """Calculate hydrostatic pressure according to CS 25.963 (d)
+    :param tankLocation: location of tank ['wing_no_engine', 'wing_at_engine', 'fuselage']
+    :param length: inner length of tank [mm]
+    :param diameter: inner diameter of tank [mm]
+    :param baffleDist: distance of horizontal baffles dividing the tank in length direction [mm]
+    :return: hydrostatic pressure [MPa]
+    """
+    validLocations = ['wing_no_engine', 'wing_at_engine', 'fuselage']
+    if tankLocation not in validLocations:
+        raise Tankoh2Error(f'Only {validLocations} allowed for '
+                           f'parameter wingOrFuselage. Got "{tankLocation}"')
+
+    if baffleDist is not None:
+        length = baffleDist
+    length, diameter = length / 1000, diameter / 1000  # convert to [m]
+    rho = rhoLh2(21)
+    # 25.963 (d)(1)
+    # loadFac: forward, inboard/outboard, downward
+    loadFac = np.array([9., 3., 6] if tankLocation == 'fuselage' else [4.5, 1.5, 6])
+    lengths = np.array([length, diameter, diameter])
+    hPressured1 = loadFac * lengths * rho * g
+
+    # 25.963 (d)(2)(ii)(A)
+    # not applied, in this calculation it is always equal or  greater than 25.963 (d)(2)(ii)(B)
+    # might be different if dynamic sloshing is considered
+
+    # 25.963 (d)(2)(ii)(B)
+    loadFac = np.array([9., 1.5, 6] if tankLocation == 'wing_at_engine' else [0, 0, 0])
+    lengths = np.array([length, diameter, diameter * 0.85])
+    hPressured2iiB = loadFac * lengths * rho * g
+
+    hPressure = np.max(np.max([hPressured1, hPressured2iiB])) / 1e6
+    return hPressure
+
 
 
 def getTankCycleData():
