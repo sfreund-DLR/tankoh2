@@ -60,18 +60,25 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
     """
 
     :param cylinderRadius: radius of the cylinder
-    :param polarOpening: polar opening
+    :param polarOpening: polar opening radius
     :param domeType: pychain.winding.DOME_TYPES.ISOTENSOID or pychain.winding.DOME_TYPES.CIRCLE
     :param x: x-coordinates of a custom dome contour
     :param r: radius-coordinates of a custom dome contour. r[0] starts at cylinderRadius
     """
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
+    elif isinstance(domeType, str):
+        domeType = domeType.lower()
+        if domeType == 'isotensoid':
+            domeType = pychain.winding.DOME_TYPES.ISOTENSOID
+        elif domeType == 'circle':
+            domeType = pychain.winding.DOME_TYPES.CIRCLE
+        else:
+            raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: [isotensoid, circle]')
     # build  dome
     dome = pychain.winding.Dome()
     dome.buildDome(cylinderRadius, polarOpening, domeType)
-    log.info(f'Polar opening {polarOpening}')
-             
+
     if x is not None and r is not None:
         if not np.allclose(r[0], cylinderRadius):
             raise Tankoh2Error('cylinderRadius and r-vector do not fit')
@@ -91,8 +98,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         
     # create a symmetric liner with dome information and cylinder length
     liner = pychain.winding.Liner()
-    log.info(dir(pychain.winding.Liner))
-      
+
     # spline for winding calculation is left on default of 1.0
     if dome2:
         contourLength = length + domeContourLength(dome) + domeContourLength(dome2)

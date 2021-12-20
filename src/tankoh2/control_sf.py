@@ -4,10 +4,9 @@ import os, sys
 import numpy as np
 import datetime
 
-import tankoh2.utilities
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, getTimeString, plotContour
-from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses
+from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, plotContour, plotThicknesses, getTimeString
+from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses, getHydrostaticPressure
 from tankoh2.contour import getLiner, getDome
 from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
 from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
@@ -223,8 +222,7 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
         thicknesses = getLayerThicknesses(vessel)
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts)]
         thicknesses.columns=columns
-        plotDataFrame(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses,
-                      yLabel='layer thicknesses')
+        plotThicknesses(show, os.path.join(runDir, f'thicknesses_{getTimeString()}.png'), thicknesses)
 
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
@@ -251,6 +249,16 @@ def createWindingDesign(**kwargs):
     kwargs['runDir'] = kwargs['runDir'] if 'runDir' in kwargs else getRunDir()
     designArgs = defaultDesign.copy()
     designArgs.update(kwargs)
+    removeIfIncluded = [('lzylByR', 'lzyl'),
+                        ('pressure', 'burstPressure'),
+                        ('safetyFactor', 'burstPressure'),
+                        ('valveReleaseFactor', 'burstPressure'),
+                        ('useHydrostaticPressure', 'burstPressure'),
+                        ('tankLocation', 'burstPressure'),
+                        ]
+    for removeIt, included in removeIfIncluded:
+        if included in designArgs:
+            designArgs.pop(removeIt)
 
     # General
     tankname = designArgs['tankname']
@@ -270,12 +278,18 @@ def createWindingDesign(**kwargs):
     if 'lzyl' not in designArgs:
         designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
     lzylinder = designArgs['lzyl']  # mm
+    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
+    length = lzylinder + 2 * dome.domeLength
 
     # Design
-    safetyFactor = designArgs['safetyFactor']
-    pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
     if 'burstPressure' not in designArgs:
-        designArgs['burstPressure'] = safetyFactor * pressure
+        safetyFactor = designArgs['safetyFactor']
+        pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
+        valveReleaseFactor = designArgs['valveReleaseFactor']
+        useHydrostaticPressure = designArgs['useHydrostaticPressure']
+        tankLocation = designArgs['tankLocation']
+        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dzyl) if useHydrostaticPressure else 0.
+        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
 
@@ -305,7 +319,6 @@ def createWindingDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
     liner = getLiner(dome, lzylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r3 = 40.
@@ -329,7 +342,7 @@ def createWindingDesign(**kwargs):
     # run winding simulation
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
-    tankoh2.utilities.copyAsJson(vesselFilename, 'vessel')
+    copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, minPolarOpening,
                            puckProperties, burstPressure, runDir,
                            composite, compositeArgs, verbose, useFibreFailure)
@@ -384,8 +397,10 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
 
     if results is not None:
         outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
+    outputStr = ''.join(outputStr)
     with open(os.path.join(runDir, filename), 'w') as f:
-        f.write(''.join(outputStr))
+        f.write(outputStr)
+    log.info('Inputs, Outputs:\n'+ outputStr)
     np.set_printoptions(linewidth=75) # reset to default
 
 if __name__ == '__main__':
@@ -394,6 +409,9 @@ if __name__ == '__main__':
         createWindingDesign(**defaultDesign)
     elif 0:
         createWindingDesign(pressure=5)
+    elif 1:
+        from tankoh2.existingdesigns import vphDesign1
+        createWindingDesign(**vphDesign1)
     elif 1:
         from tankoh2.contourcreator import getCountourConical
         designArgs = defaultDesign.copy()

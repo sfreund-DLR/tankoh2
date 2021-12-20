@@ -44,7 +44,8 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
 
     ax = next(axs)
     ax.set_title('puck fibre failure')
-    plotDataFrame(show, filename, puckFF, ax)
+    puckFF.plot(ax=ax)
+    ax.legend(loc='lower left')
 
     ax = next(axs)
     ax.set_title('puck inter fibre failure')
@@ -56,6 +57,20 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     if show:
         plt.show()
     plt.close(fig)
+
+def plotThicknesses(show, filename, thicknesses):
+    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
+    plotDataFrame(show, None, thicknesses, axes=axs[0], title='Layer thicknesses', yLabel='thickness [mm]',
+                  xLabel='contour coordinate')
+    plotDataFrame(show, None, thicknesses, axes=axs[1], title='Cumulated layer thickness', yLabel='thickness [mm]',
+                  xLabel='contour coordinate', plotKwArgs={'stacked':True})
+
+    if filename:
+        plt.savefig(filename)
+    if show:
+        plt.show()
+    plt.close(fig)
+
 
 def plotContour(show, filename, x, r):
     fig, axs = plt.subplots(1, 2, figsize=(17, 5))
@@ -73,7 +88,7 @@ def plotContour(show, filename, x, r):
     plt.close(fig)
 
 def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None,
-                  yLabel=None, xLabel='Contour coordinate'):
+                  yLabel=None, xLabel='Contour coordinate', plotKwArgs = None):
     """plots puck properties
 
     :param show: show the plot created
@@ -87,9 +102,10 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         ax = fig.gca()
     else:
         ax = axes
-
-    dataframe.plot(ax=ax)
-    legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'lower left'}
+    if plotKwArgs is None:
+        plotKwArgs = {}
+    dataframe.plot(ax=ax, **plotKwArgs)
+    legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'best'}
     ax.legend(**legendKwargs)
     ax.set(xlabel=xLabel,
            ylabel='' if yLabel is None else yLabel,
@@ -218,7 +234,7 @@ def wrap_npstr(text):
     np-arrays are returned as string without newline symbols that are usually returned by np.ndarray.__str__()
     """
     if isinstance(text, np.ndarray):
-        text = str(text).replace('\n', '').replace('   ', ', ').replace('  -', ', -')
+        text = str(text).replace('\n', '').replace('  -', ', -')
     return text
 
 
