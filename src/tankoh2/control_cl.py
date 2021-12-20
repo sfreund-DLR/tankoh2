@@ -364,7 +364,7 @@ def main():
 # - Optimized Design regarding sepcific parameters
     createDesign = True
     #design = tankoh2.existingdesigns.NGTBITDesign
-    design = kautextDesign
+    design = tankoh2.existingdesigns.NGTBITDesign_small
     tankname = design.get('tankname')    
     dataDir = os.path.join(programDir, 'data')
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")

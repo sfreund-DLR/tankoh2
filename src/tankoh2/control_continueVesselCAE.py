@@ -7,6 +7,7 @@
 
 ###############################################################################
 import sys
+#from typing import ValuesView
 
 sys.path.append('C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//src//tankoh2')
 import os
@@ -42,14 +43,16 @@ def main():
 #    %%%%%%%%%%%%% DEFINE PARAMETER %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 # ------- general    
-    #modelname = 'NGT-BIT-2020-09-16_Solid3D'
+    #modelname = 'NGT-BIT-2020-09-16_10_Solid3D' 
     #modelname = 'NGT-BIT-2020-10-15_AxSolid'
     #modelname = 'CcH2_Subscale_Axis'
-    modelname = "NGT-BIT-OPT-2021-11-05_AxSolid"
+    #modelname = "NGT-BIT-OPT-2021-11-05_AxSolid"
+    modelname = 'NGT-BIT-small_Solid3D'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"    
     rzylinder = 200. # radius of cylindrical part
-    lzylinder = 500. # length of cylindrical part
+    lzylinder = 290. # length of cylindrical part
     nMandrels = 1 # number of mandrels
+    layerPartPrefix = 'Layer'
     reveloveAngle = 1.
     
 # ------- Liner        
@@ -65,9 +68,10 @@ def main():
     UMATprefix = "MCD_SHOKRIEH"    
     AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
-    degr_fac = 1.0 # degradation factor for material properties after failure initiation
+    #nDepvar = 156 # number of solution dependen variables
+    degr_fac = 0.1 # degradation factor for material properties after failure initiation
     createUMAT = False
-    removeUMAT = True
+    removeUMAT = False
 
 # ------------------- rename Material
     oldChars = '_ABQMAT'
@@ -86,8 +90,35 @@ def main():
 # ------- Boundary Conditions
     exceptionSets = ("Fitting1.contactFacesWinding", "Mandrel1_Layer_2.FittingContact")
     createPeriodicBCs = False
-    
 
+# -------- Step-Definition
+
+    steptime = [1.0, ]
+    minInk = [1.0E-6, ]
+    startInk = [0.01, ]
+    maxInk = [0.05, ]
+    stab = [4.0E-6, ]
+    maxNumInk = [5000, ]
+    NLGEOM = [ON, ]
+    
+    createStepDefinition = False
+
+# ------ Output definition
+
+    dt = 0.05 # time interval for output request; set 0 if no reuqest per time interval
+    dnInk = 10 # interval of increment number for output request; set 0 if no reuqest per increment number
+    fieldVariables = ('S','SDV', 'LE', 'P', 'U')
+    historyVariables = () # leave empty if no history output
+    createOutputDefinition = False
+
+# ---------- Load Definition
+
+    pressure = 250 # bar
+    valveForce = 0.
+    createLoadDefinition = True
+
+
+############# START
 
     now = datetime.now()
     current_time = now.strftime("%H:%M:%S")  
@@ -96,7 +127,7 @@ def main():
     getModel(modelname)
     
     if remesh == True:
-        cvc.reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle)
+        cvc.reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle, parts)
 
     if createLiner == True:
         cvc.loadDomeContourToSketch(domefile, rzylinder, lzylinder, linerthickness)
@@ -109,7 +140,19 @@ def main():
 
     if renameMaterials:
         cvc.renameMaterials(model, oldChars, newChars)
+    
+    if createStepDefinition:
+        cvc.createStepDefinition(steptime, minInk, maxInk, startInk, maxNumInk, stab, NLGEOM, model)
 
+    if createOutputDefinition:
+        
+        if maxInk > dt:
+            print ('WARNING: maximal increment size is larger then output frequency. Output frequency is increased to fit maximum increment size')
+            dt = max(maxInk) 
+        cvc.createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables)
+
+    if createLoadDefinition:
+        cvc.createLoads(model)
 
     if createPeriodicBCs:
         cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets)

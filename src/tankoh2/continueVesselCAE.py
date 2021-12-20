@@ -12,6 +12,8 @@ import numpy as np
 import json
 import mesh
 from datetime import datetime
+from symbolicConstants import *
+from abaqusConstants import *
 
 def getModel(projectname):  
 
@@ -571,7 +573,7 @@ def getAngleBetweenEdges(edges, partVertices):
 
     return (alpha*180)/np.pi
 
-def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle):
+def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle, parts):
 
 #   sets mesh seeds at the leyer edges which represent the layer thickness
 #   sets wedge elements for regions which are limited by edges with very small angles (e.g. narrow ends of layers)
@@ -638,7 +640,7 @@ def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle
             part.generateMesh()
     
 
-def reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle):
+def reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle, parts):
 
 #   remesh the vessel with given mesh options
 #
@@ -648,7 +650,9 @@ def reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle):
 # input elementsPerLayerThickness   : numer of elements desired per layer thickness, integer
 # input minAngle                    : minimum anlge for using hex elements (for regions with lower angles, wedge elements are set)
     
-    seedLayerThicknessEdges(layerPartPrefix, int(elementsPerLayerThickness), minAngle)
+    print('*** START REMESHING PART ***')
+    seedLayerThicknessEdges(layerPartPrefix, int(elementsPerLayerThickness), minAngle, parts)
+    print('***  REMESHING PART FINISHED ***')
 
 #def createCorrespondingCSYS(setName1, setName2, partname):
 #
@@ -728,3 +732,60 @@ def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets):
         else:
             # list reference face at xy-plane (z=0) at first!
             createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables)                 
+
+
+def createStepDefinition(steptime, minInk, maxInk, startInk, maxNumInk, stab, NLGEOM, model):
+
+    nstep = -2 # start with -2 vor dont counting inital step
+    for step in model.steps.keys():
+    
+        nstep = nstep +1 
+        
+        if not step == 'Initial':
+            print('Set values for Step '+step)
+            model.steps[step].setValues(timePeriod=steptime[nstep], stabilizationMagnitude=stab[nstep], stabilizationMethod=DISSIPATED_ENERGY_FRACTION, continueDampingFactors=False, 
+            adaptiveDampingRatio=None, initialInc=startInk[nstep], minInc=minInk[nstep], maxInc=maxInk[nstep], nlgeom = NLGEOM[nstep], maxNumInc=maxNumInk[nstep])
+
+def createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables):
+
+    print('*** CREATE OUTPUT DEFINITION ***')
+    count_field_output = 1
+    count_history_output = 1
+
+    # delete already defined output to overwrite
+    for output in (model.fieldOutputRequests.keys()):
+        print('delete', output)
+        del model.fieldOutputRequests[str(output)]
+    for output in (model.historyOutputRequests.keys()):
+        print('delete', output)
+        del model.fieldOutputRequests[str(output)]
+
+    # create new output for all steps
+    for step in model.steps.keys():
+
+        if not step == 'Initial':
+            if len(fieldVariables) > 0:
+                if dnInk > 0:
+
+                    model.FieldOutputRequest(name='F-Output-'+str(count_field_output), createStepName=step, variables=fieldVariables, frequency=dnInk)
+                    count_field_output = count_field_output+1
+                if dt > 0:                    
+                    model.FieldOutputRequest(name = 'F-Output-'+str(count_field_output), createStepName=step, variables=fieldVariables, timeInterval=dt)
+                    count_field_output = count_field_output+1
+
+
+            if len(historyVariables) > 0:
+                if dnInk > 0:
+                    model.HistoryOutputRequests(name = 'F-Output-'+str(count_history_output), createStepName=step, variables=historyVariables, frequency=dnInk)
+                    count_history_output = count_history_output+1
+                if dt > 0:
+                    model.HistoryOutputRequests(name = 'F-Output-'+str(count_history_output), createStepName=step, variables=historyVariables, timeInterval=dt)
+                    count_history_output = count_history_output+1
+    
+    print('*** OUTPUT DEFINITION FINISHED ***')
+
+def createLoads(model, valveForce):
+    
+    if 'Fitting_1_axialValveForce' in model.loads.keys() and valveForce == 0.:
+        del model.loads['Fitting_1_axialValveForce']
+
