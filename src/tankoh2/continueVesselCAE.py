@@ -14,6 +14,7 @@ import mesh
 from datetime import datetime
 from symbolicConstants import *
 from abaqusConstants import *
+import regionToolset
 
 def getModel(projectname):  
 
@@ -286,7 +287,7 @@ def getPropsFromJson(materialPath, materialName):
 
     return props
 
-def getNumberOfLayerParts(layerPartPrefix):
+def getNumberOfLayerParts(layerPartPrefix, parts):
 
 # returns number of parts with names beginning with "layerPartPrefix"    
 #
@@ -842,3 +843,48 @@ def createLoads(model, valveForce, pressure):
     
     print('*** LOAD DEFINITION CREATED ***')
 
+
+def getAssemblyRegionFromPartAndSet(partname, setname, assembly):
+
+    print('Part', partname)
+    strings = assembly.instances.keys()
+    instanceKey = [string for string in strings if partname in string]
+    print('Instance', instanceKey)
+    Region = assembly.instances[instanceKey[0]].surfaces[setname]
+
+    return Region
+
+def adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact):
+
+    nLayers = getNumberOfLayerParts(layerPartPrefix, parts)
+
+    for layer in range(nLayers):
+        print('--- Layer no', layer+1)        
+        strings = model.interactions.keys()
+        contactKeys = [string for string in strings if 'Layer_'+str(layer+1) in string]
+        print(contactKeys)
+
+        if len(contactKeys) > 0. and not useContact: # TIE should be defined
+
+            
+            for contact in contactKeys:
+                # get contact partners
+                print('# get contact partners')
+                slave = model.interactions[contact].slave
+                master = model.interactions[contact].master       
+
+                slaveRegion = getAssemblyRegionFromPartAndSet(slave[1], slave[0], assembly)
+                #assembly.instances['Mandrel1_'+slave[1]].surfaces[slave[0]]
+                masterRegion = getAssemblyRegionFromPartAndSet(master[1], master[0], assembly)
+                #masterRegion = assembly.instances['Mandrel1_'+master[1]].surfaces[master[0]]
+                print(slaveRegion)
+
+                # define TIE
+                print('# define tie')
+                model.Tie(name = contact, master = masterRegion, slave = slaveRegion, adjust=ON, tieRotations=ON)
+                # supress contact
+                #model.interactions[contact].suppress()
+
+                
+
+            

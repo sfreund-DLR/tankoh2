@@ -89,13 +89,13 @@ def main():
 
 # ------- Boundary Conditions
     exceptionSets = ("Fitting1.contactFacesWinding", "Mandrel1_Layer_1.FittingContact")
-    createPeriodicBCs = True
+    createPeriodicBCs = False
 
 # -------- Step-Definition
 
     steptime = [1.0, ]
     minInk = [1.0E-6, ]
-    startInk = [0.01, ]
+    startInk = [0.001, ]
     maxInk = [0.05, ]
     stab = [4.0E-6, ]
     maxNumInk = [5000, ]
@@ -117,6 +117,10 @@ def main():
     valveForce = 0.
     createLoadDefinition = False
 
+# ----------- Layer connection
+
+    useContact = False # True -- use contact, False -- use Tie
+    checkLayerConnection = True
 
 ############# START
 
@@ -157,8 +161,8 @@ def main():
     if createPeriodicBCs:
         cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model) # 
 
-    # step definition
-    # generate output
+    if checkLayerConnection:
+        cvc.adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact)        
 
 
     now = datetime.now()
