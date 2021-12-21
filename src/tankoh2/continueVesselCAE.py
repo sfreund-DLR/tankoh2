@@ -663,7 +663,7 @@ def reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle, parts):
 #
 #    return csys1, csys2
 
-def createPeriodicEquation(setName1, setName2, partname, instancePrefix, reveloveAngle, exceptionSetNodeLables):
+def createPeriodicEquation(setName1, setName2, partname, instancePrefix, reveloveAngle, exceptionSetNodeLables, parts, model):
 
 #   creates periodic boundary equations between nodes in the given node sets (name given)
 #   return  :   none
@@ -707,7 +707,7 @@ def createPeriodicEquation(setName1, setName2, partname, instancePrefix, revelov
             #model.Equation(name='PeriodicBC_axial_'+partname+'_'+str(n), terms=((1.0, corresNodeName, 2), (-1.0, refNodeName, 2)))        
 
 
-def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets):
+def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model): #
 
 #   applies perdiodic boubdary conditions to revolve tank section (equal displacements on both sides)
 #
@@ -719,22 +719,40 @@ def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets):
 
     print("*** APPLY PERIODIC BOUNDARY CONDITIONS BY EQUATIONS ***") 
 
+    
     exceptionSetNodeLables = list()
     for exceptionSet in exceptionSets:
         for node in assembly.sets[exceptionSet].nodes:
             exceptionSetNodeLables.append(node.label)
-
+    
     for key in parts.keys():        
         print("---- proceeding "+key) 
         if key[0:7] == "Fitting":                        
             # list reference face at xy-plane (z=0) at first!            
-            createPeriodicEquation("SymmetryFaces_1", "SymmetryFaces_2", key, "", reveloveAngle, exceptionSetNodeLables)
+            createPeriodicEquation("SymmetryFaces_1", "SymmetryFaces_2", key, "", reveloveAngle, exceptionSetNodeLables, parts, model)
         else:
             # list reference face at xy-plane (z=0) at first!
-            createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables)                 
+            createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables, parts, model)                 
 
 
 def createStepDefinition(steptime, minInk, maxInk, startInk, maxNumInk, stab, NLGEOM, model):
+
+#   creates step definitian for a general all static steps which are already available in the model
+#   return  :   none
+#
+#   input   steptime [float]            : timePeriod of step
+#           minInk [float]              : minimum increment size allowed
+#           maxInk [float]              : maximal increment size allowed
+#           startInk [float]            : size of initial increment
+#           maxNumInk [float]           : maximum number of increments allowed
+#           stab [float]                : stabilizationMagnitude for dissipative damping stabilization (only Method DISSIPATED_ENERGY_FRACTION without adaptive damping is implemented)           
+#           NLGEOM [symbolicConstant]   : ON -- use geometric non-linearity // OFF -- use geometric linear equations
+#           model [model objec]         : model to be modified
+#
+#   Requirements:
+#   Analysis steps are available within the model
+#   Initial step is named "Initial"
+#    
 
     nstep = -2 # start with -2 vor dont counting inital step
     for step in model.steps.keys():
@@ -747,6 +765,20 @@ def createStepDefinition(steptime, minInk, maxInk, startInk, maxNumInk, stab, NL
             adaptiveDampingRatio=None, initialInc=startInk[nstep], minInc=minInk[nstep], maxInc=maxInk[nstep], nlgeom = NLGEOM[nstep], maxNumInc=maxNumInk[nstep])
 
 def createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables):
+
+#   deletes all present output definitions within the model and creates new output definitions based on given parameters
+#   return  :   none
+#
+#   input   
+#           model [model objec]         : model to be modified
+#           dt [float]                  : time interval for output request; if zero no request per time interval is defined
+#           dnInk [float]               : increment frequency for output request; if zero no request per increment frequency is defined
+#           fieldVariables [squence]    : sequence of field Variables for output
+#           historyVariables [squence]  : sequence of history Variables for output
+#
+#   Requirements:
+#   same output frequence per interval and/or increment is defined for field and history output
+#   
 
     print('*** CREATE OUTPUT DEFINITION ***')
     count_field_output = 1
@@ -784,8 +816,29 @@ def createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables):
     
     print('*** OUTPUT DEFINITION FINISHED ***')
 
-def createLoads(model, valveForce):
+def createLoads(model, valveForce, pressure):
+
+#   redefines the load definitions for internal pressure and axialValveForce in the model based on the given parameters
+#   axialValveForce is deleted, if valveForce is set to zero
+#   return  :   none
+#
+#   input   
+#           model [model objec]         : model to be modified
+#           valveForce [float]          : magnitude of axial valve force [N]
+#           pressure [float]            : magnitude of internal pressure in [bar] (is transferred into MPa within function)
+#
+#   Requirements:
+#   axialValveForce and internal pressure loads are already defined within the model
+#       
+
+    print('*** CREATE LOAD DEFINITION ***')
     
     if 'Fitting_1_axialValveForce' in model.loads.keys() and valveForce == 0.:
         del model.loads['Fitting_1_axialValveForce']
+    
+    for load in model.loads.keys():
+        if 'Pressure' in load:
+            model.loads[load].setValues(magnitude=pressure/10.)
+    
+    print('*** LOAD DEFINITION CREATED ***')
 

@@ -88,8 +88,8 @@ def main():
     remesh = False
 
 # ------- Boundary Conditions
-    exceptionSets = ("Fitting1.contactFacesWinding", "Mandrel1_Layer_2.FittingContact")
-    createPeriodicBCs = False
+    exceptionSets = ("Fitting1.contactFacesWinding", "Mandrel1_Layer_1.FittingContact")
+    createPeriodicBCs = True
 
 # -------- Step-Definition
 
@@ -115,7 +115,7 @@ def main():
 
     pressure = 250 # bar
     valveForce = 0.
-    createLoadDefinition = True
+    createLoadDefinition = False
 
 
 ############# START
@@ -152,10 +152,10 @@ def main():
         cvc.createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables)
 
     if createLoadDefinition:
-        cvc.createLoads(model)
+        cvc.createLoads(model, valveForce, pressure)
 
     if createPeriodicBCs:
-        cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets)
+        cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model) # 
 
     # step definition
     # generate output
