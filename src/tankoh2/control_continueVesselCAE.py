@@ -54,6 +54,7 @@ def main():
     nMandrels = 1 # number of mandrels
     layerPartPrefix = 'Layer'
     reveloveAngle = 1.
+    CoordAxisWhichIsRotAxis = "y" # coordinate main axis which acts as vessels's rotation axis
     
 # ------- Liner        
     linerthickness = 4.0
@@ -69,7 +70,7 @@ def main():
     AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
     #nDepvar = 156 # number of solution dependen variables
-    degr_fac = 0.1 # degradation factor for material properties after failure initiation
+    degr_fac = 1.0 # degradation factor for material properties after failure initiation
     createUMAT = False
     removeUMAT = False
 
@@ -87,8 +88,20 @@ def main():
     minAngle = 10.
     remesh = False
 
-# ------- Boundary Conditions
-    exceptionSets = ("Fitting1.contactFacesWinding", "Mandrel1_Layer_1.FittingContact")
+# ------- Periodic Boundary Conditions
+    exceptionSets = (("Fitting1","contactFacesWinding"), ("Layer_1", "FittingContact")
+    #, ("Layer_1", "Top_to_Layer_2_adjust"), ("Layer_1", "Top_to_Layer_3_adjust"), ("Layer_1", "Top_to_Layer_4_adjust"),
+    #("Layer_2", "Top_to_Layer_3_adjust"), 
+    #("Layer_3", "Top_to_Layer_4_adjust"),
+    #("Layer_4", "Top_to_Layer_5_adjust"),("Layer_4", "Top_to_Layer_6_adjust"),("Layer_4", "Top_to_Layer_7_adjust"),("Layer_4", "Top_to_Layer_8_adjust"),
+    #("Layer_5", "Top_to_Layer_6_adjust"),
+    #("Layer_6", "Top_to_Layer_7_adjust"), 
+    #("Layer_7", "Top_to_Layer_8_adjust"),
+    #("Layer_8", "Top_to_Layer_9_adjust"),("Layer_8", "Top_to_Layer_10_adjust"),("Layer_8", "Top_to_Layer_12_adjust"),
+    #("Layer_9", "Top_to_Layer_10_adjust"),
+    ) # (partname, setname)
+
+
     createPeriodicBCs = False
 
 # -------- Step-Definition
@@ -119,8 +132,9 @@ def main():
 
 # ----------- Layer connection
 
-    useContact = False # True -- use contact, False -- use Tie
+    useContact = True # True -- use contact, False -- use Tie
     checkLayerConnection = True
+
 
 ############# START
 
@@ -158,11 +172,12 @@ def main():
     if createLoadDefinition:
         cvc.createLoads(model, valveForce, pressure)
 
-    if createPeriodicBCs:
-        cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model) # 
-
     if checkLayerConnection:
         cvc.adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact)        
+
+    if createPeriodicBCs:
+        cvc.applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model, useContact, CoordAxisWhichIsRotAxis) # 
+
 
 
     now = datetime.now()

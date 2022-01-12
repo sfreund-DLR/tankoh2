@@ -1,4 +1,4 @@
-2# Continue vessel model implementation 
+# Continue vessel model implementation 
 # -*- coding: utf-8 -*-
 
 #Created on Wed July 14 12:30 2021
@@ -664,7 +664,7 @@ def reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle, parts):
 #
 #    return csys1, csys2
 
-def createPeriodicEquation(setName1, setName2, partname, instancePrefix, reveloveAngle, exceptionSetNodeLables, parts, model):
+def createPeriodicEquation(setName1, setName2, partname, instancePrefix, reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis):
 
 #   creates periodic boundary equations between nodes in the given node sets (name given)
 #   return  :   none
@@ -683,32 +683,229 @@ def createPeriodicEquation(setName1, setName2, partname, instancePrefix, revelov
     part = parts[partname]
     n = -1
     
+    # generate node Sets from geometric sets for diagnostic purpose
+    part.Set(name=setName1+'_nodes', nodes = part.sets[setName1].nodes)
+    part.Set(name=setName2+'_nodes', nodes = part.sets[setName2].nodes)
+
+    exceptionSetlist = list()
     for node in part.sets[setName1].nodes:
         n = n+1  
             
         if node.label in exceptionSetNodeLables:
-                print('Node '+str(node.label)+' already used within another constraint. No equation will be enforced')
+                #print('Node '+str(node.label)+' already used within another constraint. No equation will be enforced')
+                exceptionSetlist.append(node.label)
         else:
             # find corresponding nodes on part level
-            part.Set(name='ReferenceNode_'+str(n), nodes=(part.sets[setName1].nodes[n:n+1],))
-            part.Set(name='CorrespondingNode_'+str(n), nodes=(part.sets[setName2].nodes[n:n+1],))
+
+            CorresNodeLabel = getCorrespondingNodeLabel(node.label, setName2, CoordAxisWhichIsRotAxis, part)
+
+            #part.Set(name='ReferenceNode_'+str(n), nodes=(part.sets[setName1].nodes[n:n+1],))
+            #part.Set(name='CorrespondingNode_'+str(n), nodes=(part.sets[setName2].nodes[n:n+1],))
+            part.SetFromNodeLabels(name='ReferenceNode_'+str(n), nodeLabels=(node.label, ))
+            part.SetFromNodeLabels(name='CorrespondingNode_'+str(n), nodeLabels=(CorresNodeLabel,))
+            part.SetFromNodeLabels(name='NodePair_'+str(n), nodeLabels=(node.label, CorresNodeLabel))
 
             refNodeName = instancePrefix+partname+'.ReferenceNode_'+str(n)
             corresNodeName = instancePrefix+partname+'.CorrespondingNode_'+str(n)
-
             #------ create equation on assembly level
             # for radial displacement
             # put refNodenName first, as its DOF are used only on time and the firts dof in euqation will be eliminated
             model.Equation(name='PeriodicBC_radial_'+partname+'_'+str(n), terms=((-1.0, refNodeName, 1), (np.cos(reveloveAngle), corresNodeName, 1), (np.sin(reveloveAngle), corresNodeName, 3)))        
-
             # for tangential displacement
             model.Equation(name='PeriodicBC_hoop_'+partname+'_'+str(n), terms=((-1.0, refNodeName, 3), (-np.sin(reveloveAngle), corresNodeName, 1), (np.cos(reveloveAngle), corresNodeName, 3)))        
-
             # for tangential displacement
             #model.Equation(name='PeriodicBC_axial_'+partname+'_'+str(n), terms=((1.0, corresNodeName, 2), (-1.0, refNodeName, 2)))        
+    
+    #part.SetFromNodeLabels(name = 'exception_nodes', nodeLabels = exceptionSetlist)
+
+def removeNodesFromSet(parts, partname, setname, nodeSetlist):
+
+# input:
+#       setname [string]    : name of set from which nodes shall be removed
+#       nodeSetlist         : List/Sequcen of nodes, which shall be removed from node set
+#
+   
+   #create set based on nodes
+   parts[partname].Set(name = setname+'_nodes', nodes = parts[partname].sets[setname].nodes)
+   
+   # insert node set of contact surface at beginning of nodeSetlist, so that all following sets are substracted from that
+   nodeSetlist.insert(0, parts[partname].sets[setname+'_nodes']) 
+
+   # create set from set based on nodes without the nodes to be removed
+   parts[partname].SetByBoolean(name = setname, sets = nodeSetlist, operation = DIFFERENCE)
 
 
-def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model): #
+def getNodeSetListByContainingName(parts, partname, namelist):
+
+#
+#  INPUT
+#           namelist [list of strings]  : list of names of the sets whose nodes shall be stored in returned nodeSetList
+# 
+# 
+#     
+
+    nodeSetlist = list()
+
+    nodeSetKeys = list()    
+    strings = parts[partname].sets.keys()
+    for name in namelist: 
+        templist = [string for string in strings if name in string]
+        for element in templist:
+            nodeSetKeys.append(element)
+
+    
+    for nodeSetKey in nodeSetKeys:        
+        nodeSetlist.append(parts[partname].sets[nodeSetKey])
+        
+    return nodeSetlist
+
+def createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis):
+    
+    
+    exceptionParts = list()
+    exceptionSetsNames = list()
+
+    for exceptionSet in exceptionSets:
+        exceptionParts.append(exceptionSet[0])
+        exceptionSetsNames.append(exceptionSet[1])
+
+    print('exception sets in the following parts ', exceptionParts)    
+    print('exceptionsets are ', exceptionSetsNames)    
+    print('No periodic BC constraints are enforced on those nodes as they are already used within other constraints')    
+    
+    
+    for key in parts.keys():        
+        print("---- proceeding "+key) 
+
+        exceptionSetNodeLables = list()
+
+        # if contact is defined, add slave nodes to the exceptionSetNodeLables-List; the slave nodes are identicall with the node sets for adjustmant in contact called "*_adjust"
+        if useContact:
+            for setname in parts[key].sets.keys():
+                if "_adjust" in setname:
+                    contact_adjust_nodes = parts[key].sets[setname].nodes
+
+                    for node in contact_adjust_nodes:
+                        exceptionSetNodeLables.append(node.label)
+
+        # now go along the addionally user defined exception set list and add these nodes also to the exceptionSetNodeLables-List
+        if key in exceptionParts:          
+            index = exceptionParts.index(key)            
+            print('There are exception nodes in this part in set ', exceptionSetsNames[index])                                 
+            for node in parts[key].sets[exceptionSetsNames[index]].nodes:
+                exceptionSetNodeLables.append(node.label)
+            
+            parts[key].SetFromNodeLabels(name = 'Set_from_exceptionSetNodeLables', nodeLabels = exceptionSetNodeLables)
+            print('Nodes for exception are stored in node Set Set_from_exceptionSetNodeLables of part' , key)    
+
+        if key[0:7] == "Fitting":                        
+            # list reference face at xy-plane (z=0) at first!            
+            createPeriodicEquation("SymmetryFaces_1", "SymmetryFaces_2", key, "", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)
+        else:
+            # list reference face at xy-plane (z=0) at first!
+            createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)   
+
+def removePeriodicBCNodesFromContactSets(layerPartPrefix, model, parts):
+
+    contactSets = getAllLayerContactSets(layerPartPrefix, model, parts)
+
+    for contactSet in contactSets:
+
+        masterpart = contactSet[0]
+        masterSet = contactSet[1]
+        slavepart = contactSet[2]
+        slaveSet = contactSet[3]        
+
+        # master
+        nodeSetListToRemove = getNodeSetListByContainingName(parts, masterpart, ('Reference', 'Corresponding'))        
+        removeNodesFromSet(parts, masterpart, masterSet, nodeSetListToRemove)
+        
+        # slave
+        nodeSetListToRemove = getNodeSetListByContainingName(parts, slavepart, ('Reference', 'Corresponding'))
+        removeNodesFromSet(parts, slavepart, slaveSet, nodeSetListToRemove)
+
+
+def getNodeOutOfSetInBoundingZylinder(setname, z1, z2, r, part):
+
+#   description
+#
+#   return  :   node label of found node
+#   
+#   input:  setname [string]    : name of node set from which node shall be extracted
+#           z1                  : first coordinate of cylinder axis        
+#           z2                  : second coordinate of cylinder axis
+#           r                   : radius of BoundingCylinder
+#           part                : part 
+#       
+
+    nodes = part.sets[setname].nodes.getByBoundingCylinder(center1 = z1, center2 = z2, radius = r+0.001)
+    #print(str(len(nodes))+' nodes within outer bounding box with node labels')
+    #for n in nodes:
+    #    print(n.label)
+    
+    removeNodes = part.sets[setname].nodes.getByBoundingCylinder(center1 = z1, center2 = z2, radius = r-0.01)
+    #print(str(len(removeNodes))+' nodes within inner bounding box with node labels')
+    #for n in removeNodes:
+    #    print(n.label)
+
+    node = [i for i in nodes if i not in removeNodes]
+    #print('found '+str(len(node))+' corresponding nodes')
+    
+    if len(node) == 1:        
+        corresNodeLabel = node[0].label
+    #    print('found exactly one corresponding node with label ', corresNodeLabel)
+        return corresNodeLabel
+    else:
+        print('*** ERRROR: found '+str(len(node))+' corresponding nodes for node at radius '+ str(r) + 'these nodes have following labels:')
+        for n in node:
+            print(n.label)
+        
+
+    
+
+def getCorrespondingNodeLabel(nodeLabel, setname, CoordAxisWhichIsRotAxis, part): 
+
+#   corresponding node on circular segment
+#
+#   return  :   
+#   
+#   input:   nodeLabel [int]                : label of node for which corresponding node shall be find
+#           CoordAxisWhichIsRotAxis [char]  : "x", "y", "z"
+#           setname [string]                : set in which corresponding node should be searched for
+#           part                            : partname
+#
+#
+ 
+    #print('searching in set '+setname+'for corresponding node to node with label', nodeLabel)
+
+    x_ref = part.nodes[nodeLabel-1].coordinates[0]
+    y_ref = part.nodes[nodeLabel-1].coordinates[1]
+    z_ref = part.nodes[nodeLabel-1].coordinates[2]
+
+    #print('Ref points coordinates are', x_ref, y_ref, z_ref)
+
+
+    if CoordAxisWhichIsRotAxis == "x":
+        rotAxis = ((x_ref-0.001, 0., 0.), (x_ref+0.001, 0., 0.))
+        r = np.sqrt(y_ref**2. + z_ref**2.)        
+    if CoordAxisWhichIsRotAxis == "y":
+        rotAxis = ((0., y_ref-0.001, 0.), (0., y_ref+0.001, 0.))
+        r = np.sqrt(x_ref**2. + z_ref**2.)        
+    if CoordAxisWhichIsRotAxis == "z":
+        rotAxis = ((0., 0., z_ref-0.001), (0., 0., z_ref+0.001))                
+        r = np.sqrt(x_ref**2. + y_ref**2.)        
+    
+    if not CoordAxisWhichIsRotAxis == "x" and not CoordAxisWhichIsRotAxis == "y" and not CoordAxisWhichIsRotAxis == "z":
+        print("Rotation axis does not match with main axis; y-Axis is considered as rotaion axis")
+        rotAxis = ((0., y_ref-0.001, 0.), (0., y_ref+0.001, 0.))
+        r = np.sqrt(x_ref**2. + z_ref**2.)        
+
+    correspondingNodeLabel = getNodeOutOfSetInBoundingZylinder(setname, rotAxis[0], rotAxis[1], r, part)
+
+    return correspondingNodeLabel
+
+
+def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model, useContact, CoordAxisWhichIsRotAxis): #
 
 #   applies perdiodic boubdary conditions to revolve tank section (equal displacements on both sides)
 #
@@ -717,24 +914,12 @@ def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, pa
 #   input
 #       
 #
-
     print("*** APPLY PERIODIC BOUNDARY CONDITIONS BY EQUATIONS ***") 
-
     
-    exceptionSetNodeLables = list()
-    for exceptionSet in exceptionSets:
-        for node in assembly.sets[exceptionSet].nodes:
-            exceptionSetNodeLables.append(node.label)
+    createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis)
     
-    for key in parts.keys():        
-        print("---- proceeding "+key) 
-        if key[0:7] == "Fitting":                        
-            # list reference face at xy-plane (z=0) at first!            
-            createPeriodicEquation("SymmetryFaces_1", "SymmetryFaces_2", key, "", reveloveAngle, exceptionSetNodeLables, parts, model)
-        else:
-            # list reference face at xy-plane (z=0) at first!
-            createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables, parts, model)                 
-
+    removePeriodicBCNodesFromContactSets(layerPartPrefix, model, parts)              
+    
 
 def createStepDefinition(steptime, minInk, maxInk, startInk, maxNumInk, stab, NLGEOM, model):
 
@@ -844,46 +1029,202 @@ def createLoads(model, valveForce, pressure):
     print('*** LOAD DEFINITION CREATED ***')
 
 
-def getAssemblyRegionFromPartAndSet(partname, setname, assembly):
+def getAssemblyRegionFromPartAndSurface(partname, surfname, assembly):
+
+#   generates a Region Object for a given surface of a given part
+#   return  :   region object
+#
+#   input   
+#           partname [string]           : name of part that contains the surface 
+#           surfname [string]           : name of the surface for which region object shall be generated
+#           assembly [assembly object]  : assembly
+#
+#       
 
     print('Part', partname)
     strings = assembly.instances.keys()
     instanceKey = [string for string in strings if partname in string]
     print('Instance', instanceKey)
-    Region = assembly.instances[instanceKey[0]].surfaces[setname]
+    Region = assembly.instances[instanceKey[0]].surfaces[surfname]
 
     return Region
 
+def getAssemblyRegionFromPartAndSet(partname, setname, assembly, parts):
+
+
+#   generates a Region Object for a given set of a given part
+#   return  :   region object
+#
+#   input   
+#           partname [string]           : name of part that contains the surface 
+#           setname [string]            : name of the set for which region object shall be generated
+#           assembly [assembly object]  : assembly
+#
+#    
+
+    print('Part', partname)
+    strings = assembly.instances.keys()
+    instanceKey = [string for string in strings if partname in string]
+    print('Instance', instanceKey)
+    Region = assembly.instances[instanceKey[0]].sets[setname]
+
+    return Region
+
+def createNodeSetFromPartSurface(part, surfacename, nodeSetName):
+
+    nodes = part.surfaces[surfacename].nodes
+    part.Set(name = nodeSetName, nodes = nodes)
+
+def getLayerContacts(model, layer):
+
+#   gives a list of the keys of all interactions which defines a contact for the given layer of the winding
+#
+#   return  :   list of keys [strings]
+#
+#   input   
+#           model [model object]      : model
+#           layer [string]            : partname of the layer
+#    
+
+    strings = model.interactions.keys()
+    contactKeys = [string for string in strings if 'Layer_'+str(layer+1) in string]
+    
+    return contactKeys
+
+
+def getContactPartners(model, contact):
+
+#   gives information about slave and matster of the given contact. 
+#
+#   return  :   
+#               masterPart [string] : name of the part containing the master surface
+#               masterSet [string]  : name of the surface/set which is used as  master surface
+#               slavePart [string] : name of the part containing the slave surface
+#               slaveSet [string]  : name of the surface/set which is used as  slave surface
+#
+#   input   
+#           model [model object]      : model
+#           contact [string]          : key of the contact interaction for which contact parts shall be obtained
+#   
+
+
+    slave = model.interactions[contact].slave
+    master = model.interactions[contact].master  
+
+    slavePart = slave[1]
+    slaveSet = slave[0]
+    masterPart = master[1]
+    masterSet =  master[0]
+
+    return masterPart, masterSet, slavePart, slaveSet
+
+def getAllLayerContactSets(layerPartPrefix, model, parts):
+
+#   gives information about slave and matster for all contact definitions involving layers of the winding 
+#
+#   return  :   
+#               contactSets [list of strings]   : list of the contact information for all contacts with vorm (contact1, contact2, ..., contactn)
+#                                                   each contact<i> is a list of the following strings 
+#                                                           masterPart [string] : name of the part containing the master surface
+#                                                           masterSet [string]  : name of the surface/set which is used as  master surface
+#                                                           slavePart [string] : name of the part containing the slave surface
+#                                                           slaveSet [string]  : name of the surface/set which is used as  slave surface
+#
+#   input   
+#           layerPartPrefix [string]  : name prefix of layer parts
+#           model [model object]      : model
+#           parts [part objects]      : all parts of the model
+#   
+
+    contactSets = list()
+    for layer in range(getNumberOfLayerParts(layerPartPrefix, parts)):              
+        
+        contactKeys = getLayerContacts(model, layer)
+
+        for contact in contactKeys:
+            masterPart, masterSurf, slavePart, slaveSurf = getContactPartners(model, contact)
+            contactSets.append((masterPart, masterSurf, slavePart, slaveSurf))
+
+    return contactSets
+
+
 def adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact):
+
+#   generates TIE-constraints for each contact definition involving layers is userContact = False
+#
+#   return  :   none
+#
+#   input   
+#           model [model object]        : model
+#           parts [part objects]        : all parts of the model
+#           assembly [assembly objects] : model assembly
+#           layerPartPrefix [string]    : name prefix of layer parts
+#           useContact [Boolean]        : False -- Tie constraints are defined; True -- no Tie constraints are defined
+#   
+#   Remarks:
+#       - At current state contact definitions are nor deleted neither suppressed by the script. This as to be done manully within the CAE!
+#
 
     nLayers = getNumberOfLayerParts(layerPartPrefix, parts)
 
-    for layer in range(nLayers):
-        print('--- Layer no', layer+1)        
-        strings = model.interactions.keys()
-        contactKeys = [string for string in strings if 'Layer_'+str(layer+1) in string]
-        print(contactKeys)
+    for layer in range(nLayers):              
+        
+        contactKeys = getLayerContacts(model, layer)
 
         if len(contactKeys) > 0. and not useContact: # TIE should be defined
 
-            
+            print('# define TIEs from contacts')
             for contact in contactKeys:
                 # get contact partners
+                
                 print('# get contact partners')
-                slave = model.interactions[contact].slave
-                master = model.interactions[contact].master       
+                
+                masterPart, masterSurf, slavePart, slaveSurf = getContactPartners(model, contact)
 
-                slaveRegion = getAssemblyRegionFromPartAndSet(slave[1], slave[0], assembly)
-                #assembly.instances['Mandrel1_'+slave[1]].surfaces[slave[0]]
-                masterRegion = getAssemblyRegionFromPartAndSet(master[1], master[0], assembly)
-                #masterRegion = assembly.instances['Mandrel1_'+master[1]].surfaces[master[0]]
-                print(slaveRegion)
+                #slaveRegion = getAssemblyRegionFromPartAndSurface(slavePart, slaveSurf, assembly)                
+                #masterRegion = getAssemblyRegionFromPartAndSurface(masterPart, masterSurf, assembly)                                
+
+                slaveRegion = getAssemblyRegionFromPartAndSet(slavePart, slaveSurf, assembly, parts)        
+                masterRegion = getAssemblyRegionFromPartAndSet(masterPart, masterSurf, assembly, parts)        
 
                 # define TIE
                 print('# define tie')
                 model.Tie(name = contact, master = masterRegion, slave = slaveRegion, adjust=ON, tieRotations=ON)
                 # supress contact
                 #model.interactions[contact].suppress()
+
+            print('At current state contact definitions are nor deleted neither suppressed by the script. This as to be done manully within the CAE!')
+        
+
+        if len(contactKeys) > 0. and  useContact: # Contact should be defined
+                
+            print('# redefine contacts')            
+                
+            for contact in contactKeys:                    
+                masterPart, masterSurf, slavePart, slaveSurf = getContactPartners(model, contact)
+
+                # create node-set from slave-surface containing all nodes, also node for periodic BC
+                createNodeSetFromPartSurface(parts[slavePart], slaveSurf, slaveSurf+'_adjust')                
+
+                # assing nodeset for adjustment
+                print("for contact "+contact+" define adjustment in nodeset "+slaveSurf+'_adjust'+" of part instance "+slavePart)
+                model.interactions[contact].setValues(adjustMethod=SET, adjustSet=assembly.instances['Mandrel1_'+slavePart].sets[slaveSurf+'_adjust'])
+    
+    ### If Contact is used, remove slave nodes from symmetric boundary condition
+
+    
+            
+            part = parts['Layer_'+str(layer+1)]
+            print('-- Remove slave nodes from set CylinderSymm for layer ', layerPartNo+1)
+            setNameList = list()
+            for setname in part.sets.keys():
+                if "adjust" in setname:             # all sets named with "adjust" contains the slave nodes, that shalle be removed from node set for symm. BC
+                    setNameList.append(setname)
+            nodeSetListToRemove = getNodeSetListByContainingName(parts, part.name, setNameList)   # make node list from all sets with "adjust"     
+            removeNodesFromSet(parts, part.name, 'CylinderSymm', nodeSetListToRemove)             # remove these nodes from the set CylinderSymm, which is the set for symm. BC 
+
+        
+    print('###### layer connection finished')
 
                 
 

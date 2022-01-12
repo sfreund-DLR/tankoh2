@@ -65,7 +65,7 @@ def minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, puckPropertie
                                       args=[args],
                                       atol=tol*10)
     if not popt.success:
-        raise Tankoh2Error('Could not finde optimal solution')
+        raise Tankoh2Error('Could not find optimal solution')
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
     if hasattr(x, '__iter__'):
         x = x[0]
