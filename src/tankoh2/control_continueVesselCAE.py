@@ -89,19 +89,7 @@ def main():
     remesh = False
 
 # ------- Periodic Boundary Conditions
-    exceptionSets = (("Fitting1","contactFacesWinding"), ("Layer_1", "FittingContact")
-    #, ("Layer_1", "Top_to_Layer_2_adjust"), ("Layer_1", "Top_to_Layer_3_adjust"), ("Layer_1", "Top_to_Layer_4_adjust"),
-    #("Layer_2", "Top_to_Layer_3_adjust"), 
-    #("Layer_3", "Top_to_Layer_4_adjust"),
-    #("Layer_4", "Top_to_Layer_5_adjust"),("Layer_4", "Top_to_Layer_6_adjust"),("Layer_4", "Top_to_Layer_7_adjust"),("Layer_4", "Top_to_Layer_8_adjust"),
-    #("Layer_5", "Top_to_Layer_6_adjust"),
-    #("Layer_6", "Top_to_Layer_7_adjust"), 
-    #("Layer_7", "Top_to_Layer_8_adjust"),
-    #("Layer_8", "Top_to_Layer_9_adjust"),("Layer_8", "Top_to_Layer_10_adjust"),("Layer_8", "Top_to_Layer_12_adjust"),
-    #("Layer_9", "Top_to_Layer_10_adjust"),
-    ) # (partname, setname)
-
-
+    exceptionSets = (("Fitting1","contactFacesWinding"), ("Layer_1", "FittingContact")) # (partname, setname)
     createPeriodicBCs = False
 
 # -------- Step-Definition

@@ -620,7 +620,10 @@ def seedLayerThicknessEdges(layerPartPrefix, elementsPerLayerThickness, minAngle
             maxVertex = partVertices.getByBoundingBox(-10000., maxVertexY-0.01, -0.01, 10000., maxVertexY+0.01, 0.01)                        
             # create Set to get the vertices as vertex not as vertex array
             part.Set(name = 'MaxVertex', vertices = (maxVertex,))
-            maxVertex = part.sets['MaxVertex'].vertices[0]
+            maxVertex = part.sets['MaxVertex'].vertices[0]            
+            
+            charpEdgeNodes = part.nodes.getByBoundingCylinder(r = rmaxVertex, z1=maxVertex_y-0.001, z2=maxVertex_y+0.001 )
+            part.Set(name = 'SharpEdgeNodeSet', nodes = charpEdgeNodes)
                         
             # edges of dome are adjacent edges of vertex at dome
             # obtain angle between them to decide mesh control options
@@ -724,6 +727,7 @@ def removeNodesFromSet(parts, partname, setname, nodeSetlist):
 #       setname [string]    : name of set from which nodes shall be removed
 #       nodeSetlist         : List/Sequcen of nodes, which shall be removed from node set
 #
+
    
    #create set based on nodes
    parts[partname].Set(name = setname+'_nodes', nodes = parts[partname].sets[setname].nodes)
@@ -1074,6 +1078,23 @@ def createNodeSetFromPartSurface(part, surfacename, nodeSetName):
 
     nodes = part.surfaces[surfacename].nodes
     part.Set(name = nodeSetName, nodes = nodes)
+  
+def copyNodeSet(part, originalNodeSetName, copyNodeSetName):
+
+#   copys an existing node set 
+#
+# INPUT
+#       part [partobject]               : partobject at which a nodeset shall be copied
+#       originalNodeSetName [string]    : name of node set that shall be copied    
+#       copyNodeSetName [string]        : name of the node set copy
+#
+#   RETURN
+#           None
+#   
+    
+    nodes = part.sets[originalNodeSetName].nodes
+    part.Set(name = copyNodeSetName, nodes = (nodes, ))
+
 
 def getLayerContacts(model, layer):
 
@@ -1147,6 +1168,26 @@ def getAllLayerContactSets(layerPartPrefix, model, parts):
 
     return contactSets
 
+def getElementtypesInPart(part):
+
+# returns a list with all elemennt types in the given part
+#
+# INPUT
+#   part [partObject]   : part for which element types shall be returned
+# 
+# OUTPUT
+#   elementTypeList [list of strings]   : list of element types existing in given part
+# 
+
+    elementTypeList = list()
+    
+    for element in part.elements:
+        if not element.type in elementTypeList:
+            elementTypeList.append(element.type)
+    
+    return elementTypeList
+
+
 
 def adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact):
 
@@ -1198,24 +1239,52 @@ def adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact):
 
         if len(contactKeys) > 0. and  useContact: # Contact should be defined
                 
-            print('# redefine contacts')            
-                
+            print('### redefine contacts')            
+
+            
             for contact in contactKeys:                    
                 masterPart, masterSurf, slavePart, slaveSurf = getContactPartners(model, contact)
 
+                print('# Exclude edge with zero layer thickness from contact (exclude from slave)')                            
+                #check if wedge elements are in slave part         
+                print(slavePart+' constists of following element types', getElementtypesInPart(parts[slavePart]), C3D6 in getElementtypesInPart(parts[slavePart]))
+                if C3D6 in getElementtypesInPart(parts[slavePart]):
+                    print('- remove sharp edge from slave nodes')
+                    maxVertex = parts[slavePart].sets['MaxVertex'].vertices[0] # point/node that has been defined during remeshing lining on the "sharp edege"
+
+                    maxVertex_x = maxVertex.pointOn[0][0]
+                    maxVertex_y = maxVertex.pointOn[0][1]
+                    maxVertex_z = maxVertex.pointOn[0][2]
+                    rmaxVertex = np.sqrt(maxVertex_x**2. + maxVertex_z**2.)
+
+                    
+                    nodeSetListToRemove = parts[slavePart].nodes.getByBoundingCylinder(radius = rmaxVertex, center1 = (maxVertex_x, maxVertex_y-0.001, maxVertex_z), center2 = (maxVertex_x, maxVertex_y+0.001, maxVertex_z))  # all nodes on the "sharp edge"     
+                    NodeSetsToRemove = list()
+                    NodeSetsToRemove.append(parts[slavePart].Set(name = 'NodesToRemoveFromSlave', nodes = nodeSetListToRemove))
+                                    
+                    createNodeSetFromPartSurface(parts[slavePart], slaveSurf, slaveSurf)
+                    removeNodesFromSet(parts, slavePart, slaveSurf, NodeSetsToRemove)             # remove these nodes from the set CylinderSymm, which is the set for symm. BC     
+                    
+                    # assign new node set as slave surface in contact
+                    slaveRegion = getAssemblyRegionFromPartAndSet(slavePart, slaveSurf, assembly, parts) 
+                    model.interactions[contact].setValues(slave=slaveRegion)
+
+                print('# Create not set for slave node adjustment')                            
                 # create node-set from slave-surface containing all nodes, also node for periodic BC
-                createNodeSetFromPartSurface(parts[slavePart], slaveSurf, slaveSurf+'_adjust')                
+                #createNodeSetFromPartSurface(parts[slavePart], slaveSurf, slaveSurf+'_adjust')            
+                # but no nodes that are not slave nodes for contact                    
+                copyNodeSet(parts[slavePart], slaveSurf, slaveSurf+'_adjust')
 
                 # assing nodeset for adjustment
                 print("for contact "+contact+" define adjustment in nodeset "+slaveSurf+'_adjust'+" of part instance "+slavePart)
                 model.interactions[contact].setValues(adjustMethod=SET, adjustSet=assembly.instances['Mandrel1_'+slavePart].sets[slaveSurf+'_adjust'])
     
-    ### If Contact is used, remove slave nodes from symmetric boundary condition
-
-    
+        
+            ### If Contact is used, remove slave nodes from symmetric boundary condition
+            print('# remove slave nodes from symmetric boundary condition')                            
             
             part = parts['Layer_'+str(layer+1)]
-            print('-- Remove slave nodes from set CylinderSymm for layer ', layerPartNo+1)
+            print('-- Remove slave nodes from set CylinderSymm for layer ', layer+1)
             setNameList = list()
             for setname in part.sets.keys():
                 if "adjust" in setname:             # all sets named with "adjust" contains the slave nodes, that shalle be removed from node set for symm. BC
