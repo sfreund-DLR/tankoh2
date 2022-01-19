@@ -70,8 +70,8 @@ def main():
     AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
     nDepvar = 312 # number of solution dependen variables
     #nDepvar = 156 # number of solution dependen variables
-    degr_fac = 1.0 # degradation factor for material properties after failure initiation
-    createUMAT = False
+    degr_fac = 0.2 # degradation factor for material properties after failure initiation
+    createUMAT = True
     removeUMAT = False
 
 # ------------------- rename Material
@@ -121,7 +121,7 @@ def main():
 # ----------- Layer connection
 
     useContact = True # True -- use contact, False -- use Tie
-    checkLayerConnection = True
+    checkLayerConnection = False
 
 
 ############# START

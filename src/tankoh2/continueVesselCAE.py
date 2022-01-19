@@ -1243,13 +1243,14 @@ def adaptLayerConnection(model, parts, assembly, layerPartPrefix, useContact):
 
             
             for contact in contactKeys:                    
+                print('###########  Processing Contact ', contact)                            
                 masterPart, masterSurf, slavePart, slaveSurf = getContactPartners(model, contact)
 
                 print('# Exclude edge with zero layer thickness from contact (exclude from slave)')                            
                 #check if wedge elements are in slave part         
                 print(slavePart+' constists of following element types', getElementtypesInPart(parts[slavePart]), C3D6 in getElementtypesInPart(parts[slavePart]))
                 if C3D6 in getElementtypesInPart(parts[slavePart]):
-                    print('- remove sharp edge from slave nodes')
+                    print('- remove sharp edge from slave nodes of part', slavePart)
                     maxVertex = parts[slavePart].sets['MaxVertex'].vertices[0] # point/node that has been defined during remeshing lining on the "sharp edege"
 
                     maxVertex_x = maxVertex.pointOn[0][0]
