@@ -5,7 +5,7 @@ import numpy as np
 
 from tankoh2 import pychain
 from tankoh2 import log
-from tankoh2.exception import Tankoh2Error
+from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.designwinding.windingutils import copyAsJson, updateName
 
 

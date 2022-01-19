@@ -5,7 +5,7 @@ import shutil
 import numpy as np
 import pandas as pd
 
-from tankoh2.exception import Tankoh2Error
+from tankoh2.service.exception import Tankoh2Error
 
 
 def getAnglesFromVessel(vessel):

@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-from tankoh2.exception import Tankoh2Error
+from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
 from tankoh2 import log
 

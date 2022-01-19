@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from matplotlib import pylab as plt
 
-from tankoh2.service import plotDataFrame
+from tankoh2.service.plot.generic import plotDataFrame
 
 
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):

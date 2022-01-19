@@ -10,12 +10,12 @@ from tankoh2.service.plot.muwind import plotStressEpsPuck, plotContour, plotThic
 from tankoh2.service.plot.generic import plotDataFrame
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.designwinding.windingutils import getLayerThicknesses, copyAsJson, updateName
-from tankoh2.contour import getLiner, getDome
+from tankoh2.design.designwinding.contour import getLiner, getDome
 from tankoh2.design.designwinding.material import getMaterial, getComposite
-from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
+from tankoh2.design.designwinding.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
     getAngleAndPolarOpeningDiffByAngle
-from tankoh2.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
+from tankoh2.design.designwinding.optimize import optimizeAngle, minimizeUtilization
+from tankoh2.design.designwinding.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getMaxFibreFailureByShift
 from tankoh2.design.existingdesigns import defaultDesign
 
@@ -415,7 +415,7 @@ if __name__ == '__main__':
         from tankoh2.design.existingdesigns import vphDesign1
         createWindingDesign(**vphDesign1)
     elif 1:
-        from tankoh2.contourcreator import getCountourConical
+        from tankoh2.geometry.contourcreator import getCountourConical
         designArgs = defaultDesign.copy()
         x,r = getCountourConical(designArgs['minPolarOpening'], 60, designArgs['dzyl']/2, 140)
         designArgs['domeContour'] = x,r

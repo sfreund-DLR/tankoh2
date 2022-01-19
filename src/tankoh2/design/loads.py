@@ -1,6 +1,6 @@
 import numpy as np
 
-from tankoh2.exception import Tankoh2Error
+from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.pyhsicalprops import rhoLh2, g
 
 
