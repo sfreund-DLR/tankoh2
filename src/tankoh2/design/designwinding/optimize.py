@@ -5,17 +5,14 @@
 - optimize layup
 """
 
-from scipy.optimize import minimize_scalar, LinearConstraint
-from scipy.optimize import minimize
+from scipy.optimize import minimize_scalar
 from scipy.optimize import differential_evolution
-import numpy as np
 
-from tankoh2 import log
-from tankoh2.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
+from tankoh2.design.designwinding.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
     getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
-from tankoh2.exception import Tankoh2Error
-from tankoh2.solver import getMaxFibreFailureByAngle
+from tankoh2.service.exception import Tankoh2Error
+from tankoh2.design.designwinding.solver import getMaxFibreFailureByAngle
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=False,

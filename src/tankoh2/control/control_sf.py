@@ -1,20 +1,23 @@
 """control a tank optimization"""
 
-import os, sys
+import os
 import numpy as np
 import datetime
 
-from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir, plotStressEpsPuck, plotDataFrame, plotContour, plotThicknesses, getTimeString
-from tankoh2.utilities import updateName, copyAsJson, getLayerThicknesses, getHydrostaticPressure
-from tankoh2.contour import getLiner, getDome
-from tankoh2.material import getMaterial, getComposite, readLayupData, saveComposite
-from tankoh2.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
+from tankoh2 import log, pychain
+from tankoh2.service.utilities import indent, getRunDir, getTimeString
+from tankoh2.service.plot.muwind import plotStressEpsPuck, plotContour, plotThicknesses
+from tankoh2.service.plot.generic import plotDataFrame
+from tankoh2.design.loads import getHydrostaticPressure
+from tankoh2.design.designwinding.windingutils import getLayerThicknesses, copyAsJson, updateName
+from tankoh2.design.designwinding.contour import getLiner, getDome
+from tankoh2.design.designwinding.material import getMaterial, getComposite
+from tankoh2.design.designwinding.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
     getAngleAndPolarOpeningDiffByAngle
-from tankoh2.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.solver import getLinearResults, getCriticalElementIdx, getPuck, \
-    getPuckLinearResults, getMaxFibreFailureByShift
-from tankoh2.existingdesigns import defaultDesign
+from tankoh2.design.designwinding.optimize import optimizeAngle, minimizeUtilization
+from tankoh2.design.designwinding.solver import getLinearResults, getCriticalElementIdx, getPuck, \
+    getMaxFibreFailureByShift
+from tankoh2.design.existingdesigns import defaultDesign
 
 resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
 resultUnits = ['kg', 'dm^2', 'm^2', 'mm', '', '', 's', '°', 'mm']
@@ -405,15 +408,14 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
 
 if __name__ == '__main__':
     if 0:
-        from existingdesigns import hymodDesign
         createWindingDesign(**defaultDesign)
     elif 0:
         createWindingDesign(pressure=5)
     elif 1:
-        from tankoh2.existingdesigns import vphDesign1
+        from tankoh2.design.existingdesigns import vphDesign1
         createWindingDesign(**vphDesign1)
     elif 1:
-        from tankoh2.contourcreator import getCountourConical
+        from tankoh2.geometry.contourcreator import getCountourConical
         designArgs = defaultDesign.copy()
         x,r = getCountourConical(designArgs['minPolarOpening'], 60, designArgs['dzyl']/2, 140)
         designArgs['domeContour'] = x,r

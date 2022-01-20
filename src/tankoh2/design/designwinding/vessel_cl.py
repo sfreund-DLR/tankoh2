@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 
 from tankoh2 import programDir, log
 from tankoh2.settings import myCrOSettings as settings
-import mycropychain as pychain
+from tankoh2 import pychain
 
 
 # #########################################################################################

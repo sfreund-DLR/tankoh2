@@ -1,27 +1,25 @@
 """control a tank optimization"""
 
 import sys
-import statistics
-from tankoh2.existingdesigns import kautextDesign, NGTBITDesign
+from tankoh2.design.existingdesigns import kautextDesign
+
 #from builtins import True, False
 #from builtins import
 
 sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
 
 import os
-import numpy as np
-from scipy.optimize import curve_fit
 
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir
-from tankoh2.settings import myCrOSettings as settings
-from tankoh2.utilities import updateName, getRadiusByShiftOnMandrel, changeSimulationOptions
-from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
-from tankoh2.material import getMaterial, getComposite, readLayupData
-from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
+from tankoh2.service.utilities import indent, getRunDir
+from tankoh2.design.designwinding.windingutils import getRadiusByShiftOnMandrel, updateName, \
+    changeSimulationOptions
+from tankoh2.design.designwinding.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
+from tankoh2.design.designwinding.material import getMaterial, getComposite, readLayupData
+from tankoh2.design.designwinding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
-from tankoh2.control_sf import createWindingDesign
-import tankoh2.existingdesigns
+from tankoh2.control.control_sf import createWindingDesign
+import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
 
@@ -285,10 +283,8 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     #mesh model
     #model.mesh(2.0)
     #export inp file
-    #model.exportInp(tankname + "_Job")    
-    
+    #model.exportInp(tankname + "_Job")
 
-    import matplotlib.pylab as plt
 
 #    fig = plt.figure()
  #   ax = fig.gca()
@@ -365,8 +361,8 @@ def main():
 
 # - Optimized Design regarding sepcific parameters
     createDesign = True
-    design = tankoh2.existingdesigns.NGTBITDesign
-    #design = tankoh2.existingdesigns.NGTBITDesign_small
+    design = tankoh2.design.existingdesigns.NGTBITDesign
+    #design = tankoh2.design.existingdesigns.NGTBITDesign_small
     tankname = design.get('tankname')    
     dataDir = os.path.join(programDir, 'data')
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")

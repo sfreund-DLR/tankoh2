@@ -6,10 +6,11 @@
 
 
 ###############################################################################
-import sys
+import sys, os
 #from typing import ValuesView
 
-sys.path.append('C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//src//tankoh2')
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import os
 import numpy as np 
 import json
@@ -17,7 +18,7 @@ import mesh
 from datetime import datetime
 
 import importlib
-import continueVesselCAE as cvc
+import tankoh2.fem.continueVesselCAE as cvc
 cvc = reload(cvc)
 
 def getModel(projectname):  
