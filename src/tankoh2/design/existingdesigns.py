@@ -1,8 +1,13 @@
-""""""
+"""
+Characterize design input parameter for various projects
+"""
+
+
+
 from collections import OrderedDict
 import os
 
-from tankoh2 import programDir, pychain
+from tankoh2 import programDir
 
 defaultDesign = OrderedDict([
     # General

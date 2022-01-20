@@ -11,6 +11,26 @@ from tankoh2 import log
 
 
 
+def getCountourEllipsoid(rPolarOpening, dCyl, lDome):
+    """Calculcate ellipsoid contour
+    :param rPolarOpening: polar opening radius
+    :param rCyl: radius of cylindrical section
+    :param lDome: axial length of dome
+
+                      rPolarOpening
+                         ←→
+
+                     ..--    --..          ↑
+                 .-~              ~-.      |    lDome
+                /                    \     |
+               |                     |     ↓
+
+               ←----------→
+                   rCyl
+
+    """
+
+
 def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType ='circular'):
     """Calculates the countour of a dome and a attached conical structure
 

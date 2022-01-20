@@ -1,5 +1,7 @@
 # tankoh2
-Design and optimization of H2 tanks using [µChain](https://www.mefex.de/software/)
+Design and optimization of H2 tanks. 
+For metal structures, tankoh2 is standalone, for CFRP structures, 
+the winding simulation is carried out by [µChain](https://www.mefex.de/software/)
 
 ## Features 
 
