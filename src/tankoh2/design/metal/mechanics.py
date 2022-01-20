@@ -1,6 +1,6 @@
 """Mechanical calculations of metal tank"""
 
-import tankoh2.design.designmetal.material as materials
+import tankoh2.design.metal.material as materials
 from tankoh2.service.exception import Tankoh2Error
 
 def getWallThickness(materialName, burstPressure, diameter):

@@ -3,7 +3,7 @@
 from collections import OrderedDict
 
 
-alu2218 = OrderedDict([  # at T=20K
+alu2219 = OrderedDict([  # at T=20K
     ('roh', 2825),  # kg/m**3
     ('sigma_t', 172.4),  # MPa
     #('E', None),
@@ -12,7 +12,7 @@ alu2218 = OrderedDict([  # at T=20K
     ('c2', 0.),  # tbd
 ])
 
-defaultMetalMaterial = alu2218.copy()
+defaultMetalMaterial = alu2219.copy()
 
 
 

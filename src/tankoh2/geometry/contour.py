@@ -9,26 +9,66 @@ from tankoh2.service.utilities import indent
 from tankoh2 import log
 
 
+class DomeEllipsoid():
+
+    def __init__(self, rCyl, lDome, rPolarOpening):
+        """Calculcate ellipsoid contour
+        :param rCyl: radius of cylindrical section
+        :param lDome: axial length of dome
+        :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
+
+                          rPolarOpening
+                             ←→
+
+                         ..--    --..          ↑
+                     .-~              ~-.      |    lDome
+                    /                    \     |
+                   |                     |     ↓
+
+                   ←----------→
+                       rCyl
+        """
+        self.rPolarOpening = rPolarOpening
+        self.rCyl = rCyl
+        self.lDome = lDome
+
+    @property
+    def volume(self):
+        """Returns the volume of the dome"""
+        return 2 * np.pi / 3 * self.rCyl**2 * self.lDome
+
+    def getWallVolume(self, wallThickness):
+        """Calculate the volume of the material used
+
+        :param wallThickness: thickness of the dome material
+        """
+        otherDome = DomeEllipsoid(self.rCyl + wallThickness, self.lDome + wallThickness, self.rPolarOpening)
+        return otherDome.volume - self.volume
+
+    @property
+    def area(self):
+        a = self.rCyl
+        c = self.lDome
+        if a > c:
+            return np.pi * a * (
+                        a + c ** 2 / np.sqrt(a ** 2 - c ** 2) * np.arcsinh(np.sqrt(a ** 2 - c ** 2) / c))
+        else:
+            return np.pi * a * (
+                        a + c ** 2 / np.sqrt(c ** 2 - a ** 2) * np.arcsin(np.sqrt(c ** 2 - a ** 2) / c))
+
+    def getContour(self):
+        raise NotImplementedError
 
 
-def getCountourEllipsoid(rPolarOpening, dCyl, lDome):
-    """Calculcate ellipsoid contour
-    :param rPolarOpening: polar opening radius
-    :param rCyl: radius of cylindrical section
-    :param lDome: axial length of dome
+class DomeSphere(DomeEllipsoid):
+    """Defines a spherical dome"""
 
-                      rPolarOpening
-                         ←→
-
-                     ..--    --..          ↑
-                 .-~              ~-.      |    lDome
-                /                    \     |
-               |                     |     ↓
-
-               ←----------→
-                   rCyl
-
-    """
+    def __init__(self, r, rPolarOpening):
+        """
+        :param r: radius
+        :param rPolarOpening: polar opening radius
+        """
+        DomeEllipsoid.__init__(self, r, r, rPolarOpening)
 
 
 def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType ='circular'):
