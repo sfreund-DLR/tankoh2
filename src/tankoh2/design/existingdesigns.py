@@ -73,8 +73,10 @@ NGTBITDesign = OrderedDict([
     # material
     ('materialname', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
-    ('hoopLayerThickness', 0.125),
-    ('helixLayerThickenss', 0.129),
+    #('hoopLayerThickness', 0.125),
+    ('hoopLayerThickness', 0.25),
+    #('helixLayerThickenss', 0.129),
+    ('helixLayerThickenss', 0.25),
     ('rovingWidth', 3.175),
     ('numberOfRovings', 12),
     ('tex', 800),
