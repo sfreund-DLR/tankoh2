@@ -9,13 +9,13 @@ from tankoh2.service.utilities import indent, getRunDir, getTimeString
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotContour, plotThicknesses
 from tankoh2.service.plot.generic import plotDataFrame
 from tankoh2.design.loads import getHydrostaticPressure
-from tankoh2.design.designwinding.windingutils import getLayerThicknesses, copyAsJson, updateName
-from tankoh2.design.designwinding.contour import getLiner, getDome
-from tankoh2.design.designwinding.material import getMaterial, getComposite
-from tankoh2.design.designwinding.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
+from tankoh2.design.winding.windingutils import getLayerThicknesses, copyAsJson, updateName
+from tankoh2.design.winding.contour import getLiner, getDome
+from tankoh2.design.winding.material import getMaterial, getComposite
+from tankoh2.design.winding.winding import windLayer, windHoopLayer, getNegAngleAndPolarOpeningDiffByAngle, \
     getAngleAndPolarOpeningDiffByAngle
-from tankoh2.design.designwinding.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.design.designwinding.solver import getLinearResults, getCriticalElementIdx, getPuck, \
+from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
+from tankoh2.design.winding.solver import getLinearResults, getCriticalElementIdx, getPuck, \
     getMaxFibreFailureByShift
 from tankoh2.design.existingdesigns import defaultDesign
 

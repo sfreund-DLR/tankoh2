@@ -3,7 +3,7 @@
 import numpy as np
 
 from tankoh2 import pychain
-from tankoh2.design.designwinding.windingutils import copyAsJson, updateName
+from tankoh2.design.winding.windingutils import copyAsJson, updateName
 
 
 def getMaterial(materialFilename=None):

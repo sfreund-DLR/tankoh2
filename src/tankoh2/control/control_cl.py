@@ -12,11 +12,11 @@ import os
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service.utilities import indent, getRunDir
-from tankoh2.design.designwinding.windingutils import getRadiusByShiftOnMandrel, updateName, \
+from tankoh2.design.winding.windingutils import getRadiusByShiftOnMandrel, updateName, \
     changeSimulationOptions
-from tankoh2.design.designwinding.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
-from tankoh2.design.designwinding.material import getMaterial, getComposite, readLayupData
-from tankoh2.design.designwinding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
+from tankoh2.design.winding.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
+from tankoh2.design.winding.material import getMaterial, getComposite, readLayupData
+from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
 from tankoh2.control.control_sf import createWindingDesign
 import tankoh2.design.existingdesigns
