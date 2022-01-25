@@ -9,27 +9,50 @@ import os
 
 from tankoh2 import programDir
 
-allDesignKeywords = ('tankname', 'nodeNumber', 'dataDir', 'verbose', 'maxlayers', 'domeType', 'domeContour',
-                     'minPolarOpening', 'dzyl', 'lzylByR', 'safetyFactor', 'valveReleaseFactor', 'pressure',
-                     'useHydrostaticPressure', 'tankLocation', 'useFibreFailure', 'materialname',
-                     'hoopLayerThickness', 'helixLayerThickenss', 'rovingWidth', 'numberOfRovings',
-                     'tex', 'fibreDensity', 'lzyl', 'burstPressure')
+allDesignKeywords = ('tankname',
+                     'nodeNumber', # node number of full contour
+                     'dataDir',
+                     'verbose',
+                     'maxlayers',
+                     'domeType',
+                     'domeLength', # Axial length of dome, required for domeContour=='ellipse'
+                     'domeContour', # overrides domeType and domeLength. Must match dzyl and polarOpeningRadius
+                     'polarOpeningRadius',
+                     'dzyl',
+                     'lzylByR',
+                     'safetyFactor',
+                     'valveReleaseFactor',
+                     'pressure',
+                     'useHydrostaticPressure',
+                     'tankLocation',
+                     'useFibreFailure',
+                     'materialname',
+                     'hoopLayerThickness',
+                     'helixLayerThickenss',
+                     'rovingWidth',
+                     'numberOfRovings',
+                     'tex',
+                     'fibreDensity',
+                     'lzyl',
+                     'burstPressure',
+                     )
 
 
 defaultDesign = OrderedDict([
     # General
     ('tankname', 'exact_h2'),
-    ('nodeNumber', 500),  # node number of full coutour
+    ('nodeNumber', 500),
     ('dataDir', os.path.join(programDir, 'data')),
     ('verbose', False),
 
     # Optimization
     ('maxlayers', 100),
+    ('relRadiusHoopLayerEnd', 0.95),  # relative radius (to cyl radius) where hoop layers end
 
     # Geometry
-    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle], if None isotensoid is used
+    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle, ellipse], if None isotensoid is used
     ('domeContour', (None, None)),  # (x,r)
-    ('minPolarOpening', 20),  # mm, radius
+    ('polarOpeningRadius', 20),  # mm, radius
     ('dzyl', 400.),  # mm
     ('lzylByR', 2.5),
 
@@ -62,7 +85,7 @@ hymodDesign = OrderedDict([
     ('tankname', 'hymodDesign'),
     ('burstPressure', 77.85),
     ('lzyl', 1000.),
-    ('minPolarOpening', 23),
+    ('polarOpeningRadius', 23),
     ('dzyl', 300.)
 ])
 
@@ -71,7 +94,7 @@ NGTBITDesign = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
     ('pressure', 70),
     # Geometry
-    ('minPolarOpening', 23),
+    ('polarOpeningRadius', 23),
     ('dzyl', 400.),
     ('lzyl', 500.),
     # design philosophy
@@ -96,7 +119,7 @@ NGTBITDesign_small = OrderedDict([
     ('tankname', 'NGT-BIT-small'),
     ('pressure', 10),
     # Geometry
-    ('minPolarOpening', 23),
+    ('polarOpeningRadius', 23),
     ('dzyl', 400.),
     ('lzyl', 290.),
     # design philosophy
@@ -121,7 +144,7 @@ vphDesign1 = OrderedDict([
     ('dzyl', 1200.*2),
     ('safetyFactor', 2.25),
     ('pressure', .2),  # pressure in MPa (bar / 10.)
-    ('minPolarOpening', 120),
+    ('polarOpeningRadius', 120),
     ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
 ])
 
@@ -141,7 +164,7 @@ kautextDesign = OrderedDict([
                              # Geometry
                              #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
                              #('domeContour', (None, None)),  # (x,r)
-                             ('minPolarOpening', 4.572604469),  # mm
+                             ('polarOpeningRadius', 4.572604469),  # mm
                              ('dzyl', 260.),  # mm
                              ('lzyl', 588.), #mm
                              #('lzylByR', 2.5),

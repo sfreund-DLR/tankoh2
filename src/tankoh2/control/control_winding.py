@@ -12,7 +12,9 @@ from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
+from tankoh2.design.existingdesigns import defaultDesign
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
+
 
 
 def createDesign(**kwargs):
@@ -40,19 +42,20 @@ def createDesign(**kwargs):
 
     # Optimization
     layersToWind = designArgs['maxlayers']
+    relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
 
     # Geometry
     domeType = designArgs['domeType'] # CIRCLE; ISOTENSOID
     domeX, domeR = designArgs['domeContour'] # (x,r)
-    minPolarOpening = designArgs['minPolarOpening']  # mm
+    polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
     dzyl = designArgs['dzyl']  # mm
     if 'lzyl' not in designArgs:
         designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
     lzylinder = designArgs['lzyl']  # mm
-    dome = getDome(dzyl / 2., minPolarOpening, domeType, domeX, domeR)
+    dome = getDome(dzyl / 2., polarOpeningRadius, domeType, domeX, domeR)
     length = lzylinder + 2 * dome.domeLength
 
-    # Design
+    # Design Args
     if 'burstPressure' not in designArgs:
         safetyFactor = designArgs['safetyFactor']
         pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
@@ -114,9 +117,9 @@ def createDesign(**kwargs):
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
     copyAsJson(vesselFilename, 'vessel')
-    results = designLayers(vessel, layersToWind, minPolarOpening,
+    results = designLayers(vessel, layersToWind, polarOpeningRadius,
                            puckProperties, burstPressure, runDir,
-                           composite, compositeArgs, verbose, useFibreFailure)
+                           composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd)
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.datetime.now() - startTime
@@ -154,8 +157,12 @@ def createDesign(**kwargs):
 
 
 if __name__ == '__main__':
-    if 0:
-        createWindingDesign(**defaultDesign)
+    if 1:
+        params = defaultDesign.copy()
+        params['domeType'] = 'ellipse'
+        params['domeLength'] = 300
+        params['relRadiusHoopLayerEnd'] = 0.95
+        createDesign(**params)
     elif 0:
         createWindingDesign(pressure=5)
     elif 1:
@@ -172,7 +179,7 @@ if __name__ == '__main__':
                                 domeType = pychain.winding.DOME_TYPES.ISOTENSOID,
                                 lzyl=l,
                                 dzyl=2400,
-                                #minPolarOpening=30.,
+                                #polarOpeningRadius=30.,
                                 )
             rs.append(r)
         print(indent(results))
