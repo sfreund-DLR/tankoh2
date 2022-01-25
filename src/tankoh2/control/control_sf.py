@@ -8,6 +8,7 @@ from tankoh2 import log, pychain
 from tankoh2.service.utilities import indent, getRunDir, getTimeString
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotContour, plotThicknesses
 from tankoh2.service.plot.generic import plotDataFrame
+from tankoh2.geometry.contour import AbstractDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.winding.windingutils import getLayerThicknesses, copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
@@ -232,9 +233,8 @@ def designLayers(vessel, maxLayers, minPolarOpening, puckProperties, burstPressu
     frpMass = stats.overallFRPMass  # in [kg]
 
     volume = liner.getVolume()  # [l]
-    r, x = dome.getRCoords(), dome.getXCoords()
-    areaDome = np.pi * (r[:-1] + r[1:]) * np.sqrt((r[:-1] - r[1:]) ** 2 + (x[:-1] - x[1:]) ** 2)
-    area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * np.sum(areaDome)  # [mm**2]
+    areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
+    area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
     area *= 1e-6  # [m**2]
     return frpMass, volume, area, composite, iterations, *(np.array(anglesShifts).T)
 
@@ -265,7 +265,7 @@ def createWindingDesign(**kwargs):
 
     # General
     tankname = designArgs['tankname']
-    nodeNumber = designArgs['nodeNumber']  # might not exactly be matched due to approximations
+    nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
     dataDir = designArgs['dataDir']
     runDir = designArgs['runDir']
     verbose = designArgs['verbose']
