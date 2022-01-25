@@ -12,7 +12,7 @@ from tankoh2 import programDir
 defaultDesign = OrderedDict([
     # General
     ('tankname', 'exact_h2'),
-    ('nodeNumber', 500),  # might not exactly be matched due to approximations
+    ('nodeNumber', 500),  # node number of full coutour
     ('dataDir', os.path.join(programDir, 'data')),
     ('verbose', False),
 

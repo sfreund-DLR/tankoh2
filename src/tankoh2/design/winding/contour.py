@@ -93,7 +93,9 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     :param length: zylindrical length of liner
     :param linerFilename: if given, the liner is saved to this file for visualization in µChainWind
     :param linerName: name of the liner written to the file
-    :return:
+    :param dome2: dome of type pychain.winding.Dome
+    :param nodeNumber: number of nodes of full contour. Might not exactly be matched due to approximations
+    :return: liner of type pychain.winding.Liner
     """
         
     # create a symmetric liner with dome information and cylinder length
@@ -104,7 +106,8 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         contourLength = length + domeContourLength(dome) + domeContourLength(dome2)
     else:
         contourLength = length / 2 + domeContourLength(dome)  # use half model (one dome, half cylinder)
-    deltaLengthSpline = contourLength / nodeNumber # just use half side
+        nodeNumber //= 2
+    deltaLengthSpline = contourLength / nodeNumber  # just use half side
 
     if dome2 is not None:
         log.info("Creat unsymmetric vessel")
