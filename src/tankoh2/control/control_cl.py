@@ -18,7 +18,7 @@ from tankoh2.design.winding.contour import getLiner, getDome, getReducedDomePoin
 from tankoh2.design.winding.material import getMaterial, getComposite, readLayupData
 from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
-from tankoh2.control.control_sf import createWindingDesign
+from tankoh2.control.control_winding import createDesign
 import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
@@ -302,13 +302,13 @@ def builtVesselByOptimizedDesign(design, domeContourFilename):
     dpoints = 4
     runDir = getRunDir()
     if domeContourFilename == None:
-        createWindingDesign(**design)
+        createDesign(**design)
     else:
         fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
         x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
         # start design optimization with specified design and given (x,r)-liner contour data
-        createWindingDesign(**design, domeContour = (x,r), runDir=runDir)
+        createDesign(**design, domeContour = (x, r), runDir=runDir)
 
 def main():
 

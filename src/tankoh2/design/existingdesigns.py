@@ -9,6 +9,13 @@ import os
 
 from tankoh2 import programDir
 
+allDesignKeywords = ('tankname', 'nodeNumber', 'dataDir', 'verbose', 'maxlayers', 'domeType', 'domeContour',
+                     'minPolarOpening', 'dzyl', 'lzylByR', 'safetyFactor', 'valveReleaseFactor', 'pressure',
+                     'useHydrostaticPressure', 'tankLocation', 'useFibreFailure', 'materialname',
+                     'hoopLayerThickness', 'helixLayerThickenss', 'rovingWidth', 'numberOfRovings',
+                     'tex', 'fibreDensity', 'lzyl', 'burstPressure')
+
+
 defaultDesign = OrderedDict([
     # General
     ('tankname', 'exact_h2'),
@@ -30,7 +37,7 @@ defaultDesign = OrderedDict([
     ('safetyFactor', 2.25),
     ('valveReleaseFactor', 1.1),  # factor for the valve release at burst pressure
     ('pressure', 5.),  # pressure in MPa (bar / 10.)
-    ('useHydrostaticPressure', True),  # according to 25.963 (d)
+    ('useHydrostaticPressure', True),  # according to FAR 25.963 (d)
     ('tankLocation', 'wing_at_engine'),  # [wing_no_engine, wing_at_engine, fuselage]
     ('useFibreFailure', True),
 
@@ -158,3 +165,6 @@ kautextDesign = OrderedDict([
                              ])
 
 
+
+if __name__ == '__main__':
+    print("',\n'".join(defaultDesign.keys()))

@@ -16,7 +16,7 @@ from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
 from fa_pyutils.service.systemutils import getRunDir
 
-from tankoh2.control.control_sf import createWindingDesign
+from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log, pychain
 from tankoh2.service.utilities import indent
 
@@ -45,10 +45,10 @@ class TankWinder(AbstractTargetFunction):
         runDir = getRunDir(basePath=os.path.join(self.runDir), useMilliSeconds=True)
         r, lzyl, burstPressure = parameters
 
-        result = createWindingDesign(dzyl=r * 2, lzylByR=lzyl, burstPressure=burstPressure,
-                                     minPolarOpening=r / 10, runDir=runDir,
-                                     domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
-                                     useFibreFailure = useFibreFailure)
+        result = createDesign(dzyl=r * 2, lzylByR=lzyl, burstPressure=burstPressure,
+                              minPolarOpening=r / 10, runDir=runDir,
+                              domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
+                              useFibreFailure = useFibreFailure)
         return result
 
 volumeFunc = lambda r, lzylByR: (4 / 3 * np.pi * r ** 3 + r * lzylByR * np.pi * r ** 2)
