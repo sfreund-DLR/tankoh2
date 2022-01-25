@@ -7,6 +7,7 @@ from tankoh2 import log
 from tankoh2.service.utilities import indent, getRunDir
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign
+from tankoh2.geometry.contour import DomeEllipsoid
 
 resultNames = ['shellMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
 resultUnits = ['kg', 'dm^2', 'm^2', 'mm', '', '', 's', '°', 'mm']
@@ -59,5 +60,11 @@ def parseDesginArgs(inputKwArgs, windingOrMetal = 'winding'):
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
             designArgs.pop(removeIt)
+    if designArgs['domeType'] == 'ellipse':
+        if not designArgs['domeLength']:
+            raise Tankoh2Error('domeType == "ellipse" but domeLength is not defined')
+
+        de = DomeEllipsoid(designArgs['dzyl'] / 2, designArgs['domeLength'], designArgs['polarOpeningRadius'])
+        designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
     return designArgs
 

@@ -195,7 +195,7 @@ class DomeEllipsoid(AbstractDome):
             arcLengths = np.linspace(0, arcLen, nodeNumber)
         else:
             endLen = self.getArcLength(np.pi/2)
-            arcLengths = np.linspace(arcLen, endLen, nodeNumber)
+            arcLengths = np.linspace(arcLen, endLen, int(nodeNumber))
         phis = [self.getPhiByArcLength(length) for length in arcLengths]
         points = self.getPoints(phis)
         if not self.aIsDomeLength:

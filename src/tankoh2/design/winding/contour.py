@@ -65,6 +65,9 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
     :param x: x-coordinates of a custom dome contour
     :param r: radius-coordinates of a custom dome contour. r[0] starts at cylinderRadius
     """
+    validDomeTypes = ['isotensoid', 'circle',
+                      'ellipse', # allowed by own implementation in tankoh2.geometry.contour
+                      ]
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
     elif isinstance(domeType, str):
@@ -73,8 +76,12 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
             domeType = pychain.winding.DOME_TYPES.ISOTENSOID
         elif domeType == 'circle':
             domeType = pychain.winding.DOME_TYPES.CIRCLE
+        elif domeType in validDomeTypes:
+            if x is None or r is None:
+                raise Tankoh2Error(f'For dome type "{domeType}", the contour coordinates x, r must be given.')
+            domeType = pychain.winding.DOME_TYPES.CIRCLE
         else:
-            raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: [isotensoid, circle]')
+            raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: {validDomeTypes}')
     # build  dome
     dome = pychain.winding.Dome()
     dome.buildDome(cylinderRadius, polarOpening, domeType)
