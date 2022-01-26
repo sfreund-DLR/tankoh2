@@ -24,7 +24,7 @@ import tankoh2.design.existingdesigns
 #from builtins import True
 
 def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
@@ -66,15 +66,15 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     # #########################################################################################
     x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
-    dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+    dome = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     dome2 = None
     if symmetricTank == False:
         x, r = getReducedDomePoints(dome2ContourFilename,
                                 dpoints, fileNameReducedDome2Contour)
-        dome2 = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+        dome2 = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
-    liner = getLiner(dome, lzylinder, linerFilename, tankname, dome2=dome2)
+    liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2=dome2)
 
     # ###########################################
     # Create material
@@ -113,7 +113,7 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
         # Hoop Layer
         if abs(angle - 90.) < 1e-8:
             #po_goal = krempenradius
-            po_goal = hoopStart + lzylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
+            po_goal = hoopStart + lcylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
             anzHoop = anzHoop+1
             #po_goal = wendekreisradius
             log.info(f'apply layer {i+1} with angle {angle}, and hoop position {po_goal}')
@@ -330,9 +330,9 @@ def main():
         
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
-    dzyl = 400.  # mm
+    dcly = 400.  # mm
     polarOpening = 46./2.  # mm
-    lzylinder = 500.  # mm    
+    lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
@@ -372,7 +372,7 @@ def main():
 
     if AsBuilt: 
         builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
     if createDesign:

@@ -9,34 +9,50 @@ import os
 
 from tankoh2 import programDir
 
-allDesignKeywords = ('tankname',
-                     'nodeNumber', # node number of full contour
-                     'dataDir',
-                     'verbose',
-                     'maxlayers',
-                     'domeType',
-                     'domeLength', # Axial length of dome, required for domeContour=='ellipse'
-                     'domeContour', # overrides domeType and domeLength. Must match dzyl and polarOpeningRadius
-                     'polarOpeningRadius',
-                     'dzyl',
-                     'lzylByR',
-                     'safetyFactor',
-                     'valveReleaseFactor',
-                     'pressure',
-                     'useHydrostaticPressure',
-                     'tankLocation',
-                     'useFibreFailure',
-                     'materialname',
-                     'hoopLayerThickness',
-                     'helixLayerThickenss',
-                     'rovingWidth',
-                     'numberOfRovings',
-                     'tex',
-                     'fibreDensity',
-                     'lzyl',
-                     'burstPressure',
-                     )
+allDesignKeywords = (
+    'tankname',
+    'nodeNumber', # node number of full contour
+    'dataDir',
+    'verbose',
+    'maxlayers',
+    'domeType',
+    'domeAxialHalfAxis', # Axial length of dome, required for domeContour=='ellipse'
+    'domeContour', # overrides domeType and domeAxialHalfAxis. Must match dcly and polarOpeningRadius
+    'polarOpeningRadius',
+    'dcly',
+    'lcylByR',
+    'safetyFactor',
+    'valveReleaseFactor',
+    'pressure',
+    'useHydrostaticPressure',
+    'tankLocation',
+    'useFibreFailure',
+    'materialName',
+    'hoopLayerThickness',
+    'helixLayerThickenss',
+    'rovingWidth',
+    'numberOfRovings',
+    'tex',
+    'fibreDensity',
+    'lcyl',
+    'burstPressure',
+    )
 
+frpKeywords = (
+    'dataDir',
+    'domeType',
+    'domeAxialHalfAxis',
+    'domeContour',
+    'polarOpeningRadius',
+    'dcly',
+    'lcylByR',
+    'safetyFactor',
+    'valveReleaseFactor',
+    'pressure',
+    'useHydrostaticPressure',
+    'tankLocation',
+    'materialName',
+)
 
 defaultDesign = OrderedDict([
     # General
@@ -50,11 +66,11 @@ defaultDesign = OrderedDict([
     ('relRadiusHoopLayerEnd', 0.95),  # relative radius (to cyl radius) where hoop layers end
 
     # Geometry
-    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle, ellipse], if None isotensoid is used
+    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle, ellipse, custom], if None isotensoid is used
     ('domeContour', (None, None)),  # (x,r)
     ('polarOpeningRadius', 20),  # mm, radius
-    ('dzyl', 400.),  # mm
-    ('lzylByR', 2.5),
+    ('dcly', 400.),  # mm
+    ('lcylByR', 2.5),
 
     # Design
     ('safetyFactor', 2.25),
@@ -65,7 +81,7 @@ defaultDesign = OrderedDict([
     ('useFibreFailure', True),
 
     # Material
-    ('materialname', 'CFRP_HyMod'),
+    ('materialName', 'CFRP_HyMod'),
 
     # Fiber roving parameter
     ('hoopLayerThickness', 0.125),
@@ -84,9 +100,9 @@ defaultDesign = OrderedDict([
 hymodDesign = OrderedDict([
     ('tankname', 'hymodDesign'),
     ('burstPressure', 77.85),
-    ('lzyl', 1000.),
+    ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dzyl', 300.)
+    ('dcly', 300.)
 ])
 
 
@@ -95,13 +111,13 @@ NGTBITDesign = OrderedDict([
     ('pressure', 70),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dzyl', 400.),
-    ('lzyl', 500.),
+    ('dcly', 400.),
+    ('lcyl', 500.),
     # design philosophy
     ('safetyFactor', 2.0),
     ('useFibreFailure', True),
     # material
-    ('materialname', 'CFRP_T700SC_LY556'),
+    ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     #('hoopLayerThickness', 0.125),
     ('hoopLayerThickness', 0.25),
@@ -120,13 +136,13 @@ NGTBITDesign_small = OrderedDict([
     ('pressure', 10),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dzyl', 400.),
-    ('lzyl', 290.),
+    ('dcly', 400.),
+    ('lcyl', 290.),
     # design philosophy
     ('safetyFactor', 2.0),
     ('useFibreFailure', True),
     # material
-    ('materialname', 'CFRP_T700SC_LY556'),
+    ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     ('hoopLayerThickness', 0.125),
     ('helixLayerThickenss', 0.129),
@@ -140,8 +156,8 @@ NGTBITDesign_small = OrderedDict([
 
 vphDesign1 = OrderedDict([
     ('tankname', 'vph_design1'),
-    ('lzyl', 3218.8),
-    ('dzyl', 1200.*2),
+    ('lcyl', 3218.8),
+    ('dcly', 1200.*2),
     ('safetyFactor', 2.25),
     ('pressure', .2),  # pressure in MPa (bar / 10.)
     ('polarOpeningRadius', 120),
@@ -165,9 +181,9 @@ kautextDesign = OrderedDict([
                              #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
                              #('domeContour', (None, None)),  # (x,r)
                              ('polarOpeningRadius', 4.572604469),  # mm
-                             ('dzyl', 260.),  # mm
-                             ('lzyl', 588.), #mm
-                             #('lzylByR', 2.5),
+                             ('dcly', 260.),  # mm
+                             ('lcyl', 588.), #mm
+                             #('lcylByR', 2.5),
 
                              # Design
                              ('safetyFactor', 2.0),
@@ -175,7 +191,7 @@ kautextDesign = OrderedDict([
                              ('useFibreFailure', True),
 
                              # Material
-                             ('materialname', 'CFRP_T700SC_LY556'),
+                             ('materialName', 'CFRP_T700SC_LY556'),
 
                              # Fiber roving parameter
                              ('hoopLayerThickness', 0.125),

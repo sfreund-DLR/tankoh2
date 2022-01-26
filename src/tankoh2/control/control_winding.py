@@ -28,7 +28,7 @@ def createDesign(**kwargs):
     # #########################################################################################
 
     log.info('='*100)
-    log.info('createWindingDesign with these parameters: \n'+(indent(kwargs.items())))
+    log.info('Create frp winding design with these parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
     designArgs = parseDesginArgs(kwargs)
@@ -45,15 +45,15 @@ def createDesign(**kwargs):
     relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
 
     # Geometry
-    domeType = designArgs['domeType'] # CIRCLE; ISOTENSOID
+    domeType = designArgs['domeType'].lower() # CIRCLE; ISOTENSOID
     domeX, domeR = designArgs['domeContour'] # (x,r)
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
-    dzyl = designArgs['dzyl']  # mm
-    if 'lzyl' not in designArgs:
-        designArgs['lzyl'] = designArgs['lzylByR'] * dzyl/2
-    lzylinder = designArgs['lzyl']  # mm
-    dome = getDome(dzyl / 2., polarOpeningRadius, domeType, domeX, domeR)
-    length = lzylinder + 2 * dome.domeLength
+    dcly = designArgs['dcly']  # mm
+    if 'lcyl' not in designArgs:
+        designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
+    lcylinder = designArgs['lcyl']  # mm
+    dome = getDome(dcly / 2., polarOpeningRadius, domeType, domeX, domeR)
+    length = lcylinder + 2 * dome.domeLength
 
     # Design Args
     if 'burstPressure' not in designArgs:
@@ -62,13 +62,13 @@ def createDesign(**kwargs):
         valveReleaseFactor = designArgs['valveReleaseFactor']
         useHydrostaticPressure = designArgs['useHydrostaticPressure']
         tankLocation = designArgs['tankLocation']
-        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dzyl) if useHydrostaticPressure else 0.
+        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
         designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
     useFibreFailure = designArgs['useFibreFailure']
 
     # Material
-    materialname = designArgs['materialname']
+    materialName = designArgs['materialName']
 
     # Fiber roving parameter
     hoopLayerThickness = designArgs['hoopLayerThickness']
@@ -83,7 +83,7 @@ def createDesign(**kwargs):
     saveParametersAndResults(designArgs)
 
     # input files
-    materialFilename = os.path.join(dataDir, materialname+".json")
+    materialFilename = os.path.join(dataDir, materialName+".json")
     # output files
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
@@ -93,7 +93,7 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = getLiner(dome, lzylinder, linerFilename, tankname, nodeNumber=nodeNumber)
+    liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r3 = 40.
 
@@ -157,16 +157,17 @@ def createDesign(**kwargs):
 
 
 if __name__ == '__main__':
-    if 1:
+    if 0:
         params = defaultDesign.copy()
         params['domeType'] = 'ellipse'
-        params['domeLength'] = 300
+        params['domeAxialHalfAxis'] = 300
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 0:
         createWindingDesign(pressure=5)
     elif 1:
         from tankoh2.design.existingdesigns import vphDesign1
+        vphDesign1['polarOpeningRadius'] = 23
         createDesign(**vphDesign1)
     else:
         rs=[]
@@ -177,8 +178,8 @@ if __name__ == '__main__':
                                 safetyFactor=1.,
                                 burstPressure=.5,
                                 domeType = pychain.winding.DOME_TYPES.ISOTENSOID,
-                                lzyl=l,
-                                dzyl=2400,
+                                lcyl=l,
+                                dcly=2400,
                                 #polarOpeningRadius=30.,
                                 )
             rs.append(r)

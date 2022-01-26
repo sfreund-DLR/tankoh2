@@ -114,7 +114,7 @@ def getInnerDomeContour(ys, xs, linerthickness, rzylinder):
     return xs_inner, ys_inner
 
 
-def getDomeContourFromFile(domefilename, rzylinder, lzylinder, linerthickness):
+def getDomeContourFromFile(domefilename, rzylinder, lcylinder, linerthickness):
 
 #   reads and returns x,y-values of liner contour
 #
@@ -123,7 +123,7 @@ def getDomeContourFromFile(domefilename, rzylinder, lzylinder, linerthickness):
 #
 #   input domefilename  : name of txt-file including datapoints of outer liner contour
 #   input rzylinder     : radius in cylindrical regime (outer side of liner = inner side of winding)
-#   input lzylinder     : length of cylincrical regime of tank
+#   input lcylinder     : length of cylincrical regime of tank
 #   input linerthickess   : desired thickness of liner
 #
     
@@ -132,7 +132,7 @@ def getDomeContourFromFile(domefilename, rzylinder, lzylinder, linerthickness):
     Data = np.loadtxt(filename)  
     filename.close()   
 
-    ys = abs(Data[:, 0])-abs(Data[0,0])+lzylinder/2. # positiona long axis
+    ys = abs(Data[:, 0])-abs(Data[0,0])+lcylinder/2. # positiona long axis
     xs = abs(Data[:,1]) # position dome radius
     dy = abs(max(ys)-min(ys))
     dx = abs(max(xs)-min(xs))
@@ -155,7 +155,7 @@ def getDomeContourFromFile(domefilename, rzylinder, lzylinder, linerthickness):
     return contour, sheetSize
 
 
-def loadDomeContourToSketch(domefilename, rzylinder, lzylinder, linerthickness):
+def loadDomeContourToSketch(domefilename, rzylinder, lcylinder, linerthickness):
 
 #   loads dome contour from file into Abaqus-Sketch
 #
@@ -163,10 +163,10 @@ def loadDomeContourToSketch(domefilename, rzylinder, lzylinder, linerthickness):
 #
 #   input domefilename  : name of txt-file including datapoints of outer liner contour
 #   input rzylinder     : radius in cylindrical regime (outer side of liner = inner side of winding)
-#   input lzylinder     : length of cylincrical regime of tank
+#   input lcylinder     : length of cylincrical regime of tank
 #   input linerthickess   : desired thickness of liner
 #
-    contourpoints, sheet = getDomeContourFromFile(domefilename, rzylinder, lzylinder, linerthickness)  
+    contourpoints, sheet = getDomeContourFromFile(domefilename, rzylinder, lcylinder, linerthickness)  
 
     s1 = model.ConstrainedSketch(name='Liner', sheetSize=sheet)  
     s1.Spline(points = contourpoints)

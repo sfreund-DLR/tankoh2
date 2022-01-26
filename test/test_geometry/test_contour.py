@@ -1,6 +1,6 @@
 import numpy as np
 
-from tankoh2.geometry.contour import DomeEllipsoid, DomeSphere
+from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere
 
 
 def test_domeEllipsoidSphere():

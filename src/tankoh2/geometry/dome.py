@@ -18,6 +18,11 @@ class AbstractDome(metaclass=ABCMeta):
         self._contourCache = {} # nodeNumber --> result points
 
     @property
+    def rCyl(self):
+        """Return largest radius of dome"""
+        return self.getContour()[1][0]
+
+    @property
     def volume(self):
         """calc dome volume numerically by slices of circular conical frustums"""
         return self.getVolume(self.getContour())
@@ -37,6 +42,13 @@ class AbstractDome(metaclass=ABCMeta):
         :param wallThickness: thickness of the dome material
         :return: scalar, wall volume
         """
+
+    @property
+    def domeLength(self):
+        """Returns the length of the dome, also considering the polar opening"""
+        x, _ = self.getContour()
+        return abs(x[0]-x[-1])
+
 
     @property
     def area(self):
@@ -61,51 +73,56 @@ class AbstractDome(metaclass=ABCMeta):
 
 class DomeEllipsoid(AbstractDome):
 
-    def __init__(self, rCyl, lDome, rPolarOpening):
+    def __init__(self, rCyl, lDomeHalfAxis, rPolarOpening):
         """Calculcate ellipsoid contour
         :param rCyl: radius of cylindrical section
-        :param lDome: axial length of dome
+        :param lDomeHalfAxis: axial length of the ellipse (half axis)
         :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
 
                           rPolarOpening
                              ←→
 
                          ..--    --..          ↑
-                     .-~              ~-.      |    lDome
+                     .-~              ~-.      |    lDomeHalfAxis
                     /                    \     |
                    |                     |     ↓
 
                    ←----------→
                        rCyl
         """
+        AbstractDome.__init__(self)
         if rPolarOpening >= rCyl:
             raise Tankoh2Error('Polar opening should not be greater or equal to the cylindrical radius')
-        self.rPolarOpening = rPolarOpening
+        self._rPolarOpening = rPolarOpening
         self._rCyl = rCyl
-        self._lDome = lDome
-        self.halfAxes = (self.lDome, self.rCyl) if self.lDome > self.rCyl else (self.rCyl, self.lDome)
+        self._lDomeHalfAxis = lDomeHalfAxis
+        self.halfAxes = (self.lDomeHalfAxis, self.rCyl) if self.lDomeHalfAxis > self.rCyl else (self.rCyl, self.lDomeHalfAxis)
         a, b = self.halfAxes
         self.eccentricitySq = 1.0 - b ** 2 / a ** 2  # eccentricity squared
+
+    @property
+    def rPolarOpening(self):
+        return self._rPolarOpening
 
     @property
     def rCyl(self):
         return self._rCyl
 
     @property
-    def lDome(self):
-        return self._lDome
+    def lDomeHalfAxis(self):
+        return self._lDomeHalfAxis
 
     @property
     def aIsDomeLength(self):
         """Returns true if the dome length represents the major half axis of the ellipse"""
-        return self.lDome > self.rCyl
+        return self.lDomeHalfAxis > self.rCyl
 
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used
 
         :param wallThickness: thickness of the dome material
         """
-        otherDome = DomeEllipsoid(self.rCyl + wallThickness, self.lDome + wallThickness, self.rPolarOpening)
+        otherDome = DomeEllipsoid(self.rCyl + wallThickness, self.lDomeHalfAxis + wallThickness, self.rPolarOpening)
         return otherDome.volume - self.volume
 
     def _getPolarOpeningArcLenEllipse(self):
@@ -190,6 +207,8 @@ class DomeEllipsoid(AbstractDome):
         :param nodeNumber: number of nodes used
         :return: vectors x,r: x is increasing, r starts at cylinder radius decreasing
         """
+        if nodeNumber in self._contourCache:
+            return self._contourCache[nodeNumber]
         arcLen = self._getPolarOpeningArcLenEllipse()
         if self.aIsDomeLength:
             arcLengths = np.linspace(0, arcLen, nodeNumber)
@@ -200,8 +219,9 @@ class DomeEllipsoid(AbstractDome):
         points = self.getPoints(phis)
         if not self.aIsDomeLength:
             points = points[::-1,::-1]
-        points[:, 0] = [0, self.rCyl] # due to nummerical inaccuracy
-        points[1, -1] = self.rPolarOpening # due to nummerical inaccuracy
+        points[:, 0] = [0, self.rCyl] # due to numerical inaccuracy
+        points[1, -1] = self.rPolarOpening # due to numerical inaccuracy
+        self._contourCache[nodeNumber] = points
         return points
 
 
@@ -218,7 +238,7 @@ class DomeSphere(DomeEllipsoid):
     @property
     def radius(self):
         """Returns the radius of the sphere"""
-        return self.lDome
+        return self.rCyl
 
     @property
     def contourLength(self):
