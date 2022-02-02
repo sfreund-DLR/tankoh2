@@ -343,13 +343,16 @@ def removeUMAT(model):
         sections[sectionkey].setValues(material=sectionkey, thickness=None) 
 
 
-def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles):
+def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName):
 
 #   create material card for UMAT from material props from given json file
 #
 #   input layerMaterialPrefix : prefix used in material name for layer materials, e.g. "Layer_"
 #   inout materialPath  : json-file (whole file path)
 #   input materialName  : name of material for wich paramaters are to be read
+#   input udLayers      : boolean if udLayers (true) or balance angle plies (false) are modelled
+#   input compositeLayup : boolean; true if compositelayup is used as material section; false if not
+#   inout windingPartName : name of winding part
 
     print("*** START GENERATE UMAT MATERIAL CARDS ***")  
 
@@ -361,13 +364,23 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
     for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
-        #print('key', key)
+        print('key', key)
         if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
             material = materials[key]            
             propsTemp = materialProps.copy()
             if not key[0:len(UMATprefix)] == UMATprefix and len(UMATprefix)>0:
                 newKey = UMATprefix+'_'+key
-                sectionkey = key
+                if not compositeLayup:
+                    sectionkey = key
+                else:
+                    keyword = key[0:2]+'_Section_'                    
+                    before_keyword, keyword, after_keyword = key.partition(keyword)                     
+                    keyword = '_Layer_'
+                    before_keyword, keyword, after_keyword  = after_keyword.partition(keyword)
+                    sectionNumberStr = before_keyword                    
+                    before_keyword, keyword, after_keyword  = after_keyword.partition(keyword)
+                    layerNoStr = after_keyword
+                    sectionkey = key[0:2]+'_Composite_'+sectionNumberStr
             else:
                 newKey = key  
                 sectionkey = newKey[13:len(newKey)]
@@ -376,7 +389,7 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
             #AbqMatProps = material.elastic.table
 
             #print('nexKey', newKey)
-            #print('sectionkey', sectionkey)
+            print('sectionkey', sectionkey)
 
             #get band angle from material description
             materialDescription= material.description
@@ -413,8 +426,14 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
 
 # ---------- Assign UMAT to section definition rename material to trigger UMAT    
             if len(UMATprefix) > 0:           
-                #material.changeKey(fromName=key, toName=newKey)
-                sections[sectionkey].setValues(material=newKey, thickness=None)           
+                if not compositeLayup: # change section definition
+                    #material.changeKey(fromName=key, toName=newKey)
+                    sections[sectionkey].setValues(material=newKey, thickness=None)           
+                if compositeLayup:  # change material definition in composite layup
+                    if udLayers:
+                        iLayer = int(layerNoStr)
+                        print(model.parts[windingPartName].compositeLayups[sectionkey].plies[iLayer])
+
             
             if AbqMATinAcuteTriangles:   
                 # check which mandrel current section belongs to; this is defined within the section name "Layer_X_M1_xyz"--> mandrel 1, "..._M2_..." --> Mandrel 2

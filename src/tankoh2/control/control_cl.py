@@ -75,6 +75,8 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
         dome2 = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2=dome2)
+    #buildFromDome(dome, cylinderLength, deltaSpline)
+    
 
     # ###########################################
     # Create material
