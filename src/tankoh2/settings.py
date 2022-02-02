@@ -3,7 +3,7 @@
 import json
 import os, sys
 
-from tankoh2.exception import Tankoh2Error
+from tankoh2.service.exception import Tankoh2Error
 
 myCrOSettings = None
 exampleFileName = 'settings_example.json'

@@ -4,7 +4,7 @@ import numpy as np
 import pandas
 
 from tankoh2 import pychain, log
-from tankoh2.winding import windLayer
+from tankoh2.design.winding.winding import windLayer
 
 
 def getCriticalElementIdx(puck):

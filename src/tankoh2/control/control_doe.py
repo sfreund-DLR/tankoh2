@@ -16,14 +16,14 @@ from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
 from fa_pyutils.service.systemutils import getRunDir
 
-from tankoh2.control_sf import createWindingDesign
+from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent
+from tankoh2.service.utilities import indent
 
 dome = 'circle'  # isotensoid  circle
 safetyFactor = 1  # 2.25
-lb = OrderedDict([('r', 500.), ('lzylByR', 0.01), ('dp', 0.13 * safetyFactor)])  # [mm, - , MPa]
-ub = OrderedDict([('r', 1600.), ('lzylByR', 12.), ('dp', 0.5 * safetyFactor)])
+lb = OrderedDict([('r', 500.), ('lcylByR', 0.01), ('dp', 0.13 * safetyFactor)])  # [mm, - , MPa]
+ub = OrderedDict([('r', 1600.), ('lcylByR', 12.), ('dp', 0.5 * safetyFactor)])
 useFibreFailure = False
 
 numberOfSamples = 201
@@ -34,7 +34,7 @@ class TankWinder(AbstractTargetFunction):
 
     def __init__(self, lb, ub, runDir):
         """"""
-        resultNames = ['frpMass', 'volume', 'area', 'lzylinder', 'numberOfLayers', 'angles', 'hoopLayerShifts']
+        resultNames = ['frpMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'angles', 'hoopLayerShifts']
         AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNames)
         self.doParallelization = []
         self.runDir = runDir
@@ -43,27 +43,27 @@ class TankWinder(AbstractTargetFunction):
     def _call(self, parameters):
         """call function for the model"""
         runDir = getRunDir(basePath=os.path.join(self.runDir), useMilliSeconds=True)
-        r, lzyl, burstPressure = parameters
+        r, lcyl, burstPressure = parameters
 
-        result = createWindingDesign(dzyl=r * 2, lzylByR=lzyl, burstPressure=burstPressure,
-                                     minPolarOpening=r / 10, runDir=runDir,
-                                     domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
-                                     useFibreFailure = useFibreFailure)
+        result = createDesign(dcly=r * 2, lcylByR=lcyl, burstPressure=burstPressure,
+                              polarOpeningRadius=r / 10, runDir=runDir,
+                              domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
+                              useFibreFailure = useFibreFailure)
         return result
 
-volumeFunc = lambda r, lzylByR: (4 / 3 * np.pi * r ** 3 + r * lzylByR * np.pi * r ** 2)
+volumeFunc = lambda r, lcylByR: (4 / 3 * np.pi * r ** 3 + r * lcylByR * np.pi * r ** 2)
 """[m**3]"""
 
-def plotGeometryRange(radii, lzylByRs, plotDir='', show=False, samples=None):
+def plotGeometryRange(radii, lcylByRs, plotDir='', show=False, samples=None):
     """
 
     :param radii: tuple with min and max radius [mm]
-    :param lzylByRs: tuple with min and max lzylByR [-]
+    :param lcylByRs: tuple with min and max lcylByR [-]
     :return: None
     """
     radii = np.array(radii) / 1e3  # convert to m
     if samples is not None:
-        samplesR, samplesLzylByR = samples[:2, :]
+        samplesR, sampleslcylByR = samples[:2, :]
         samplesR = samplesR / 1e3
 
     fig = plt.figure(figsize=(15,6))
@@ -74,14 +74,14 @@ def plotGeometryRange(radii, lzylByRs, plotDir='', show=False, samples=None):
         ax.set_xlabel('Radius [m]')
         ax.set_ylabel('Volume [m^3]')
         color = 'tab:blue'
-        for lzylByR in lzylByRs:
+        for lcylByR in lcylByRs:
             x = np.linspace(*radii,11)
-            volumes = [volumeFunc(r, lzylByR) for r in x]
-            ax.plot(x, volumes, color=color, label=f'lzylByR={lzylByR}')
+            volumes = [volumeFunc(r, lcylByR) for r in x]
+            ax.plot(x, volumes, color=color, label=f'lcylByR={lcylByR}')
             color = 'tab:orange'
         ax.legend()
         if samples is not None:
-            volumes = volumeFunc(samplesR, samplesLzylByR)
+            volumes = volumeFunc(samplesR, sampleslcylByR)
             ax.scatter(samplesR, volumes, label=f'samples')
 
     if plotDir:
@@ -106,7 +106,7 @@ def main():
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
-    plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']], plotDir=runDir, samples=sampleX)
+    plotGeometryRange([lb['r'], ub['r']],[lb['lcylByR'], ub['lcylByR']], plotDir=runDir, samples=sampleX)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
     sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)
@@ -132,4 +132,4 @@ if __name__ == '__main__':
     if 1:
         main()
     else:
-        plotGeometryRange([lb['r'], ub['r']],[lb['lzylByR'], ub['lzylByR']], show=True)
+        plotGeometryRange([lb['r'], ub['r']],[lb['lcylByR'], ub['lcylByR']], show=True)

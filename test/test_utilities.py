@@ -1,6 +1,4 @@
-
-
-from tankoh2.utilities import getHydrostaticPressure
+from tankoh2.design.loads import getHydrostaticPressure
 import numpy as np
 
 

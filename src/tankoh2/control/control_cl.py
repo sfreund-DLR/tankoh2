@@ -1,32 +1,30 @@
 """control a tank optimization"""
 
 import sys
-import statistics
-from tankoh2.existingdesigns import kautextDesign, NGTBITDesign
+from tankoh2.design.existingdesigns import kautextDesign
+
 #from builtins import True, False
 #from builtins import
 
 sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
 
 import os
-import numpy as np
-from scipy.optimize import curve_fit
 
 from tankoh2 import programDir, log, pychain
-from tankoh2.service import indent, getRunDir
-from tankoh2.settings import myCrOSettings as settings
-from tankoh2.utilities import updateName, getRadiusByShiftOnMandrel, changeSimulationOptions
-from tankoh2.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
-from tankoh2.material import getMaterial, getComposite, readLayupData
-from tankoh2.optimize import optimizeFriction, optimizeHoopShift, optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
+from tankoh2.service.utilities import indent, getRunDir
+from tankoh2.design.winding.windingutils import getRadiusByShiftOnMandrel, updateName, \
+    changeSimulationOptions
+from tankoh2.design.winding.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
+from tankoh2.design.winding.material import getMaterial, getComposite, readLayupData
+from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
-from tankoh2.control_sf import createWindingDesign
-import tankoh2.existingdesigns
+from tankoh2.control.control_winding import createDesign
+import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 #from builtins import True
 
 def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
@@ -68,15 +66,15 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     # #########################################################################################
     x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
-    dome = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+    dome = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     dome2 = None
     if symmetricTank == False:
         x, r = getReducedDomePoints(dome2ContourFilename,
                                 dpoints, fileNameReducedDome2Contour)
-        dome2 = getDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+        dome2 = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
-    liner = getLiner(dome, lzylinder, linerFilename, tankname, dome2=dome2)
+    liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2=dome2)
 
     # ###########################################
     # Create material
@@ -115,7 +113,7 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
         # Hoop Layer
         if abs(angle - 90.) < 1e-8:
             #po_goal = krempenradius
-            po_goal = hoopStart + lzylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
+            po_goal = hoopStart + lcylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
             anzHoop = anzHoop+1
             #po_goal = wendekreisradius
             log.info(f'apply layer {i+1} with angle {angle}, and hoop position {po_goal}')
@@ -285,10 +283,8 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     #mesh model
     #model.mesh(2.0)
     #export inp file
-    #model.exportInp(tankname + "_Job")    
-    
+    #model.exportInp(tankname + "_Job")
 
-    import matplotlib.pylab as plt
 
 #    fig = plt.figure()
  #   ax = fig.gca()
@@ -306,13 +302,13 @@ def builtVesselByOptimizedDesign(design, domeContourFilename):
     dpoints = 4
     runDir = getRunDir()
     if domeContourFilename == None:
-        createWindingDesign(**design)
+        createDesign(**design)
     else:
         fileNameReducedDomeContour = os.path.join(runDir, f"Dome_contour_{tankname}_reduced.dcon")
         x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
         # start design optimization with specified design and given (x,r)-liner contour data
-        createWindingDesign(**design, domeContour = (x,r), runDir=runDir)
+        createDesign(**design, domeContour = (x, r), runDir=runDir)
 
 def main():
 
@@ -334,9 +330,9 @@ def main():
         
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
-    dzyl = 400.  # mm
+    dcly = 400.  # mm
     polarOpening = 46./2.  # mm
-    lzylinder = 500.  # mm    
+    lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
@@ -365,8 +361,8 @@ def main():
 
 # - Optimized Design regarding sepcific parameters
     createDesign = True
-    design = tankoh2.existingdesigns.NGTBITDesign
-    #design = tankoh2.existingdesigns.NGTBITDesign_small
+    design = tankoh2.design.existingdesigns.NGTBITDesign
+    #design = tankoh2.design.existingdesigns.NGTBITDesign_small
     tankname = design.get('tankname')    
     dataDir = os.path.join(programDir, 'data')
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
@@ -376,7 +372,7 @@ def main():
 
     if AsBuilt: 
         builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dzyl, polarOpening, lzylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
     if createDesign:

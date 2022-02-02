@@ -6,10 +6,11 @@
 
 
 ###############################################################################
-import sys
+import sys, os
 #from typing import ValuesView
 
-sys.path.append('C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//src//tankoh2')
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 import os
 import numpy as np 
 import json
@@ -17,7 +18,7 @@ import mesh
 from datetime import datetime
 
 import importlib
-import continueVesselCAE as cvc
+import tankoh2.fem.continueVesselCAE as cvc
 cvc = reload(cvc)
 
 def getModel(projectname):  
@@ -50,7 +51,7 @@ def main():
     modelname = 'NGT-BIT-small_Solid3D'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"    
     rzylinder = 200. # radius of cylindrical part
-    lzylinder = 290. # length of cylindrical part
+    lcylinder = 290. # length of cylindrical part
     nMandrels = 1 # number of mandrels
     layerPartPrefix = 'Layer'
     reveloveAngle = 1.
@@ -137,7 +138,7 @@ def main():
         cvc.reMeshVessel(elementsPerLayerThickness, layerPartPrefix, minAngle, parts)
 
     if createLiner == True:
-        cvc.loadDomeContourToSketch(domefile, rzylinder, lzylinder, linerthickness)
+        cvc.loadDomeContourToSketch(domefile, rzylinder, lcylinder, linerthickness)
     
     if createUMAT == True:
         cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles)

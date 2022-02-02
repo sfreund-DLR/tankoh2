@@ -11,7 +11,7 @@ from scipy.optimize import curve_fit
 
 from tankoh2 import programDir, log
 from tankoh2.settings import myCrOSettings as settings
-import mycropychain as pychain
+from tankoh2 import pychain
 
 
 # #########################################################################################
@@ -98,9 +98,9 @@ def main():
 
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
-    dzyl = 400.  # mm
+    dcly = 400.  # mm
     polarOpening = 20.  # mm
-    lzylinder = 500.  # mm
+    lcylinder = 500.  # mm
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
@@ -151,14 +151,14 @@ def main():
 
     # build  dome
     dome = pychain.winding.Dome()
-    dome.buildDome(dzyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID)
+    dome.buildDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID)
     dome.setPoints(Xvec, rVec)
     log.info(f'Build Dome with dome data {dome}')
 
     # create a symmetric liner with dome information and cylinder length
     liner = pychain.winding.Liner()
     # spline for winding calculation is left on default of 1.0
-    liner.buildFromDome(dome, lzylinder, 1.0)
+    liner.buildFromDome(dome, lcylinder, 1.0)
 
     # save liner for visualization with µChainWind
     linerFilename = os.path.join(dataDir, tankname + ".liner")

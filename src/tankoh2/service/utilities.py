@@ -1,134 +1,27 @@
-"""some service functions"""
+import math
+
+import re
 
 import functools
-import pandas as pd
+
+import io
+
+import itertools
 import numpy as np
-import io, math
-import itertools,re
-import os
-from datetime import datetime
 import time
-import matplotlib.pylab as plt
-from matplotlib.figure import Figure
+
+import os
+
+from datetime import datetime
 
 from tankoh2 import programDir, log
 
-
-def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
-    fig, axs = plt.subplots(2, 3, figsize=(18,10))
-    axs = iter(axs.T.flatten())
-
-    ax = next(axs)
-    ax.set_title('S11')
-    for layerIndex, stressLayer11 in enumerate(S11.T):
-        ax.plot(stressLayer11, label=f'layer {layerIndex}')
-        ax.legend()
-
-    ax = next(axs)
-    ax.set_title('S22')
-    for layerIndex, stressLayer22 in enumerate(S22.T):
-        ax.plot(stressLayer22, label=f'layer {layerIndex}')
-        ax.legend()
-
-    ax = next(axs)
-    ax.set_title('eps axial')
-    ax.plot(epsAxialBot, label='epsAxialBot')
-    ax.plot(epsAxialTop, label='epsAxialTop')
-    ax.legend()
-
-    ax = next(axs)
-    ax.set_title('eps circ')
-    ax.plot(epsCircBot, label='epsCircBot')
-    ax.plot(epsCircTop, label='epsCircTop')
-    ax.legend()
-
-    ax = next(axs)
-    ax.set_title('puck fibre failure')
-    puckFF.plot(ax=ax)
-    ax.legend(loc='lower left')
-
-    ax = next(axs)
-    ax.set_title('puck inter fibre failure')
-    puckIFF.plot(ax=ax)
-    ax.legend(loc='lower left')
-
-    if filename:
-        plt.savefig(filename)
-    if show:
-        plt.show()
-    plt.close(fig)
-
-def plotThicknesses(show, filename, thicknesses):
-    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-    plotDataFrame(show, None, thicknesses, axes=axs[0], title='Layer thicknesses', yLabel='thickness [mm]',
-                  xLabel='contour coordinate')
-    plotDataFrame(show, None, thicknesses, axes=axs[1], title='Cumulated layer thickness', yLabel='thickness [mm]',
-                  xLabel='contour coordinate', plotKwArgs={'stacked':True})
-
-    if filename:
-        plt.savefig(filename)
-    if show:
-        plt.show()
-    plt.close(fig)
-
-
-def plotContour(show, filename, x, r):
-    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-    df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
-    plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r')
-    df = pd.DataFrame(np.array([r]).T, columns=['r'], index=pd.Index(x))
-    plotDataFrame(show, None, df, axes=axs[1], title='Contour', yLabel='r', xLabel='x')
-
-    plt.axis('scaled')
-
-    if filename:
-        plt.savefig(filename)
-    if show:
-        plt.show()
-    plt.close(fig)
-
-def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None,
-                  yLabel=None, xLabel='Contour coordinate', plotKwArgs = None):
-    """plots puck properties
-
-    :param show: show the plot created
-    :param filename: save the plot to filename
-    :param dataframe: dataframe with layers as columns and elementIds as index
-    :param axes: matplotlib axes object
-    :param vlines: x-coordinates with a vertical line to draw
-    """
-    if axes is None:
-        fig = plt.figure(figsize=(15,9))
-        ax = fig.gca()
-    else:
-        ax = axes
-    if plotKwArgs is None:
-        plotKwArgs = {}
-    dataframe.plot(ax=ax, **plotKwArgs)
-    legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'best'}
-    ax.legend(**legendKwargs)
-    ax.set(xlabel=xLabel,
-           ylabel='' if yLabel is None else yLabel,
-           title='' if title is None else title)
-
-    if vlines is not None:
-        if vlineColors is None:
-            vlineColors = 'black'
-        ymin, ymax = dataframe.min().min(), dataframe.max().max()
-        plt.vlines(vlines, ymin, ymax + 0.1*(ymax-ymin), colors=vlineColors, linestyles='dashed')
-
-    if axes is None:
-        plt.subplots_adjust(right=0.75, left=0.10)
-        if filename:
-            plt.savefig(filename)
-        if show:
-            plt.show()
-        plt.close(fig)
 
 def getTimeString(useMilliSeconds=False):
     """returns a time string of the format: yyyymmdd_hhmmss"""
     dt = datetime.now()
     return dt.strftime("%Y%m%d_%H%M%S") + ('_{}'.format(dt.microsecond) if useMilliSeconds else '')
+
 
 def makeAllDirs(directory):
     absPath = os.path.abspath(directory)
@@ -137,6 +30,7 @@ def makeAllDirs(directory):
         subPath = absPath.rsplit(os.sep,i)[0]
         if not os.path.exists(subPath):
             os.makedirs(subPath)
+
 
 def getRunDir(runDirExtension='', useMilliSeconds=False):
     """Creates a folder that will be used as directory for the actual run.
@@ -165,6 +59,7 @@ def getRunDir(runDirExtension='', useMilliSeconds=False):
             break
 
     return runDir
+
 
 def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
            separateRows=False, prefix='', postfix='', wrapfunc=lambda x: wrap_npstr(x)):  # lambda x:x):
@@ -226,9 +121,6 @@ def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
     return output.getvalue()
 
 
-# written by Mike Brown
-# http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/148061
-
 def wrap_npstr(text):
     """A function to distinguisch between np-arrays and others.
     np-arrays are returned as string without newline symbols that are usually returned by np.ndarray.__str__()
@@ -266,5 +158,3 @@ def wrap_always(text, width):
        It doesn't split the text in words."""
     return '\n'.join([text[width * i:width * (i + 1)] \
                       for i in range(int(math.ceil(1. * len(text) / width)))])
-
-
