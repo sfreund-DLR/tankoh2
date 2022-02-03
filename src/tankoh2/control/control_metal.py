@@ -9,6 +9,7 @@ from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere
 from tankoh2.geometry.liner import Liner
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.metal.mechanics import getWallThickness
+from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
 
@@ -63,8 +64,8 @@ def createDesign(**kwargs):
         designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
 
-    saveParametersAndResults(designArgs)
-
+    materialName = designArgs['materialName']
+    material = getMaterial(materialName)
     # #########################################################################################
     # Create Liner
     # #########################################################################################
@@ -75,10 +76,12 @@ def createDesign(**kwargs):
     # run winding simulation
     # #############################################################################
     volume, area, linerLength = liner.volume, liner.area, liner.length
-    wallThickness = getWallThickness(designArgs['materialName'], burstPressure, dcly / 1000)
-    mass = liner.getWallVolume(wallThickness)
+    wallThickness = getWallThickness(material, burstPressure, dcly / 1000)
+    wallVol = liner.getWallVolume(wallThickness*1000)
+    mass = material['roh'] * wallVol / 1000 / 1000 / 1000
+
     duration = datetime.datetime.now() - startTime
-    results = mass, volume, area, linerLength, duration
+    results = mass, wallThickness, volume, area, linerLength, duration
 
     saveParametersAndResults(designArgs, results)
 
@@ -95,6 +98,23 @@ if __name__ == '__main__':
         params['domeAxialHalfAxis'] = 100
         params['materialName'] = 'alu2219'
         createDesign(**params)
-    elif 0:
-        pass
+    elif 1:
+        import numpy as np
+        r = h = 100
+        asp = 4*np.pi*r**2
+        vs = 4/3*np.pi*r**3
+        ac = 2*np.pi*r*h
+        vc = np.pi*r**2*h
+
+        params = defaultDesign.copy()
+        params['materialName'] = 'alu2219'
+        params['domeType'] = 'ellipse'
+        params['polarOpeningRadius'] = 0
+        params['domeAxialHalfAxis'] = r
+        params['dcly'] = 2*r
+        params['lcyl'] = h
+        params['safetyFactor'] = 2.25
+        params['pressure'] = .2
+        createDesign(**params)
+        print('volumne', vc+vs, 'area', ac+asp)
 

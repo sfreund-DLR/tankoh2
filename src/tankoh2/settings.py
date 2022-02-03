@@ -29,22 +29,23 @@ def applySettings(filename=None):
         settings = json.load(f)
     major, minor = str(sys.version_info.major), str(sys.version_info.minor)
     pyVersionString = major+minor
-    # v 0.90c
-    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}_x64')
+
+    # v0.95.3
+    pyVersionString = f'{major}_{minor}'
+    pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\{pyVersionString}')
     if not os.path.exists(pythonApiPath):
-        # v 0.95.2
-        pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
+        # v 0.90c
+        pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}_x64')
         if not os.path.exists(pythonApiPath):
-            # v0.95.3
-            pyVersionString = f'{major}_{minor}'
-            pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\{pyVersionString}')
+            # v 0.95.2
+            pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
     #abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
     abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95')
 
     log.info(f'Append mycropychain path to sys path: {pythonApiPath}')
     sys.path.append(pythonApiPath)
     
-    # import API - MyCrOChain GUI with activiated TCP-Connector needed
+    # import API - MyCrOChain GUI with activated TCP-Connector needed
     pychainActive = True
     try:
         # v <= 0.90

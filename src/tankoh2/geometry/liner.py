@@ -19,10 +19,15 @@ class Liner():
         return self.dome.rCyl
 
     @property
+    def _cylVolume(self):
+        """calc volume of cylindrical part"""
+        return np.pi * self.rCyl ** 2 * self.lcyl
+
+    @property
     def volume(self):
         """calc volume of the liner"""
         domeVolume = (self.dome.volume + self.dome2.volume) if self.dome2 else 2 * self.dome.volume
-        return np.pi*self.rCyl**2*self.lcyl + domeVolume
+        return self._cylVolume + domeVolume
 
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used
@@ -35,7 +40,7 @@ class Liner():
         else:
             domeWallVol = 2 * self.dome.getWallVolume(wallThickness)
         biggerCylVol = np.pi * (self.rCyl+wallThickness) ** 2 * self.lcyl
-        return biggerCylVol-self.volume + domeWallVol
+        return biggerCylVol-self._cylVolume + domeWallVol
 
     @property
     def length(self):

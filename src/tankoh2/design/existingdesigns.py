@@ -21,6 +21,7 @@ allDesignKeywords = (
     'polarOpeningRadius',
     'dcly',
     'lcylByR',
+    'relRadiusHoopLayerEnd',
     'safetyFactor',
     'valveReleaseFactor',
     'pressure',
