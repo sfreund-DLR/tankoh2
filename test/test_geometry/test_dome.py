@@ -68,3 +68,10 @@ def test_ellipseContour3():
     assert np.allclose(x, xref)
     assert np.allclose(r, rref)
 
+def test_ellipseWallVolume():
+    r = 1000
+    de = DomeEllipsoid(r, r, 0)
+    vRefSphere = 4/3*np.pi*((r+1)**3-r**3)
+    assert abs(2*de.getWallVolume(1) / vRefSphere -1) < 1e-5
+
+
