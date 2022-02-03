@@ -12,8 +12,8 @@ from tankoh2.geometry.dome import DomeEllipsoid
 resultNamesFrp = ['shellMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
 resultUnitsFrp = ['kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['metalMass', 'wallThickness', 'volume', 'area', 'lcylinder', 'duration']
-resultUnitsMetal = ['kg', 'm', 'mm^3', 'mm^2', 'mm', 's']
+resultNamesMetal = ['metalMass', 'volume', 'area', 'lcylinder', 'wallThickness', 'duration']
+resultUnitsMetal = ['kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     filename = 'all_parameters_and_results.txt'
@@ -67,7 +67,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                            f'"{frpOrMetal}" instead.')
     if frpOrMetal == 'metal':
         for key in frpKeywords:
-            inputKwArgs.pop(key)
+            inputKwArgs.pop(key, None)
 
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     removeIfIncluded = [('lcylByR', 'lcyl'),

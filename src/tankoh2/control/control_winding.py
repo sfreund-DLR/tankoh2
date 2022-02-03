@@ -160,11 +160,15 @@ if __name__ == '__main__':
     if 0:
         params = defaultDesign.copy()
         params['domeType'] = 'ellipse'
-        params['domeAxialHalfAxis'] = 300
+        params['domeAxialHalfAxis'] = 100
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
+    elif 1:
+        params = defaultDesign.copy()
+        params['domeType'] = 'circle'
+        createDesign(**params)
     elif 0:
-        createWindingDesign(pressure=5)
+        createDesign(pressure=5)
     elif 1:
         from tankoh2.design.existingdesigns import vphDesign1
         vphDesign1['polarOpeningRadius'] = 23

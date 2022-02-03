@@ -97,8 +97,12 @@ class DomeEllipsoid(AbstractDome):
         self._rCyl = rCyl
         self._lDomeHalfAxis = lDomeHalfAxis
         self.halfAxes = (self.lDomeHalfAxis, self.rCyl) if self.lDomeHalfAxis > self.rCyl else (self.rCyl, self.lDomeHalfAxis)
+
+    @property
+    def eccentricitySq(self):
+        """return eccentricity squared"""
         a, b = self.halfAxes
-        self.eccentricitySq = 1.0 - b ** 2 / a ** 2  # eccentricity squared
+        return 1.0 - b ** 2 / a ** 2
 
     @property
     def rPolarOpening(self):
