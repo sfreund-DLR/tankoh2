@@ -148,13 +148,13 @@ def wrap_onspace(text, width):
 
 def wrap_onspace_strict(text, width):
     """Similar to wrap_onspace, but enforces the width constraint:
-       words longer than width are split."""
+    words longer than width are split."""
     wordRegex = re.compile(r'\S{' + str(width) + r',}')
     return wrap_onspace(wordRegex.sub(lambda m: wrap_always(m.group(), width), text), width)
 
 
 def wrap_always(text, width):
     """A simple word-wrap function that wraps text on exactly width characters.
-       It doesn't split the text in words."""
+    It doesn't split the text in words."""
     return '\n'.join([text[width * i:width * (i + 1)] \
                       for i in range(int(math.ceil(1. * len(text) / width)))])

@@ -86,23 +86,25 @@ def _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoop
 
 def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, runDir,
                  composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd):
-    """
-        :param vessel: vessel instance of mywind
-        :param maxLayers: maximum numbers of layers
-        :param polarOpeningRadius: min polar opening where fitting is attached [mm]
-        :param puckProperties: puckProperties instance of mywind
-        :param burstPressure: burst pressure [MPa]
-        :param runDir: directory where to store results
-        :param composite: composite instance of mywind
-        :param compositeArgs: properties defining the composite:
-            thicknesses, hoopLayerThickness, helixLayerThickenss, material,
-            sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
-        :param verbose: flag if verbose output is needed
-        :param useFibreFailure: flag, use fibre failure or inter fibre failure
-        :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
-        :return: frpMass, volume, area, composite, iterations, anglesShifts
+    """Perform design optimization layer by layer
+
+    :param vessel: vessel instance of mywind
+    :param maxLayers: maximum numbers of layers
+    :param polarOpeningRadius: min polar opening where fitting is attached [mm]
+    :param puckProperties: puckProperties instance of mywind
+    :param burstPressure: burst pressure [MPa]
+    :param runDir: directory where to store results
+    :param composite: composite instance of mywind
+    :param compositeArgs: properties defining the composite:
+        thicknesses, hoopLayerThickness, helixLayerThickenss, material,
+        sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
+    :param verbose: flag if verbose output is needed
+    :param useFibreFailure: flag, use fibre failure or inter fibre failure
+    :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
+    :return: frpMass, volume, area, composite, iterations, anglesShifts
 
     Strategy:
+
     #. Start with hoop layer
     #. Second layer:
         #. Maximize layer angle that still attaches to the fitting

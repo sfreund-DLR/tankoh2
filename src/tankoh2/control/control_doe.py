@@ -14,11 +14,11 @@ import matplotlib.pyplot as plt
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
-from fa_pyutils.service.systemutils import getRunDir
 
 from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log, pychain
-from tankoh2.service.utilities import indent
+from tankoh2.service.utilities import indent, getRunDir
+
 
 dome = 'circle'  # isotensoid  circle
 safetyFactor = 1  # 2.25

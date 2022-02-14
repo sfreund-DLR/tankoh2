@@ -44,9 +44,10 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
 
 def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     """Parse keyworded arguments, add missing parameters with defaults and return a new dict.
+
     :param inputKwArgs: dict with input keyworded arguments
     :param frpOrMetal: flag to switch between FRP winding and metal calculations.
-    For metal calculations, all winding parameters are removed.
+        For metal calculations, all winding parameters are removed.
     :return: dict with updated keyworded arguments
     """
 

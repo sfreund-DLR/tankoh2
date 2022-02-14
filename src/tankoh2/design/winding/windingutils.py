@@ -128,7 +128,7 @@ def changeSimulationOptions(vesselFilename, nLayers, minThicknessValue, hoopLaye
 
     The given json file vesselFilename will be updated in place
 
-    :param vesselFilename: name of vessel file (*.vessel)
+    :param vesselFilename: name of vessel file (\*.vessel)
     :param nLayers: number of layers to be wind
 
     """

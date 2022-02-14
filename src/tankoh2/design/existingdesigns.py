@@ -67,7 +67,7 @@ defaultDesign = OrderedDict([
     ('relRadiusHoopLayerEnd', 0.95),  # relative radius (to cyl radius) where hoop layers end
 
     # Geometry
-    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle, ellipse, custom], if None isotensoid is used
+    ('domeType', 'ISOTENSOID'),  # [isotensoid, circle, ellipse, custom], if None isotensoid is used, if custom domeContour must be given
     ('domeContour', (None, None)),  # (x,r)
     ('polarOpeningRadius', 20),  # mm, radius
     ('dcly', 400.),  # mm
@@ -75,7 +75,7 @@ defaultDesign = OrderedDict([
 
     # Design
     ('safetyFactor', 2.25),
-    ('valveReleaseFactor', 1.1),  # factor for the valve release at burst pressure
+    ('valveReleaseFactor', 1.1),  # factor for the valve release at burst pressure [source: Brewer]
     ('pressure', 5.),  # pressure in MPa (bar / 10.)
     ('useHydrostaticPressure', True),  # according to FAR 25.963 (d)
     ('tankLocation', 'wing_at_engine'),  # [wing_no_engine, wing_at_engine, fuselage]

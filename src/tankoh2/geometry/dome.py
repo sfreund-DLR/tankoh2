@@ -1,13 +1,11 @@
 """This module creates dome contours"""
-from abc import ABCMeta, abstractmethod, abstractproperty
+from abc import ABCMeta, abstractmethod
 
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy import special
 from scipy.optimize import minimize_scalar
 
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.service.utilities import indent
 from tankoh2 import log
 
 
@@ -72,24 +70,27 @@ class AbstractDome(metaclass=ABCMeta):
 
 
 class DomeEllipsoid(AbstractDome):
+    """Calculcate ellipsoid contour
+
+    :param rCyl: radius of cylindrical section
+    :param lDomeHalfAxis: axial length of the ellipse (half axis)
+    :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
+
+    ::
+
+        |              rPolarOpening
+        |                 ←→
+        |
+        |             ..--    --..          ↑
+        |         .-~              ~-.      |    lDomeHalfAxis
+        |        /                    \     |
+        |       |                     |     ↓
+        |
+        |       ←----------→
+        |           rCyl
+    """
 
     def __init__(self, rCyl, lDomeHalfAxis, rPolarOpening):
-        """Calculcate ellipsoid contour
-        :param rCyl: radius of cylindrical section
-        :param lDomeHalfAxis: axial length of the ellipse (half axis)
-        :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
-
-                          rPolarOpening
-                             ←→
-
-                         ..--    --..          ↑
-                     .-~              ~-.      |    lDomeHalfAxis
-                    /                    \     |
-                   |                     |     ↓
-
-                   ←----------→
-                       rCyl
-        """
         AbstractDome.__init__(self)
         if rPolarOpening >= rCyl:
             raise Tankoh2Error('Polar opening should not be greater or equal to the cylindrical radius')
@@ -161,12 +162,14 @@ class DomeEllipsoid(AbstractDome):
     def getPoints(self, phis):
         """Calculates a point on the ellipse
 
-            b,y ↑
-                |    /
-                |phi/
-                |  /
-                | /
-                |------------------→ a,x
+        ::
+
+            |   b,y ↑
+            |       |    /
+            |       |phi/
+            |       |  /
+            |       | /
+            |       |------------------→ a,x
 
         :param phis: angles of the ellipse in rad. For phi=0 → x=0, y=b. For phi=pi/2 → x=a, y=0
         :return: tuple x,y
@@ -179,12 +182,16 @@ class DomeEllipsoid(AbstractDome):
 
     def getPhiByArcLength(self, arcLength):
         """Calculate angle phi starting from phiStart and a given arc length
-            b,y ↑
-                |    /
-                |phi/
-                |  /
-                | /
-                |------------------→ a,x
+
+        ::
+
+            |   b,y ↑
+            |       |    /
+            |       |phi/
+            |       |  /
+            |       | /
+            |       |------------------→ a,x
+
         :param arcLength: length of the arc
         :return: angle in rad
         """
@@ -256,6 +263,7 @@ def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType='circul
     """Calculates the countour of a dome and a attached conical structure
 
     ATTENTION:
+
     - This method is not yet finished!
     - It continas some hardcoded values like xOffset, rOffset
     - dydxConical must be iteratively identified which changes xOffset, rOffset.
@@ -263,18 +271,19 @@ def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType='circul
     - Only tested for dydxConical=1
     - extend for other dome types
 
+    ::
 
-                      rPolarOpening
-                         ←-→
-
-                     ..--     --..
-    circle 1     .-~               ~-.          rSmall
-                /                     \     ↑
-               /                       \    |   lConical
-              /                         \   ↓
-    circle 2 |                           |      rLarge
-             |                           |
-             |                           |
+        |                      rPolarOpening
+        |                         ←-→
+        |
+        |                     ..--     --..
+        |    circle 1     .-~               ~-.          rSmall
+        |                /                     \     ↑
+        |               /                       \    |   lConical
+        |              /                         \   ↓
+        |    circle 2 |                           |      rLarge
+        |             |                           |
+        |             |                           |
 
 
     :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
