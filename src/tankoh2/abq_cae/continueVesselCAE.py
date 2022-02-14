@@ -16,6 +16,9 @@ from symbolicConstants import *
 from abaqusConstants import *
 import regionToolset
 
+global nDepvar_UserDefField
+nDepvar_UserDefField = 35
+
 def getModel(projectname):  
 
     #sourcepath=os.getcwd()
@@ -343,7 +346,181 @@ def removeUMAT(model):
         sections[sectionkey].setValues(material=sectionkey, thickness=None) 
 
 
-def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName):
+def createUMAT(model, material, UMATName, MatProps, nDepvar, degr_fac, udLayers, userDefinedField):
+
+#   for a given material a second Material with UMAT and, if demanded, user-defined-field definition, is created
+#   material parameters, and description from the given material are used
+#
+#   INPUT
+#       model               [model object]      : model to be treated
+#       material            [material object]   : material for which a copy with
+#       UMATName            [string]            : name of the new material with UMAT
+#       MatProps            [list of floats]    : umat material properties
+#       nDepvar             [int]               : number of statev variables 
+#       degr_fac            [float ]            : degradation factor for property degradation due to damage; 0 ... 1
+#       udLaywers           [Boolean]           : true, if UD-layers are modelled; false if balanced angle plies are modelled
+#       userDefinedField    [Boolean]           : true, if also user defined field shall be defined for material; false im not
+#
+#   RETURN
+#       None.
+#   
+
+    
+    propsTemp = MatProps.copy()   
+    
+    if userDefinedField:
+        nDepvar = nDepvar+nDepvar_UserDefField
+
+
+    materialDescription= material.description
+    if not udLayers:
+        #get band angle from material description        
+        angle = getBandAngleFromMaterialDescription(materialDescription)
+    else:
+        angle = 0.
+
+    
+    # append angle and degradation factor to props
+    propsTemp = np.append(propsTemp, [angle])
+    propsTemp = np.append(propsTemp, [degr_fac])
+    
+    # genereate Material with UMAT definition but also keep Abaqus-Standardmaterial definition for
+    # use in triangle elements
+    UmatMaterial = model.Material(name = UMATName, description = materialDescription)                                      
+    UmatMaterial.UserMaterial(mechanicalConstants = propsTemp) 
+    UmatMaterial.Depvar(n=nDepvar)  
+
+    if userDefinedField:
+        UmatMaterial.UserDefinedField()
+
+
+def createUMATName(oldMatName, UMATprefix):
+
+#   generates the name for a UMAT material from the old material name and a UMAT-prefix; consideres if UMAT material already exists for the given material name
+#
+#   INPUT
+
+#       oldMatName          [string]      : name of the material
+#       UMATprefix          [string]      : name prefix for materials with UMAT definition
+#
+#   RETURN
+#       UMATName    [string]    : name of the UMAT material
+#       sectionkey  [string]    : name of the section, the old Material is assigned to    
+#   
+    
+    key = oldMatName
+    if not key[0:len(UMATprefix)] == UMATprefix and len(UMATprefix)>0:
+        newKey = UMATprefix+'_'+key                
+        sectionkey = key                
+    else:
+        newKey = key  
+        sectionkey = newKey[13:len(newKey)]
+    
+    UMATName = newKey
+
+    return UMATName, sectionkey
+
+def createUMATforHomogeneousSection(model, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField):
+
+#   for a given material a material equivalent with UMAT (and user defined field) definition is created; material assignment of the section the given material is assigned to, is changed to the
+#   UMAT material 
+#
+#   INPUT
+#       model                   [model object]      : model to be treated
+#       material                [material object]   : material for which a copy with
+#       layerMaterialPrefix     [string]            . prefix of the material names which are materialdefinitions for frp layers of the winding
+#       UMATprefix              [string]            : name prefix for materials with UMAT definition
+#       materialProps           [list of floats]    : umat material properties
+#       nDepvar                 [int]               : number of statev variables 
+#       degr_fac                [float ]            : degradation factor for property degradation due to damage; 0 ... 1
+#       AbqMATinAcuteTriangles  [boolean]           : true, if in sharp wegde elements no umat shall be used (instead abaqus material is assigned); false, if UMAT shall be used in all wedge elements, too
+#       udLaywers           [Boolean]           : true, if UD-layers are modelled; false if balanced angle plies are modelled
+#       userDefinedField    [Boolean]           : true, if also user defined field shall be defined for material; false im not
+#
+#   RETURN
+#       None.
+#   
+
+    for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
+        print('key', key)
+        if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
+            material = materials[key]            
+            propsTemp = materialProps.copy()
+
+            newKey, sectionkey = createUMATName(key, UMATprefix)
+
+            #print('nexKey', newKey)
+            #print('sectionkey', sectionkey)
+
+            createUMAT(model, material, newKey, propsTemp, nDepvar, degr_fac, udLayers, userDefinedField)
+            
+# ---------- Assign UMAT to section definition rename material to trigger UMAT    
+            if len(UMATprefix) > 0:                           
+                #material.changeKey(fromName=key, toName=newKey)
+                sections[sectionkey].setValues(material=newKey, thickness=None)           
+                                    
+            if AbqMATinAcuteTriangles:   
+                # check which mandrel current section belongs to; this is defined within the section name "Layer_X_M1_xyz"--> mandrel 1, "..._M2_..." --> Mandrel 2
+                keyword = '_M'
+                before_keyword, keyword, after_keyword = sectionkey.partition(keyword)   # 1_xyz or 2_xyz                                
+                keyword = "_"                 
+                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)  # now before_keyword gives the Mandrel number                                                            
+                setABQUMATinAcuteTriangles(model, 'Mandrel'+before_keyword, sectionkey, materialDescription)
+
+
+def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField):
+
+#   for a given material a material equivalent with UMAT (and user defined field) definition is created; material assignment of the plies in all compositelayuo definitions is updated
+#   to reference the UMAT material 
+#
+#   INPUT
+#       model                   [model object]      : model to be treated
+#       part                    [part object]       : part (winding) to be treated
+#       material                [material object]   : material for which a copy with
+#       layerMaterialPrefix     [string]            . prefix of the material names which are materialdefinitions for frp layers of the winding
+#       UMATprefix              [string]            : name prefix for materials with UMAT definition
+#       materialProps           [list of floats]    : umat material properties
+#       nDepvar                 [int]               : number of statev variables 
+#       degr_fac                [float ]            : degradation factor for property degradation due to damage; 0 ... 1
+#       AbqMATinAcuteTriangles  [boolean]           : true, if in sharp wegde elements no umat shall be used (instead abaqus material is assigned); false, if UMAT shall be used in all wedge elements, too
+#       udLaywers               [Boolean]           : true, if UD-layers are modelled; false if balanced angle plies are modelled
+#       userDefinedField        [Boolean]           : true, if also user defined field shall be defined for material; false im not
+#
+#   RETURN
+#       None.
+#  
+
+    propsTemp = materialProps.copy()
+
+    for compositeLayupKey in part.compositeLayups.keys():
+        print('-------------- '+compositeLayupKey+' -----------------------')       
+
+        compositePlyList = list()
+
+        for plyNo in range(len(part.compositeLayups[compositeLayupKey].plies)):
+            ply = part.compositeLayups[compositeLayupKey].plies[plyNo]
+            materialName = ply.material            
+            material = model.materials[materialName]
+
+            # extract values of composite ply and store in list
+            compositePly = (ply.thickness, ply.region, ply.material, ply.plyName, ply.orientationType, ply.thicknessType, ply.orientationValue, ply.thicknessField, ply.numIntPoints, ply.axis, ply.angle, ply.additionalRotationType, ply.orientation, ply.additionalRotationField)
+            compositePlyList.append(compositePly)
+                      
+
+            # create UMAT for material
+            UMATName, sectionkey = createUMATName(materialName, UMATprefix)
+            createUMAT(model, material, UMATName, propsTemp, nDepvar, degr_fac, udLayers, userDefinedField)
+
+        # values of plies cannot be changed (no setValues methode) --> plies have to be deleted and defined again
+        part.compositeLayups[compositeLayupKey].deletePlies()
+
+        # re-generate plies with new material assignment
+        for compositePly in compositePlyList:
+            UMATName, sectionkey = createUMATName(compositePly[2], UMATprefix)                                    
+            compositeLayup = part.compositeLayups[compositeLayupKey]
+            compositeLayup.CompositePly(suppressed=False, plyName=compositePly[3], region=part.sets[compositePly[1][0]], material=UMATName, thicknessType=compositePly[5], thickness=compositePly[0],  orientationType=compositePly[4], orientationValue=float(compositePly[6]), additionalRotationType=compositePly[11], additionalRotationField=compositePly[13], axis=compositePly[9], angle=compositePly[10], numIntPoints=3)            
+
+def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName, userDefinedField):
 
 #   create material card for UMAT from material props from given json file
 #
@@ -352,97 +529,24 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
 #   input materialName  : name of material for wich paramaters are to be read
 #   input udLayers      : boolean if udLayers (true) or balance angle plies (false) are modelled
 #   input compositeLayup : boolean; true if compositelayup is used as material section; false if not
-#   inout windingPartName : name of winding part
+#   input windingPartName : name of winding part
+#   input userDefinedField : true if user defined field hall be activated in material definition
 
     print("*** START GENERATE UMAT MATERIAL CARDS ***")  
 
     materials = model.materials    
     sections = model.sections
-    materialProps = getPropsFromJson(materialPath, materialName)
-    #print('props', materialProps)
+    materialProps = getPropsFromJson(materialPath, materialName)    
+    part = model.parts[windingPartName]
 
     print("*** GENERATE UMAT MATERIAL CARDS ***")    
         
-    for key in materials.keys():       # ["MCD_SHOKRIEH_Layer_4_M1_233"]
-        print('key', key)
-        if (key[0:len(layerMaterialPrefix)] == layerMaterialPrefix) or (key[13:13+len(layerMaterialPrefix)] == layerMaterialPrefix):            
-            material = materials[key]            
-            propsTemp = materialProps.copy()
-            if not key[0:len(UMATprefix)] == UMATprefix and len(UMATprefix)>0:
-                newKey = UMATprefix+'_'+key
-                if not compositeLayup:
-                    sectionkey = key
-                else:
-                    keyword = key[0:2]+'_Section_'                    
-                    before_keyword, keyword, after_keyword = key.partition(keyword)                     
-                    keyword = '_Layer_'
-                    before_keyword, keyword, after_keyword  = after_keyword.partition(keyword)
-                    sectionNumberStr = before_keyword                    
-                    before_keyword, keyword, after_keyword  = after_keyword.partition(keyword)
-                    layerNoStr = after_keyword
-                    sectionkey = key[0:2]+'_Composite_'+sectionNumberStr
-            else:
-                newKey = key  
-                sectionkey = newKey[13:len(newKey)]
-
-            # store ABQ-Definition-Properties
-            #AbqMatProps = material.elastic.table
-
-            #print('nexKey', newKey)
-            print('sectionkey', sectionkey)
-
-            #get band angle from material description
-            materialDescription= material.description
-            angle = getBandAngleFromMaterialDescription(materialDescription)
+    if not compositeLayup:
+        createUMATforHomogeneousSection(model, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField)
+    else:
+        createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField)
             
-            # append angle and degradation factor to props
-            propsTemp = np.append(propsTemp, [angle])
-            propsTemp = np.append(propsTemp, [degr_fac])
 
-            # genereate Material with UMAT definition but also keep Abaqus-Standardmaterial definition for
-            # use in triangle elements
-            UmatMaterial = model.Material(name = newKey, description = materialDescription)                                      
-            UmatMaterial.UserMaterial(mechanicalConstants = propsTemp) 
-            UmatMaterial.Depvar(n=nDepvar)  
-            
-            #try:
-            #    del material.userMaterial
-            #    material.UserMaterial(mechanicalConstants = propsTemp)
-#
-            #except:
-            #    print('no UMAT, will be created')
-            #    material.UserMaterial(mechanicalConstants = propsTemp)                        
-            #try: 
-            #    del material.depvar
-            #    material.Depvar(n=nDepvar)              
-            #except:
-            #    print('no UMAT, will be created')
-            #    material.Depvar(n=nDepvar)  
-
-#            try:     
-#                del material.elastic
-#            except:
-#                print('Elastic Props already deleted')           
-
-# ---------- Assign UMAT to section definition rename material to trigger UMAT    
-            if len(UMATprefix) > 0:           
-                if not compositeLayup: # change section definition
-                    #material.changeKey(fromName=key, toName=newKey)
-                    sections[sectionkey].setValues(material=newKey, thickness=None)           
-                if compositeLayup:  # change material definition in composite layup
-                    if udLayers:
-                        iLayer = int(layerNoStr)
-                        print(model.parts[windingPartName].compositeLayups[sectionkey].plies[iLayer])
-
-            
-            if AbqMATinAcuteTriangles:   
-                # check which mandrel current section belongs to; this is defined within the section name "Layer_X_M1_xyz"--> mandrel 1, "..._M2_..." --> Mandrel 2
-                keyword = '_M'
-                before_keyword, keyword, after_keyword = sectionkey.partition(keyword)   # 1_xyz or 2_xyz                                
-                keyword = "_"                 
-                before_keyword, keyword, after_keyword = after_keyword.partition(keyword)  # now before_keyword gives the Mandrel number                                                            
-                setABQUMATinAcuteTriangles(model, 'Mandrel'+before_keyword, sectionkey, materialDescription)
-                
 def setABQUMATinAcuteTriangles(model, partname, sectionkey, materialDescription):         
 
 # assigns Abaqus Standard Material to very acute triangle elements
@@ -503,7 +607,16 @@ def getElasticPropsFromMaterialDescription(materialDescription):
     return E1, E2, G12, nu12, nu23
 
 
-def getBandAngleFromMaterialDescription(materialDescription):    
+def getBandAngleFromMaterialDescription(materialDescription):  
+
+#   extract the band angle of the balanced anle ply the material represents by effective properties
+# 
+# INPUT
+#   materialDescription [string]    : whole text of the material description
+# 
+# RETURN
+#   angle [float]   : band angle
+#   
     
     if 'Mean Angle' in materialDescription: # for Models generated from muWind
         keyword = 'Mean Angle: '
@@ -1091,7 +1204,7 @@ def getAssemblyRegionFromPartAndSet(partname, setname, assembly, parts):
     print('Instance', instanceKey)
     Region = assembly.instances[instanceKey[0]].sets[setname]
 
-    return Region
+    return Region  
 
 def createNodeSetFromPartSurface(part, surfacename, nodeSetName):
 

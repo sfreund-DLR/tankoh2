@@ -7,7 +7,6 @@
 
 ###############################################################################
 import sys, os
-#from typing import ValuesView
 
 sys.path.append('C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//src//tankoh2//abq_cae')
 
@@ -71,12 +70,13 @@ def main():
     materialPath = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//tankoh2//data//"+materialName+".json"
     UMATprefix = "MCD_SHOKRIEH"    
     AbqMATinAcuteTriangles = False # if true, ABQ-Material is set for very acute triangle elements yielding warnings in mesh verification
-    nDepvar = 312 # number of solution dependen variables
-    #nDepvar = 156 # number of solution dependen variables
+    #nDepvar = 312 # number of solution dependen variables
+    nDepvar = 156 # number of solution dependen variables
     #degr_fac = 0.40 # last value for berst pressure analysis
     degr_fac = 0.1 # degradation factor for material properties after failure initiation
     udLayers = True
     compositeLayup = True
+    userDefinedField = True
     createUMAT = True
     removeUMAT = False
 
@@ -108,7 +108,7 @@ def main():
     maxNumInk = [5000, ]
     NLGEOM = [ON, ]
     
-    createStepDefinition = True
+    createStepDefinition = False
 
 # ------ Output definition
 
@@ -116,13 +116,13 @@ def main():
     dnInk = 10 # interval of increment number for output request; set 0 if no reuqest per increment number
     fieldVariables = ('S','SDV', 'LE', 'P', 'U')
     historyVariables = () # leave empty if no history output
-    createOutputDefinition = True
+    createOutputDefinition = False
 
 # ---------- Load Definition
 
     pressure = 250 # bar
     valveForce = 0.
-    createLoadDefinition = True
+    createLoadDefinition = False
 
 # ----------- Layer connection
 
@@ -145,7 +145,7 @@ def main():
         cvc.loadDomeContourToSketch(domefile, rzylinder, lcylinder, linerthickness)
     
     if createUMAT == True:
-        cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName)
+        cvc.createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName, userDefinedField)
 
     if removeUMAT == True:
         cvc.removeUMAT(model)
