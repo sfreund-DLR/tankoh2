@@ -366,7 +366,6 @@ def main():
     design = tankoh2.design.existingdesigns.NGTBITDesign
     #design = tankoh2.design.existingdesigns.NGTBITDesign_small
     tankname = design.get('tankname')    
-    dataDir = os.path.join(programDir, 'data')
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
     #domeContourFilename = None    
     

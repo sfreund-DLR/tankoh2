@@ -25,7 +25,7 @@ except NameError:
     __title__ = None
 
 __description__ = 'Design and optimization of H2 tanks using muChain'
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 __author__ = 'Sebastian Freund, Caroline Lueders'
 __email__ = 'sebastian.freund@dlr.de'
 __license__ = 'MIT'

@@ -24,10 +24,6 @@ def createDesign(**kwargs):
     # SET Parameters of vessel
     # #########################################################################################
 
-    log.info('='*100)
-    log.info('Create metal design with these parameters: \n'+(indent(kwargs.items())))
-    log.info('='*100)
-
     designArgs = parseDesginArgs(kwargs, 'metal')
 
     # General
@@ -47,10 +43,12 @@ def createDesign(**kwargs):
     if domeType == 'circle':
         dome = DomeSphere(dcly/2, polarOpeningRadius)
     elif domeType == 'ellipse':
-        lDomeHalfAxis = designArgs['domeAxialHalfAxis']
+        lDomeHalfAxis = designArgs['domeLengthByR'] * dcly / 2
         dome = DomeEllipsoid(dcly/2, lDomeHalfAxis, polarOpeningRadius)
     else:
-        raise Tankoh2Error(f'Dome type "{domeType}" not supported for metal tanks. Please contact the developer.')
+        raise Tankoh2Error(f'Dome type "{domeType}" not supported for metal tanks. '
+                           f'Please use [circle, ellipse, custom] and contact the developer '
+                           f'if you need this feature.')
     length = lcylinder + 2 * dome.domeLength
 
     # Pressure Args
@@ -100,7 +98,7 @@ if __name__ == '__main__':
     elif 1:
         params = defaultDesign.copy()
         params['domeType'] = 'ellipse'
-        params['domeAxialHalfAxis'] = 100
+        params['domeLengthByR'] = 0.5
         params['materialName'] = 'alu2219'
         createDesign(**params)
     elif 1:
@@ -115,7 +113,7 @@ if __name__ == '__main__':
         params['materialName'] = 'alu2219'
         params['domeType'] = 'ellipse'
         params['polarOpeningRadius'] = 0
-        params['domeAxialHalfAxis'] = r
+        params['domeLengthByR'] = 1
         params['dcly'] = 2*r
         params['lcyl'] = h
         params['safetyFactor'] = 2.25

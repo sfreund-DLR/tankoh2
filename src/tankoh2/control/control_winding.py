@@ -3,7 +3,7 @@
 import os
 import datetime
 
-from tankoh2 import log, pychain
+from tankoh2 import log, pychain, programDir
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
@@ -36,7 +36,6 @@ def createDesign(**kwargs):
     # General
     tankname = designArgs['tankname']
     nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
-    dataDir = designArgs['dataDir']
     runDir = designArgs['runDir']
     verbose = designArgs['verbose']
 
@@ -56,6 +55,8 @@ def createDesign(**kwargs):
     length = lcylinder + 2 * dome.domeLength
 
     # Design Args
+    pressure = None
+    safetyFactor = None
     if 'burstPressure' not in designArgs:
         safetyFactor = designArgs['safetyFactor']
         pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
@@ -65,7 +66,8 @@ def createDesign(**kwargs):
         hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
         designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
     burstPressure = designArgs['burstPressure']
-    useFibreFailure = designArgs['useFibreFailure']
+    failureMode = designArgs['failureMode']
+    useFibreFailure = failureMode.lower() == 'fibrefailure'
 
     # Material
     materialName = designArgs['materialName']
@@ -83,7 +85,10 @@ def createDesign(**kwargs):
     saveParametersAndResults(designArgs)
 
     # input files
-    materialFilename = os.path.join(dataDir, materialName+".json")
+    materialName = materialName if materialName.endswith('.json') else materialName+'.json'
+    materialFilename = materialName
+    if not os.path.exists(materialName):
+        materialFilename = os.path.join(programDir, 'data', materialName)
     # output files
     linerFilename = os.path.join(runDir, tankname + ".liner")
     designFilename = os.path.join(runDir, tankname + ".design")
@@ -128,8 +133,10 @@ def createDesign(**kwargs):
     # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
-    updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')
-    updateName(vesselFilename, safetyFactor, ['vessel'], attrName='securityFactor')
+    if pressure:
+        updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')
+    if safetyFactor:
+        updateName(vesselFilename, safetyFactor, ['vessel'], attrName='securityFactor')
     copyAsJson(vesselFilename, 'vessel')
 
     # save winding results
@@ -160,7 +167,7 @@ if __name__ == '__main__':
     if 0:
         params = defaultDesign.copy()
         params['domeType'] = 'ellipse'
-        params['domeAxialHalfAxis'] = 100
+        params['domeLengthByR'] = 0.5
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
