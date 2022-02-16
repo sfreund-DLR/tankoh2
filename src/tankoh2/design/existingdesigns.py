@@ -127,7 +127,7 @@ NGTBITDesign = OrderedDict([
     ('rovingWidth', 3.175),
     ('numberOfRovings', 12),
     ('tex', 800),
-    ('fibreDensity', 1.78),
+    ('fibreDensity', 1.8),
     # optimizer settings
     ('maxlayers', 200)
     ])
