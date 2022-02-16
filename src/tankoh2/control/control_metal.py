@@ -73,15 +73,15 @@ def createDesign(**kwargs):
 
 
     # #############################################################################
-    # run winding simulation
+    # run calculate wall thickness
     # #############################################################################
-    volume, area, linerLength = liner.volume, liner.area, liner.length
-    wallThickness = getWallThickness(material, burstPressure, dcly / 1000)
-    wallVol = liner.getWallVolume(wallThickness*1000)
-    mass = material['roh'] * wallVol / 1000 / 1000 / 1000
+    volume, area, linerLength = liner.volume / 1000 /1000, liner.area/100/100/100, liner.length
+    wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
+    wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
+    mass = material['roh'] * wallVol / 1000 # [kg]
 
     duration = datetime.datetime.now() - startTime
-    results = mass, wallThickness, volume, area, linerLength, duration
+    results = mass, volume, area, linerLength, wallThickness, duration
 
     saveParametersAndResults(designArgs, results)
 
@@ -93,6 +93,11 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 1:
+        params = defaultDesign.copy()
+        params['domeType'] = 'circle'
+        params['materialName'] = 'alu2219'
+        createDesign(**params)
+    elif 1:
         params = defaultDesign.copy()
         params['domeType'] = 'ellipse'
         params['domeAxialHalfAxis'] = 100

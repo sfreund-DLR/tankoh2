@@ -1,0 +1,4 @@
+python==3.8  # or python==3.6
+numpy==1.19.1  # numpy==1.16.2 for python==3.6
+scipy
+pandas

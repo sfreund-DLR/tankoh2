@@ -1,15 +1,18 @@
 # tankoh2
 Design and optimization of H2 tanks. 
-For metal structures, tankoh2 is standalone, for CFRP structures, 
-the winding simulation is carried out by [µChain](https://www.mefex.de/software/)
+
+For metal structures, tankoh2 is a standalone pre-design tool. 
+For CFRP structures, a detailed winding optimization is performed. 
+The winding simulation is carried out by [µChain](https://www.mefex.de/software/)
 
 ## Features 
 
 - Material/layup read/write
-- Create dome and liner from zylindrical length and radius or using a dome contour
+- Create dome and liner from cylindrical length and radius or using a dome contour
 - Setup of a vessel model
 - Optimization of each layer with respect to minimizing puck fibre failure
 - Create and run DOE with support of DLR tools (delismm, fa_pyutils)
+- Routines for the improvement of the FEM model generatred by Abaqus CAE
 - Planned features:
   - Global optimization of 
     - All angles of helical layers
@@ -28,7 +31,7 @@ Python Packages:
 - Scipy
 - Pandas
 
-Requirements from [muChain](https://www.mefex.de/software/):
+Requirements from [µChain](https://www.mefex.de/software/):
 - Python 3.6 (x64) + Numpy 1.16.2
 - Python 3.8 (x64) + Numpy 1.19.1
 
@@ -40,7 +43,9 @@ Get tankoh2 from
 https://github.com/sfreund-DLR/tankoh2.git
 ```
 In the folder `/src/tankoh2/`, create a the file `settings.json`
-and include the path to [muChain](https://www.mefex.de/software/) like this:
+and include the path to [µChains](https://www.mefex.de/software/) python API. 
+In most recent µChain-Versions, the python API is located in `pythonAPI/3_8` or
+`pythonAPI/3_6` in the µChain installation directory.
 
 ```
 {
@@ -54,6 +59,8 @@ In python execute:
 ```
 import tankoh2
 ```
+
+## Usage
 
    
 
