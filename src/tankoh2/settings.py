@@ -8,9 +8,22 @@ from tankoh2.service.exception import Tankoh2Error
 myCrOSettings = None
 exampleFileName = 'settings_example.json'
 
+class PychainMock():
+    """This class is a mock of pychain.
+
+    When pychain can not be imported, it stores the respective error message.
+    The error will be raised when trying to access pychain attributes.
+    By this, tankoh2 standalone functions can be used without error messages due to missing pychain."""
+    def __init__(self, errorMsg = None):
+        self.errorMsg = errorMsg
+
+    def __getattr__(self, item):
+        raise Tankoh2Error(self.errorMsg)
+
 def applySettings(filename=None):
     """reads settings from the settingsfile"""
     from tankoh2 import log
+    pychain = PychainMock()
     defaultSettingsFileName = 'settings.json'
     searchDirs = ['.', os.path.dirname(__file__), os.path.dirname(os.path.dirname(os.path.dirname(__file__)))]
     if filename is None:
@@ -20,10 +33,12 @@ def applySettings(filename=None):
                 filename = os.path.join(searchDir, defaultSettingsFileName)
     if filename is None:
         writeSettingsExample()
-        raise Tankoh2Error(
-            f'Could not find the settings file "{defaultSettingsFileName}" in the following folders: {searchDirs}.\n'
-            f'An example settings file is written to ./{exampleFileName}.\n'
-            f'Please add the requried settings and rename the file to {exampleFileName.replace("_example","")}.')
+        pychain.errorMsg = f'Could not find the settings file "{defaultSettingsFileName}" in the ' \
+                           f'following folders: {searchDirs}.\n' \
+                           f'An example settings file is written to ./{exampleFileName}.\n' \
+                           f'Please add the requried settings and rename the file to ' \
+                           f'{exampleFileName.replace("_example","")}.'
+        return pychain
 
     with open(filename, 'r') as f:
         settings = json.load(f)
@@ -58,9 +73,9 @@ def applySettings(filename=None):
             else: # minor == '8'
                 import mycropychain38 as pychain
         except ModuleNotFoundError:
-
-            raise Tankoh2Error('Could not find package "mycropychain". Please check the path to mycropychain in the '
-                               'settings file.')
+            pychain = PychainMock('Could not find package "mycropychain". '
+                                  'Please check the path to mycropychain in the settings file.')
+            return pychain
         else:
             if len(pychain.__dict__) < 10:
                 pychainActive = False
@@ -70,7 +85,9 @@ def applySettings(filename=None):
 
     if not pychainActive:
         # len(pychain.__dict__) was 8 on failure and 17 on success
-        log.error('Could not connect to mycropychain GUI. Did you start the GUI and activated "TCP Conn."?')
+        pychain = PychainMock('Could not connect to mycropychain GUI. '
+                              'Did you start the GUI and activated "TCP Conn."?')
+        return pychain
     else:
         # set general path information
         global myCrOSettings

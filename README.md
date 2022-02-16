@@ -42,7 +42,8 @@ Get tankoh2 from
 ```
 https://github.com/sfreund-DLR/tankoh2.git
 ```
-In the folder `/src/tankoh2/`, create a the file `settings.json`
+
+For winding: In the folder `/src/tankoh2/`, create a file `settings.json`
 and include the path to [µChains](https://www.mefex.de/software/) python API. 
 In most recent µChain-Versions, the python API is located in `pythonAPI/3_8` or
 `pythonAPI/3_6` in the µChain installation directory.
@@ -54,15 +55,46 @@ In most recent µChain-Versions, the python API is located in `pythonAPI/3_8` or
 ```
 
 ### Test the installation
-In python execute: 
 
 ```
-import tankoh2
+cd <path_to_tankoh2>/src
+python -m tankoh2 --help
+```
+
+You can perform a standalone test for metal tanks
+
+```
+cd <path_to_tankoh2>/src
+python -m tankoh2 --materialName alu2219 --windingOrMetal metal --domeType circle
 ```
 
 ## Usage
+A full list the available parameters can be found with 
 
-   
+```
+cd <path_to_tankoh2>/src
+python -m tankoh2 --help
+```
+
+### Winding
+
+For winding mode, a valid µWind license is required!
+Run the following, to start a winding optimization.
+
+```
+cd <path_to_tankoh2>/src
+python -m tankoh2
+```
+
+### Metal
+
+A design run for metal structures can be run by
+
+```
+cd <path_to_tankoh2>/src
+python -m tankoh2 --materialName alu2219 --windingOrMetal metal --domeType circle
+```
+
 
 ## Contributing to _tankoh2_
 
