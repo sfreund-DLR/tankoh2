@@ -6,7 +6,7 @@ import os
 from tankoh2 import log
 from tankoh2.service.utilities import indent, getRunDir
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.design.existingdesigns import defaultDesign, allDesignKeywords, frpKeywords
+from tankoh2.design.existingdesigns import defaultDesign, allArgs, frpKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
 
 resultNamesFrp = ['shellMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
@@ -52,7 +52,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     """
 
     # check if unknown args are used
-    notDefinedArgs = set(inputKwArgs.keys()).difference(allDesignKeywords)
+    notDefinedArgs = set(inputKwArgs.keys()).difference(allArgs['name'])
     if notDefinedArgs:
         log.warning(f'These input keywords are unknown: {notDefinedArgs}')
 
@@ -84,10 +84,11 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
     # for elliptical domes, create the contour since µWind does not support is natively
     if designArgs['domeType'] == 'ellipse':
-        if not designArgs['domeAxialHalfAxis']:
+        if not designArgs['domeLengthByR']:
             raise Tankoh2Error('domeType == "ellipse" but domeLength is not defined')
 
-        de = DomeEllipsoid(designArgs['dcly'] / 2, designArgs['domeAxialHalfAxis'], designArgs['polarOpeningRadius'])
+        r = designArgs['dcly'] / 2
+        de = DomeEllipsoid(r, designArgs['domeLengthByR'] / r, designArgs['polarOpeningRadius'])
         designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
     return designArgs
 
