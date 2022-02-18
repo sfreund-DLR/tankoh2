@@ -62,7 +62,7 @@ def applySettings(filename=None):
             # v 0.95.2
             pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\python{pyVersionString}')
     #abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_89')
-    abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95')
+    abaqusPythonLibPath = os.path.join(settings['mycropychainPath'], 'abaqus_interface_0_95_4')
 
     log.info(f'Append mycropychain path to sys path: {pythonApiPath}')
     sys.path.append(pythonApiPath)

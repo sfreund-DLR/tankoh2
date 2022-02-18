@@ -31,7 +31,7 @@ allArgs = pd.DataFrame(
         ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
         ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
         ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
-        ['domeLengthByR', 'Geometry', '', '', float,
+        ['domeLengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
 
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
@@ -189,7 +189,12 @@ kautextDesign = OrderedDict([
                              ('fibreDensity', 1.78),  # g / cm^3
                              ])
 
-
+ttDesign = OrderedDict([
+#    (, ),
+#    (, ),
+#    (, ),
+#    (, ),
+])
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
