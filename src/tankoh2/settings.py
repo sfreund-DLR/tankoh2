@@ -6,6 +6,7 @@ import os, sys
 from tankoh2.service.exception import Tankoh2Error
 
 myCrOSettings = None
+useRstOutput = False
 exampleFileName = 'settings_example.json'
 
 class PychainMock():
@@ -22,6 +23,7 @@ class PychainMock():
 
 def applySettings(filename=None):
     """reads settings from the settingsfile"""
+    global myCrOSettings, useRstOutput
     from tankoh2 import log
     pychain = PychainMock()
     defaultSettingsFileName = 'settings.json'
@@ -42,10 +44,15 @@ def applySettings(filename=None):
 
     with open(filename, 'r') as f:
         settings = json.load(f)
-    major, minor = str(sys.version_info.major), str(sys.version_info.minor)
-    pyVersionString = major+minor
 
+    if 'useRstInputOutput' in settings:
+        useRstOutput = 'true' == settings['useRstInputOutput'].lower()
+
+    #############################################################################
+    # Read pychain and abq_pychain path and put it in sys.path
+    #############################################################################
     # v0.95.3
+    major, minor = str(sys.version_info.major), str(sys.version_info.minor)
     pyVersionString = f'{major}_{minor}'
     pythonApiPath = os.path.join(settings['mycropychainPath'], f'pythonAPI\{pyVersionString}')
     if not os.path.exists(pythonApiPath):
@@ -90,7 +97,6 @@ def applySettings(filename=None):
         return pychain
     else:
         # set general path information
-        global myCrOSettings
         myCrOSettings = pychain.utility.MyCrOSettings()
         myCrOSettings.abaqusPythonLibPath = abaqusPythonLibPath
 

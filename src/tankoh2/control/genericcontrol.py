@@ -4,10 +4,11 @@ import numpy as np
 import os
 
 from tankoh2 import log
-from tankoh2.service.utilities import indent, getRunDir
+from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, frpKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
+from tankoh2.settings import useRstOutput
 
 resultNamesFrp = ['shellMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
 resultUnitsFrp = ['kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
@@ -15,13 +16,15 @@ resultUnitsFrp = ['kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
 resultNamesMetal = ['metalMass', 'volume', 'area', 'lcylinder', 'wallThickness', 'duration']
 resultUnitsMetal = ['kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
+indentFunc = createRstTable if useRstOutput else indent
+
 def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
     np.set_printoptions(linewidth=np.inf) # to put arrays in one line
     outputStr = [
         'INPUTS\n\n',
-        indent(inputKwArgs.items())
+        indentFunc(inputKwArgs.items())
     ]
     if results is not None:
         if len(results) == len(resultNamesFrp):
@@ -29,12 +32,12 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
         else:
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
         outputStr += ['\n\nOUTPUTS\n\n',
-                      indent(zip(resultNames, resultUnits, results))]
+                      indentFunc(zip(resultNames, resultUnits, results))]
     logFunc = log.info if verbose else log.debug
     logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
     if results is not None:
-        outputStr += ['\n\n' + indent([resultNames, resultUnits, results])]
+        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, results])]
     outputStr = ''.join(outputStr)
     with open(os.path.join(runDir, filename), 'w') as f:
         f.write(outputStr)
