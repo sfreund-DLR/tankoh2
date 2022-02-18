@@ -408,9 +408,10 @@ def main():
 #####################################################################################################
 
 # - Optimized Design regarding sepcific parameters
-    createDesign = False
-    design = tankoh2.design.existingdesigns.NGTBITDesign
+    createDesign = True
+    #design = tankoh2.design.existingdesigns.NGTBITDesign
     #design = tankoh2.design.existingdesigns.NGTBITDesign_small
+    design = tankoh2.design.existingdesigns.NGTBITDesign
     tankname = design.get('tankname')    
     dataDir = os.path.join(programDir, 'data')
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
@@ -421,7 +422,7 @@ def main():
 
 #- create a layerbook of an existing vessel
     
-    createLayerBook = True
+    createLayerBook = False
     #vesselFile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20211105_140505_70MPa_12_Rovings//"
     directory = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20211105_140505_70MPa_12_Rovings"
     vesselName = "NGT-BIT-2020-09-16" 

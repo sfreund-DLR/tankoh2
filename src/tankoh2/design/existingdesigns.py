@@ -121,11 +121,11 @@ NGTBITDesign = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     #('hoopLayerThickness', 0.125),
-    ('hoopLayerThickness', 0.25),
+    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
     #('helixLayerThickenss', 0.129),
-    ('helixLayerThickenss', 0.25),
-    ('rovingWidth', 3.175),
-    ('numberOfRovings', 12),
+    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
+    ('rovingWidth', 8.00),
+    ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
     # optimizer settings

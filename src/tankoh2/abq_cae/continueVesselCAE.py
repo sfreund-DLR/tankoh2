@@ -7,17 +7,75 @@
 
 ###############################################################################
 import sys
+sys.path.append('C://Program Files//Dassault Systemes//SimulationServices//V6R2018x//win_b64//tools//SMApy//python2.7//Lib//site-packages')
+
 import os
+
 import numpy as np 
 import json
+import posixpath
+import requests
 import mesh
 from datetime import datetime
 from symbolicConstants import *
 from abaqusConstants import *
 import regionToolset
 
+
+
 global nDepvar_UserDefField
 nDepvar_UserDefField = 35
+
+def getTransverseStiffnessesOfLaminate(materialName, UD_elastic_props, ud_strength, layup, thicknesses, update):
+
+# INPUT
+#   materialName [string]                    : label of material
+#   UD_elastic_props [array of floats]       : elastic props of UD plies [E11, E22, G12, G23, nu12] in 10^6 N/mm2
+#   ud_strength [array of floats]            : strengths of the UD plies [X11t, X22t, X33t, X11c, X22c, X33c, X12, X13, X23, X12(?)]   in 10^6 N/mm2
+#   thicknesses [array of floats]            : thickness of plies in layup in m 
+#
+# RETURN
+#   Transverse stiffnesses for Abaqus as float : k11, k22, k12 in Abaqus-Notation
+#
+    
+    # Base URL for all requests
+    url = "https://stmlab.fa-services.intra.dlr.de/1/PyCODAC/api"
+
+    # A name for the material
+    label = materialName
+
+    # Create material dictionary
+    payload = {
+      "Label": label,
+      "Density": 1557,
+      "Elastic": UD_elastic_props, # [146240 000000,8560 000000,5630 000000,3285 000000,0.33],
+      "Strength": ud_strength #[2000 000000,70 000000,70 000000,1650 000000,240 000000,240 000000,105 000000,105 000000,80 000000,105 000000]
+    }
+
+    # Create a new material of type Composite
+    # update true:  new material is created and if material with same name exist it is overwritten
+    # update false: if material with name already exists already stord material parameters are used
+    requests.post(posixpath.join(url,"materials","Composite"), json=payload, params={"update":update}) 
+
+    ## Get the material code from the database. All materials in the public database are Anisotropic.
+    # Get the last element of the list (to collect always the last published material)
+    MatDBCode = [x for x in requests.get(posixpath.join(url,"materials","public")).json()["Anisotropic"] if label in x][-1]
+
+    # Properties used in the request to create a stack using the material code.
+    properties = { "ListofPlies": [{"Tape2D": [ "Anisotropic", MatDBCode]}], 
+                  "ListofPlyAngles": layup, #[0,90,60,-60,0,0,-45,45,90,0],
+                  "ListofPlyThickness": thicknesses }# [0.000128] * 10}
+
+    ## Create a post request with the given properties. Create a JSON string from the result
+    # and load the result into a dictionary.
+    Laminate = json.loads(requests.post(posixpath.join(url,"laminate","Monolithic"), json=properties).json())
+
+    ## Laminate now holds a dictionary. 
+    # Print ABD matrix and the (improved) shear stiffness matrix    
+    print("Hext2D ", Laminate["Hext2D"])
+    print('k11 ', Laminate["Hext2D"][1][1])
+
+    return Laminate["Hext2D"][1][1], Laminate["Hext2D"][0][0], Laminate["Hext2D"][0][1] # k11, k22, k12
 
 def getModel(projectname):  
 
@@ -496,6 +554,8 @@ def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMA
         print('-------------- '+compositeLayupKey+' -----------------------')       
 
         compositePlyList = list()
+        thicknesses = []
+        layup = []
 
         for plyNo in range(len(part.compositeLayups[compositeLayupKey].plies)):
             ply = part.compositeLayups[compositeLayupKey].plies[plyNo]
@@ -505,20 +565,37 @@ def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMA
             # extract values of composite ply and store in list
             compositePly = (ply.thickness, ply.region, ply.material, ply.plyName, ply.orientationType, ply.thicknessType, ply.orientationValue, ply.thicknessField, ply.numIntPoints, ply.axis, ply.angle, ply.additionalRotationType, ply.orientation, ply.additionalRotationField)
             compositePlyList.append(compositePly)
+            thicknesses.append(ply.thickness)
+            layup.append(ply.orientationValue)
                       
 
             # create UMAT for material
             UMATName, sectionkey = createUMATName(materialName, UMATprefix)
             createUMAT(model, material, UMATName, propsTemp, nDepvar, degr_fac, udLayers, userDefinedField)
+            
 
         # values of plies cannot be changed (no setValues methode) --> plies have to be deleted and defined again
         part.compositeLayups[compositeLayupKey].deletePlies()
 
+        
         # re-generate plies with new material assignment
+        compositeLayup = part.compositeLayups[compositeLayupKey]
         for compositePly in compositePlyList:
-            UMATName, sectionkey = createUMATName(compositePly[2], UMATprefix)                                    
-            compositeLayup = part.compositeLayups[compositeLayupKey]
-            compositeLayup.CompositePly(suppressed=False, plyName=compositePly[3], region=part.sets[compositePly[1][0]], material=UMATName, thicknessType=compositePly[5], thickness=compositePly[0],  orientationType=compositePly[4], orientationValue=float(compositePly[6]), additionalRotationType=compositePly[11], additionalRotationField=compositePly[13], axis=compositePly[9], angle=compositePly[10], numIntPoints=3)            
+            UMATName, sectionkey = createUMATName(compositePly[2], UMATprefix)                                                
+            compositeLayup.CompositePly(suppressed=False, plyName=compositePly[3], region=part.sets[compositePly[1][0]], material=UMATName, thicknessType=compositePly[5], thickness=compositePly[0],  orientationType=compositePly[4], orientationValue=float(compositePly[6]), additionalRotationType=compositePly[11], additionalRotationField=compositePly[13], axis=compositePly[9], angle=compositePly[10], numIntPoints=3)                        
+
+        #get transverse stiffness of layup
+        #elastic props of UD plies [E11, E22, G12, G23, nu12] in 10^6 N/mm2
+        #ud_strength [array of floats]            : strengths of the UD plies [X11t, X22t, X33t, X11c, X22c, X33c, X12, X13, X23, X12(?)]   in 10^6 N/mm2
+        UD_elastic_props = [propsTemp[0], propsTemp[1], propsTemp[3], propsTemp[4], propsTemp[5], propsTemp[6]]
+        ud_strength = [propsTemp[9], propsTemp[10], propsTemp[11], propsTemp[12], propsTemp[13], propsTemp[14], propsTemp[15], propsTemp[16], propsTemp[17], propsTemp[15]]
+        print('Elastic Props', UD_elastic_props)
+        print('Strengths', ud_strength)
+        print('layup', layup)
+        print('thickness', thicknesses)
+        k11, k22, k12 = getTransverseStiffnessesOfLaminate(materialName, UD_elastic_props, ud_strength, layup, thicknesses, True)
+        compositeLayup.section.TransverseShearShell(k11=k11, k22=k22, k12=k12)
+
 
 def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName, userDefinedField):
 
