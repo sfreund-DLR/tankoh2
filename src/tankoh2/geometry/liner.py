@@ -1,6 +1,9 @@
 """Defines liner based on a cylindrical section and domes"""
 
 import numpy as np
+import scipy
+
+from tankoh2.service.plot.generic import plotContour
 
 
 class Liner():
@@ -54,6 +57,14 @@ class Liner():
         domeArea = (self.dome.area + self.dome2.area) if self.dome2 else 2 * self.dome.area
         return 2 *np.pi*self.rCyl*self.lcyl + domeArea
 
-
+    def plotContour(self):
+        """creates a plot of the outer liner contour"""
+        pointsDome = self.dome.getContour(20)
+        stepping = scipy.linalg.norm(pointsDome[:,0] - pointsDome[:,1], axis=0)
+        linerPointCount = int(self.lcyl / 2 // stepping)
+        pointsDome[0,:] += (pointsDome[0,0] + self.lcyl/2)  # move dome start to half liner length
+        pointsLiner = [np.linspace(0., self.lcyl/2, linerPointCount, False), [self.rCyl]*linerPointCount]
+        points = np.append(pointsLiner, pointsDome, axis=1)
+        plotContour(True, '', points[0,:], points[1,:])
 
 

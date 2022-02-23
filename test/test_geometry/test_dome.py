@@ -20,12 +20,12 @@ def test_domeEllipsoidShell():
 
 def test_domeEllipsoidVolume1():
     de = DomeEllipsoid(1000, 2000, 100)
-    vFullEllipsoid = 2 * np.pi / 3 * de.rCyl ** 2 * de.lDome
+    vFullEllipsoid = 2 * np.pi / 3 * de.rCyl ** 2 * de.lDomeHalfAxis
     assert de.volume < vFullEllipsoid
 
 def test_domeEllipsoidVolume2():
     de = DomeEllipsoid(1000, 2000, 0)
-    vFullEllipsoid = 2 * np.pi / 3 * de.rCyl ** 2 * de.lDome
+    vFullEllipsoid = 2 * np.pi / 3 * de.rCyl ** 2 * de.lDomeHalfAxis
     assert de.volume < vFullEllipsoid
     assert abs(1-de.volume / vFullEllipsoid) < 2e-5
 
@@ -38,24 +38,30 @@ def test_ellipseCircumference():
 def test_ellipseContour1():
     rCyl, lDome = 20, 10
     de = DomeEllipsoid(rCyl, lDome, 1)
-    x, r = de.getContour(5)
+    x, r = de.getContour(100)
     assert all((x[1:] - x[:-1]) > 0)
     assert all((r[1:] - r[:-1]) < 0)
     assert np.allclose(x[0], 0)
-    assert x[-1] < de.lDome
+    assert x[-1] < de.lDomeHalfAxis
     assert np.allclose(r[0], de.rCyl)
     assert np.allclose(r[-1], de.rPolarOpening)
+    dx, dr = abs(x[:-1]-x[1:]), abs(r[:-1]-r[1:])
+    norm = np.linalg.norm([dx, dr], axis=0)
+    assert np.all(np.abs(norm/norm[0]-1) < 1e-4)
 
 def test_ellipseContour2():
     rCyl, lDome = 10, 20
     de = DomeEllipsoid(rCyl, lDome, 1)
-    x, r = de.getContour(5)
+    x, r = de.getContour(100)
     assert all((x[1:] - x[:-1]) > 0)
     assert all((r[1:] - r[:-1]) < 0)
     assert np.allclose(x[0], 0)
-    assert x[-1] < de.lDome
+    assert x[-1] < de.lDomeHalfAxis
     assert np.allclose(r[0], de.rCyl)
     assert np.allclose(r[-1], de.rPolarOpening)
+    dx, dr = abs(x[:-1]-x[1:]), abs(r[:-1]-r[1:])
+    norm = np.linalg.norm([dx, dr], axis=0)
+    assert np.all(np.abs(norm/norm[0]-1) < 1e-4)
 
 
 def test_ellipseContour3():
@@ -63,10 +69,41 @@ def test_ellipseContour3():
     de = DomeEllipsoid(radius, radius, 0)
     x, r = de.getContour(count)
     angles = np.linspace(0, np.pi/2, count)
-    xref = radius * np.sin(angles)
-    rref = radius * np.cos(angles)
-    assert np.allclose(x, xref)
-    assert np.allclose(r, rref)
+    ref = [radius * np.sin(angles), radius * np.cos(angles)]
+    assert np.allclose([x,r], ref)
+
+def test_ellipseContour4():
+    rCyl, lDome = 10, 0.0001
+    de = DomeEllipsoid(rCyl, lDome, 1)
+    x, r = de.getContour(100)
+    rRef = np.linspace(rCyl,1,100)
+    assert np.allclose(r,rRef)
+
+def test_ellipseContourCheckEqualDist1():
+    rCyl, lDome = 1, 0.99
+    de = DomeEllipsoid(rCyl, lDome, rCyl/2)
+    points = de.getContour(5)
+    dp = abs(points[:,:-1]-points[:,1:])
+    norm = np.linalg.norm(dp, axis=0)
+    assert np.alltrue(np.abs(norm/norm[0]-1) < 2e-4)
+
+def test_ellipseContourCheckEqualDist2():
+    rCyl, lDome = 0.99, 1.
+    de = DomeEllipsoid(rCyl, lDome, rCyl/2)
+    x, r = de.getContour(5)
+    dx, dr = abs(x[:-1]-x[1:]), abs(r[:-1]-r[1:])
+    norm = np.linalg.norm([dx, dr], axis=0)
+    assert np.alltrue(np.abs(norm/norm[0]-1) < 2e-4)
+
+def test_ellipseContourCheckSimilarPoints():
+    rCyl, lDome = 1, 0.9999
+    de = DomeEllipsoid(rCyl, lDome, rCyl/2)
+    p1 = de.getContour(5)
+
+    rCyl, lDome = 0.9999, 1.
+    de = DomeEllipsoid(rCyl, lDome, rCyl/2)
+    p2 = de.getContour(5)
+    assert np.allclose(p1,p2, rtol=1e-4)
 
 def test_ellipseWallVolume():
     r = 1000
