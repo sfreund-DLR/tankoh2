@@ -46,7 +46,7 @@ def getRequiredVolume(lh2Mass, operationalPressure, maxFill = 0.9, roh=None, lh2
     :param lh2Mass: mass of lh2 [kg]
     :param operationalPressure: operational pressure [MPa]
     :param maxFill: max fill level. Brewer uses 1/(1+0.0072 [volumetric allowance]) for this
-    :param roh: density of lh2/gh2
+    :param roh: density of lh2/gh2 [kg/m^3]
     :param lh2OrCh2: switch which storage system shall be used [lh2, gh2]
     :return: volume [m**3]
     """

@@ -8,6 +8,7 @@ from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, frpKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
+from tankoh2.geometry.liner import Liner
 from tankoh2.settings import useRstOutput
 
 resultNamesFrp = ['shellMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
@@ -17,6 +18,7 @@ resultNamesMetal = ['metalMass', 'volume', 'area', 'lcylinder', 'wallThickness',
 resultUnitsMetal = ['kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
+
 
 def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     filename = 'all_parameters_and_results.txt'
@@ -88,10 +90,10 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     # for elliptical domes, create the contour since µWind does not support is natively
     if designArgs['domeType'] == 'ellipse':
         if not designArgs['domeLengthByR']:
-            raise Tankoh2Error('domeType == "ellipse" but domeLength is not defined')
+            raise Tankoh2Error('domeType == "ellipse" but "domeLengthByR" is not defined')
 
         r = designArgs['dcly'] / 2
-        de = DomeEllipsoid(r, designArgs['domeLengthByR'] / r, designArgs['polarOpeningRadius'])
+        de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
         designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
     return designArgs
 
