@@ -1,5 +1,3 @@
-import numpy as np
-import pandas as pd
 from matplotlib import pylab as plt
 
 from tankoh2.service.plot.generic import plotDataFrame
@@ -64,17 +62,3 @@ def plotThicknesses(show, filename, thicknesses):
     plt.close(fig)
 
 
-def plotContour(show, filename, x, r):
-    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-    df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
-    plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r')
-    df = pd.DataFrame(np.array([r]).T, columns=['r'], index=pd.Index(x))
-    plotDataFrame(show, None, df, axes=axs[1], title='Contour', yLabel='r', xLabel='x')
-
-    plt.axis('scaled')
-
-    if filename:
-        plt.savefig(filename)
-    if show:
-        plt.show()
-    plt.close(fig)
