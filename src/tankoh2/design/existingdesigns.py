@@ -95,7 +95,8 @@ hymodDesign = OrderedDict([
 
 NGTBITDesign = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
-    ('pressure', 70),
+    ('pressure', 70), # MPa
+    ('burstPressure', 140.), # MPa
     # Geometry
     ('polarOpeningRadius', 23),
     ('dcly', 400.),
@@ -106,10 +107,15 @@ NGTBITDesign = OrderedDict([
     # material
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
-    #('hoopLayerThickness', 0.125),
-    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
-    #('helixLayerThickenss', 0.129),
-    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
+    # single ply thickness with 62% FVG
+#    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG    
+#    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
+    # single ply thickness with 55% FVG
+    #('hoopLayerThickness', 0.101010101), # thickness for 55% FVG    
+    #('helixLayerThickenss', 0.101010101), # thickness for 55% FVG
+    # single ply thickness with 60% FVG
+    ('hoopLayerThickness', 0.092592593), # thickness for 60% FVG    
+    ('helixLayerThickenss', 0.092592593), # thickness for 60% FVG          
     ('rovingWidth', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),

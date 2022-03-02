@@ -47,7 +47,7 @@ def main():
     #modelname = 'NGT-BIT-2020-10-15_AxSolid'
     #modelname = 'CcH2_Subscale_Axis'
     #modelname = "NGT-BIT-OPT-2021-11-05_AxSolid"
-    modelname = 'NGT-BIT_small_shell_3DShell'
+    modelname = 'NGT-BIT-2022-02-18_Shell_3DShell'
     domefile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//SetSimulationOptions//Dome_contour_NGT-BIT-2020-09-16_48mm.txt"    
     rzylinder = 200. # radius of cylindrical part
     lcylinder = 290. # length of cylindrical part
@@ -76,7 +76,7 @@ def main():
     degr_fac = 0.1 # degradation factor for material properties after failure initiation
     udLayers = True
     compositeLayup = True
-    userDefinedField = True
+    userDefinedField = False
     createUMAT = True
     removeUMAT = False
 
@@ -108,7 +108,7 @@ def main():
     maxNumInk = [5000, ]
     NLGEOM = [ON, ]
     
-    createStepDefinition = False
+    createStepDefinition = True
 
 # ------ Output definition
 
@@ -116,17 +116,17 @@ def main():
     dnInk = 10 # interval of increment number for output request; set 0 if no reuqest per increment number
     fieldVariables = ('S','SDV', 'LE', 'P', 'U')
     historyVariables = () # leave empty if no history output
-    createOutputDefinition = False
+    createOutputDefinition = True
 
 # ---------- Load Definition
 
-    pressure = 250 # bar
+    pressure = 1400 # bar
     valveForce = 0.
     createLoadDefinition = False
 
 # ----------- Layer connection
 
-    useContact = True # True -- use contact, False -- use Tie
+    useContact = False # True -- use contact, False -- use Tie
     checkLayerConnection = False
 
 
