@@ -1,6 +1,6 @@
 
-
-from tankoh2.design.designutils import getRequiredVolume
+import numpy as np
+from tankoh2.design.designutils import getRequiredVolume, getLengthRadiusFromVolume
 
 
 def test_getRequiredVolume():
@@ -11,5 +11,9 @@ def test_getRequiredVolume():
     vRef = 7636 # lb/ft3
     assert abs(1-v/vRef) < 2e-5
 
-
+def test_getLengthRadiusFromVolume():
+    r1,l1 = getLengthRadiusFromVolume(100 * 1e6, # l → mm**3
+                                      mode='quick')
+    r2,l2 = getLengthRadiusFromVolume(100 * 1e6)
+    assert np.allclose([r1,l1], [r2,l2])
 

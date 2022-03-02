@@ -3,10 +3,11 @@ from abc import ABCMeta, abstractmethod
 
 import numpy as np
 from scipy import special
-from scipy.optimize import minimize_scalar
+from scipy import optimize
 
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
+from tankoh2.service.plot.generic import plotContour
 
 
 class AbstractDome(metaclass=ABCMeta):
@@ -133,12 +134,9 @@ class DomeEllipsoid(AbstractDome):
     def _getPolarOpeningArcLenEllipse(self):
         a, b = self.halfAxes
         if self.aIsDomeLength:
-            yPo = self.rPolarOpening
-            xPo = a/b*np.sqrt((b**2-yPo**2))
+            phiPo = np.pi / 2 - np.arcsin(self.rPolarOpening / b)
         else:
-            xPo = self.rPolarOpening
-            yPo = b / a * np.sqrt((a ** 2 - xPo ** 2))
-        phiPo = np.arctan2(xPo, yPo)
+            phiPo = np.pi / 2 - np.arccos(self.rPolarOpening / a)
         arcLen = self.getArcLength(phiPo)
         return arcLen
 
@@ -153,11 +151,6 @@ class DomeEllipsoid(AbstractDome):
         quaterEllipseLength = self.getArcLength(np.pi/2)
         return quaterEllipseLength - arcLen
 
-
-
-        a, b = self.halfAxes
-        e_sq = 1.0 - b ** 2 / a ** 2  # eccentricity squared
-        return 2 * a * special.ellipe(e_sq)  # circumference formula
 
     def getPoints(self, phis):
         """Calculates a point on the ellipse
@@ -180,10 +173,20 @@ class DomeEllipsoid(AbstractDome):
         xs = a/b*np.sqrt(b**2-ys**2)
         return np.array([xs,ys])
 
-    def getPhiByArcLength(self, arcLength):
-        """Calculate angle phi starting from phiStart and a given arc length
 
-        ::
+    def getArcLength(self, phi):
+        """Calculates the arc length"""
+        a = self.halfAxes[0]
+        return a * special.ellipeinc(phi, self.eccentricitySq)
+
+
+    def getContour(self, nodeNumber=250):
+        """Return the countour of the dome
+
+        :param nodeNumber: number of nodes used
+        :return: vectors x,r: x is increasing, r starts at cylinder radius decreasing
+
+        The angles here are defined as follows::
 
             |   b,y ↑
             |       |    /
@@ -192,48 +195,37 @@ class DomeEllipsoid(AbstractDome):
             |       | /
             |       |------------------→ a,x
 
-        :param arcLength: length of the arc
-        :return: angle in rad
-        """
-        a = self.halfAxes[0]
 
-        def optFun(phi):
-            return abs(arcLength - (a * special.ellipeinc(phi, self.eccentricitySq)))
-
-        result = minimize_scalar(optFun, bounds=(0, np.pi), method='bounded')
-        phi = result.x
-
-        return phi
-
-    def getArcLength(self, phi):
-        """Calculates the arc length"""
-        a = self.halfAxes[0]
-        return a * special.ellipeinc(phi, self.eccentricitySq)
-
-
-
-    def getContour(self, nodeNumber=250):
-        """Return the countour of the dome
-
-        :param nodeNumber: number of nodes used
-        :return: vectors x,r: x is increasing, r starts at cylinder radius decreasing
         """
         if nodeNumber in self._contourCache:
             return self._contourCache[nodeNumber]
-        arcLen = self._getPolarOpeningArcLenEllipse()
+        initAngles = np.pi /2 * np.arange(nodeNumber) / nodeNumber
+        a, b = self.halfAxes
+        arcPo = self._getPolarOpeningArcLenEllipse()
         if self.aIsDomeLength:
-            arcLengths = np.linspace(0, arcLen, nodeNumber)
+            arcStart = 0.
+            arcEnd = arcPo
         else:
-            endLen = self.getArcLength(np.pi/2)
-            arcLengths = np.linspace(arcLen, endLen, int(nodeNumber))
-        phis = [self.getPhiByArcLength(length) for length in arcLengths]
-        points = self.getPoints(phis)
+            arcStart = self.getArcLength(np.pi/2)
+            arcEnd = arcPo
+        arcLengths = np.linspace(arcStart, arcEnd, nodeNumber)
+        res = optimize.root(
+            lambda angles: (a * special.ellipeinc(angles, self.eccentricitySq) - arcLengths),
+            initAngles)
+        phis = res.x
+        points = np.array([a * np.sin(phis), b * np.cos(phis)])
         if not self.aIsDomeLength:
-            points = points[::-1,::-1]
+            points = points[::-1,:]
+
         points[:, 0] = [0, self.rCyl] # due to numerical inaccuracy
         points[1, -1] = self.rPolarOpening # due to numerical inaccuracy
         self._contourCache[nodeNumber] = points
         return points
+
+    def plotContour(self):
+        """creates a plot of the outer liner contour"""
+        points = self.getContour(20)
+        plotContour(True, '', points[0,:], points[1,:])
 
 
 class DomeSphere(DomeEllipsoid):
@@ -343,15 +335,10 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    f = plt.figure()
-    de = DomeEllipsoid(20, 10, 1)
-    phis = np.linspace(0, np.pi, 5)
-    #coords = de.getPoints(phis)
-    #print(indent(coords))
+    de = DomeEllipsoid(2,1,1)
+    #de = DomeEllipsoid(1,2,0.5)
+    de.plotContour()
 
-    print(de.contourLength)
-    print(de.getPhiByArcLength(48.4422411), np.pi)
-    print(indent(de.getContour(5)))
 
     # getCountourConical(20 ,60 ,100 ,40)
     pass

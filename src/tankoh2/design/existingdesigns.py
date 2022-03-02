@@ -11,17 +11,18 @@ import os
 
 allArgs = pd.DataFrame(
     [
+        # General
         ['windingOrMetal', 'General', '', 'winding', '',
          'Switch between winding mode or metal design [winding, metal]', ''],
         ['tankname', 'General', 'name', 'tank_name', '', 'Name of the tank', ''],
         ['nodeNumber', 'General', 'number', 500, int, 'node number along the contour', ''],
         ['verbose', 'General', '', False, '', 'More console output', 'store_true'],
         ['help', 'General', '', '', '', 'show this help message and exit', 'help'],
-
+        # Optimization
         ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-
+        # Geometry
         ['domeType', 'Geometry', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
         ['domeContour', 'Geometry', '(x,y)', (None,None), '',
@@ -31,9 +32,9 @@ allArgs = pd.DataFrame(
         ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
         ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
         ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
-        ['domeLengthByR', 'Geometry', '', '', float,
+        ['domeLengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
-
+        # Design
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
         ['valveReleaseFactor', 'Design', 'f_pv', 1.1, float,
          'Factor defining additional pressure to account for the valve pressure inaccuracies', ''],
@@ -44,7 +45,7 @@ allArgs = pd.DataFrame(
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
          'Location of the tank according to CS 25.963 (d). Only used if useHydrostaticPressure. '
          'Options: [wing_no_engine, wing_at_engine, fuselage]', ''],
-
+        # Material
         ['materialName', 'Material', 'name', 'CFRP_HyMod', '',
          'For metal tanks: name of the material defined in tankoh2.design.metal.material. '
          'For wound tanks: name of the .json for a µWind material definiton '
@@ -52,7 +53,7 @@ allArgs = pd.DataFrame(
          'If only a name is given, the file is assumed to be in tankoh2/data', ''],
         ['failureMode', 'Material', 'mode', 'fibreFailure', '',
          'Use pucks failure mode [fibreFailure, interFibreFailure]', ''],
-
+        # Fiber roving parameters
         ['hoopLayerThickness', 'Fiber roving parameters', 'thk', 0.125, float,
          'Thickness of hoop (circumferential) layers [mm]', ''],
         ['helixLayerThickenss', 'Fiber roving parameters', 'thk', 0.129, float,
@@ -195,7 +196,28 @@ kautextDesign = OrderedDict([
                              ('fibreDensity', 1.78),  # g / cm^3
                              ])
 
+ttDesignLh2 = OrderedDict([
+    ('tankname', 'tt_lh2'),
+    #('polarOpeningRadius', 40),  # mm
+    ('polarOpeningRadius', 1),  # mm
+    ('dcly', 0.228659348*2*1000),  # mm
+    #('lcyl', 0.5716483709*1000), #mm
+    ('lcyl', 200), #mm
+    ('safetyFactor', 2.0),
+    ('pressure', 0.25),  # pressure in MPa (bar / 10.)
+    ('domeType', 'ellipse'),
+    ('domeLengthByR',2)
+])
 
+ttDesignCh2 = OrderedDict([
+    ('tankname', 'tt_ch2'),
+    ('polarOpeningRadius', 40),  # mm
+    ('dcly', 0.228659348*2*1000),  # mm
+    ('lcyl', 0.5716483709*1000), #mm
+    ('safetyFactor', 2.0),
+    ('pressure', 70.),  # pressure in MPa (bar / 10.)
+    ('domeType', 'ellipse'),
+])
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

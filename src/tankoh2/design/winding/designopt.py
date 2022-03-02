@@ -11,8 +11,8 @@ from tankoh2.design.winding.winding import windHoopLayer, windLayer, getAngleAnd
     getNegAngleAndPolarOpeningDiffByAngle
 from tankoh2.design.winding.windingutils import getLayerThicknesses
 from tankoh2.geometry.dome import AbstractDome
-from tankoh2.service.plot.generic import plotDataFrame
-from tankoh2.service.plot.muwind import plotContour, plotStressEpsPuck, plotThicknesses
+from tankoh2.service.plot.generic import plotDataFrame, plotContour
+from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses
 from tankoh2.service.utilities import getTimeString
 
 

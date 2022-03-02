@@ -61,6 +61,47 @@ def getRunDir(runDirExtension='', useMilliSeconds=False):
     return runDir
 
 
+def createRstTable(inputMatrix, numberOfHeaderLines=1):
+    """Returns a string containing a well formatted table that can be used in rst-documentation.
+
+    :param inputMatrix: A sequence of sequences of items, one sequence per row.
+    :param numberOfHeaderLines: number of lines that are used as header. the header is printed bold.
+    :return: string containing well formatted rst table
+
+    Example::
+
+        >>> from fa_pyutils.service.stringutils import createRstTable
+        >>> a=[]
+        >>> a.append(['','major','minor','revision'])
+        >>> a.append(['Example','13','2','0'])
+        >>> a.append([  'Explanation','New feature, incompatibe to prev versions','New feature, compatible to prev versions','Patch/Bugfix'])
+        >>> print(createRstTable(a))
+        +-------------+-------------------------------------------+------------------------------------------+--------------+
+        |             | major                                     | minor                                    | revision     |
+        +=============+===========================================+==========================================+==============+
+        | Example     | 13                                        | 2                                        | 0            |
+        +-------------+-------------------------------------------+------------------------------------------+--------------+
+        | Explanation | New feature, incompatibe to prev versions | New feature, compatible to prev versions | Patch/Bugfix |
+        +-------------+-------------------------------------------+------------------------------------------+--------------+
+    """
+    tableString = indent(inputMatrix, separateRows=True, hasHeader=True, headerChar="-", prefix="| ", postfix=" |")
+    tableLines = tableString.splitlines()
+    # get second row to extract the position of '|'
+    pipePositions = []
+    line = tableLines[1]
+    for index, character in enumerate(line):
+        if character == "|":
+            pipePositions.append(index)
+
+    # alter tableLines containing text
+    for halfLineNumber, line in enumerate(tableLines[::2]):
+        for index in pipePositions:
+            line = line[:index] + "+" + line[index + 1 :]
+        tableLines[halfLineNumber * 2] = line
+
+    tableLines[2 * numberOfHeaderLines] = tableLines[2 * numberOfHeaderLines].replace("-", "=")
+    return "\n".join(tableLines)
+
 def indent(rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
            separateRows=False, prefix='', postfix='', wrapfunc=lambda x: wrap_npstr(x)):  # lambda x:x):
     """

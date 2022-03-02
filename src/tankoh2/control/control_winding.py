@@ -2,6 +2,7 @@
 
 import os
 import datetime
+from numpy.testing._private.parameterized import param
 
 from tankoh2 import log, pychain, programDir
 from tankoh2.design.winding.designopt import designLayers
@@ -12,7 +13,7 @@ from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
-from tankoh2.design.existingdesigns import defaultDesign
+import tankoh2.design.existingdesigns as parameters
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
 
 
@@ -169,21 +170,24 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 0:
-        params = defaultDesign.copy()
+        params = parameters.defaultDesign.copy()
         params['domeType'] = 'ellipse'
         params['domeLengthByR'] = 0.5
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
-        params = defaultDesign.copy()
+        createDesign(**parameters.ttDesignLh2)
+    elif 1:
+        createDesign(**parameters.ttDesignCh2)
+    elif 1:
+        params = parameters.defaultDesign.copy()
         params['domeType'] = 'circle'
         createDesign(**params)
     elif 0:
         createDesign(pressure=5)
     elif 1:
-        from tankoh2.design.existingdesigns import vphDesign1
-        vphDesign1['polarOpeningRadius'] = 23
-        createDesign(**vphDesign1)
+        parameters.vphDesign1['polarOpeningRadius'] = 23
+        createDesign(**parameters.vphDesign1)
     else:
         rs=[]
         lengths = np.linspace(1000.,6000,11)
