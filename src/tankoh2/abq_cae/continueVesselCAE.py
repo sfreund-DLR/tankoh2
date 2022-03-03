@@ -55,16 +55,18 @@ def getTransverseStiffnessesOfLaminate(materialName, UD_elastic_props, ud_streng
     # Create a new material of type Composite
     # update true:  new material is created and if material with same name exist it is overwritten
     # update false: if material with name already exists already stord material parameters are used
-    requests.post(posixpath.join(url,"materials","Composite"), json=payload, params={"update":update}) 
+    requests.post(posixpath.join(url,"material","Composite"), json=payload, params={"update":update}) 
 
     ## Get the material code from the database. All materials in the public database are Anisotropic.
     # Get the last element of the list (to collect always the last published material)
-    MatDBCode = [x for x in requests.get(posixpath.join(url,"materials","public")).json()["Anisotropic"] if label in x][-1]
+    MatDBCode = [x for x in requests.get(posixpath.join(url,"material","public")).json()["Anisotropic"] if label in x][-1]
 
     # Properties used in the request to create a stack using the material code.
     properties = { "ListofPlies": [{"Tape2D": [ "Anisotropic", MatDBCode]}], 
                   "ListofPlyAngles": layup, #[0,90,60,-60,0,0,-45,45,90,0],
                   "ListofPlyThickness": thicknesses }# [0.000128] * 10}
+
+    print('Laminate props',properties)
 
     ## Create a post request with the given properties. Create a JSON string from the result
     # and load the result into a dictionary.
@@ -526,7 +528,7 @@ def createUMATforHomogeneousSection(model, materials, layerMaterialPrefix, UMATp
                 setABQUMATinAcuteTriangles(model, 'Mandrel'+before_keyword, sectionkey, materialDescription)
 
 
-def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField):
+def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField, noSectionPoint):
 
 #   for a given material a material equivalent with UMAT (and user defined field) definition is created; material assignment of the plies in all compositelayuo definitions is updated
 #   to reference the UMAT material 
@@ -543,6 +545,7 @@ def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMA
 #       AbqMATinAcuteTriangles  [boolean]           : true, if in sharp wegde elements no umat shall be used (instead abaqus material is assigned); false, if UMAT shall be used in all wedge elements, too
 #       udLaywers               [Boolean]           : true, if UD-layers are modelled; false if balanced angle plies are modelled
 #       userDefinedField        [Boolean]           : true, if also user defined field shall be defined for material; false im not
+#       noSectionPoint          [int]               : no of section points per layer
 #
 #   RETURN
 #       None.
@@ -582,7 +585,7 @@ def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMA
         compositeLayup = part.compositeLayups[compositeLayupKey]
         for compositePly in compositePlyList:
             UMATName, sectionkey = createUMATName(compositePly[2], UMATprefix)                                                
-            compositeLayup.CompositePly(suppressed=False, plyName=compositePly[3], region=part.sets[compositePly[1][0]], material=UMATName, thicknessType=compositePly[5], thickness=compositePly[0],  orientationType=compositePly[4], orientationValue=float(compositePly[6]), additionalRotationType=compositePly[11], additionalRotationField=compositePly[13], axis=compositePly[9], angle=compositePly[10], numIntPoints=3)                        
+            compositeLayup.CompositePly(suppressed=False, plyName=compositePly[3], region=part.sets[compositePly[1][0]], material=UMATName, thicknessType=compositePly[5], thickness=compositePly[0],  orientationType=compositePly[4], orientationValue=float(compositePly[6]), additionalRotationType=compositePly[11], additionalRotationField=compositePly[13], axis=compositePly[9], angle=compositePly[10], numIntPoints=noSectionPoint)                        
 
         #get transverse stiffness of layup
         #elastic props of UD plies [E11, E22, G12, G23, nu12] in 10^6 N/mm2
@@ -593,11 +596,12 @@ def createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMA
         print('Strengths', ud_strength)
         print('layup', layup)
         print('thickness', thicknesses)
-        k11, k22, k12 = getTransverseStiffnessesOfLaminate(materialName, UD_elastic_props, ud_strength, layup, thicknesses, True)
+        print('materialName', compositeLayupKey)
+        k11, k22, k12 = getTransverseStiffnessesOfLaminate(compositeLayupKey, UD_elastic_props, ud_strength, layup, thicknesses, True)
         compositeLayup.section.TransverseShearShell(k11=k11, k22=k22, k12=k12)
 
 
-def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName, userDefinedField):
+def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, materialName, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, compositeLayup, windingPartName, userDefinedField, noSectionPoint):
 
 #   create material card for UMAT from material props from given json file
 #
@@ -621,7 +625,7 @@ def createUMATmaterials(model, layerMaterialPrefix, UMATprefix, materialPath, ma
     if not compositeLayup:
         createUMATforHomogeneousSection(model, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField)
     else:
-        createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField)
+        createUMATforCompositeLayup(model, part, materials, layerMaterialPrefix, UMATprefix, materialProps, nDepvar, degr_fac, AbqMATinAcuteTriangles, udLayers, userDefinedField, noSectionPoint)
             
 
 def setABQUMATinAcuteTriangles(model, partname, sectionkey, materialDescription):         
@@ -972,7 +976,7 @@ def getNodeSetListByContainingName(parts, partname, namelist):
         
     return nodeSetlist
 
-def createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis):
+def createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis, WindingOfDiffParts):
     
     
     exceptionParts = list()
@@ -1016,7 +1020,10 @@ def createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAng
             createPeriodicEquation("SymmetryFaces_1", "SymmetryFaces_2", key, "", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)
         else:
             # list reference face at xy-plane (z=0) at first!
-            createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)   
+            if WindingOfDiffParts:
+                createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "Mandrel1_", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)   
+            else:
+                createPeriodicEquation(key+"_SideFaces_Zero", key+"_SideFaces_One", key, "", reveloveAngle, exceptionSetNodeLables, parts, model, CoordAxisWhichIsRotAxis)   
 
 def removePeriodicBCNodesFromContactSets(layerPartPrefix, model, parts):
 
@@ -1118,18 +1125,19 @@ def getCorrespondingNodeLabel(nodeLabel, setname, CoordAxisWhichIsRotAxis, part)
     return correspondingNodeLabel
 
 
-def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model, useContact, CoordAxisWhichIsRotAxis): #
+def applyPeropdicBCs(layerPartPrefix, reveloveAngle, exceptionSets, assembly, parts, model, useContact, CoordAxisWhichIsRotAxis, WindingOfDiffParts): #
 
 #   applies perdiodic boubdary conditions to revolve tank section (equal displacements on both sides)
 #
 #   return  :   nonde
 #   
-#   input
+#   input:
+#       WindingOfDiffParts [boolean]    : true -- winding composed of differnt layer parts, no -- winding is one single part    
 #       
 #
     print("*** APPLY PERIODIC BOUNDARY CONDITIONS BY EQUATIONS ***") 
     
-    createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis)
+    createPeriodicConstraints(exceptionSets, assembly, parts, model, reveloveAngle, useContact, CoordAxisWhichIsRotAxis, WindingOfDiffParts)
     
     removePeriodicBCNodesFromContactSets(layerPartPrefix, model, parts)              
     
@@ -1190,6 +1198,7 @@ def createOutputDefinition(model, dt, dnInk, fieldVariables, historyVariables):
     for output in (model.historyOutputRequests.keys()):
         print('delete', output)
         del model.fieldOutputRequests[str(output)]
+        
 
     # create new output for all steps
     for step in model.steps.keys():
