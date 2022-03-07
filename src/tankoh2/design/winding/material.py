@@ -29,10 +29,10 @@ def readLayupData(filename):
     :return:
     """
     data = np.abs(np.loadtxt(filename))
-    angle_degree, wendekreisdurchmesser, singlePlyThickenss, krempendruchmesser = data.T
+    angle_degree, wendekreisdurchmesser, singlePlyThickenss, krempendruchmesser, hoopShift = data.T
     wendekreisradien = wendekreisdurchmesser / 2.
     krempenradien = krempendruchmesser / 2.
-    return np.array([angle_degree, singlePlyThickenss, wendekreisradien, krempenradien])
+    return np.array([angle_degree, singlePlyThickenss, wendekreisradien, krempenradien, hoopShift])
 
 
 def getComposite(angle_degree, singlePlyThickensses, hoopLayerThickness, helixLayerThickenss, material,
