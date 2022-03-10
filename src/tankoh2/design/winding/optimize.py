@@ -12,7 +12,7 @@ from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarO
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
     getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.design.winding.solver import getMaxFibreFailureByAngle
+from tankoh2.design.winding.solver import getMaxPuckByAngle
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=False,
@@ -44,13 +44,13 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=Fal
     #r = angle / angle2
     return angle, funVal, iterations
 
-def minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, puckProperties, burstPressure,
-                        targetFunction = getMaxFibreFailureByAngle, verbose=False):
+def minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, useFibreFailure, puckProperties,
+                        burstPressure, targetFunction = getMaxPuckByAngle, verbose=False):
     """Minimizes puck fibre failure criterion in a certain region of angles
 
     """
     tol = 1e-2
-    args = [vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose]
+    args = [vessel, layerNumber, puckProperties, burstPressure, dropIndicies, useFibreFailure, verbose]
     if 0:
         popt = minimize_scalar(targetFunction, method='bounded',
                                bounds=bounds,  # bounds of the angle
@@ -66,7 +66,7 @@ def minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, puckPropertie
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
     if hasattr(x, '__iter__'):
         x = x[0]
-    if targetFunction is getMaxFibreFailureByAngle:
+    if targetFunction is getMaxPuckByAngle:
         windLayer(vessel, layerNumber, x)
     else:
         windHoopLayer(vessel, layerNumber, x)
