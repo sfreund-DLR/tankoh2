@@ -47,10 +47,16 @@ def windLayer(vessel, layerNumber, angle=None, verbose = False):
         vessel.setLayerAngle(layerNumber, angle)
     try:
         vessel.runWindingSimulation(layerNumber + 1)
-    except RuntimeError as e:
+    except (RuntimeError, IndexError) as e:
         if 'bandmiddle path crossed polar opening!' in str(e):
             if verbose:
                 log.warning(f'Got an error at angle {angle}: {e}')
+            return np.inf
+        if isinstance(e, IndexError):
+            if verbose:
+                log.warning(f'Got an error at angle {angle}. '
+                            f'Maybe due to too small polar opening relative to cylindrical radius. '
+                            f'Error message: {e}')
             return np.inf
         else:
             raise
