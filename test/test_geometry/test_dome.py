@@ -1,6 +1,6 @@
 import numpy as np
 
-from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere
+from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere, DomeGeneric
 
 
 def test_domeEllipsoidSphere():
@@ -111,4 +111,14 @@ def test_ellipseWallVolume():
     vRefSphere = 4/3*np.pi*((r+1)**3-r**3)
     assert abs(2*de.getWallVolume(1) / vRefSphere -1) < 1e-5
 
-
+def test_domeVolumes():
+    r = 1
+    thk = 0.01
+    po = r/10
+    dc = DomeSphere(r, po)
+    de = DomeEllipsoid(r,r,po)
+    dg = DomeGeneric(*dc.getContour())
+    assert np.allclose(dc.volume, de.volume)
+    assert np.allclose(dc.volume, dg.volume)
+    assert np.allclose(dc.getWallVolume(thk), de.getWallVolume(thk))
+    assert np.allclose(dc.getWallVolume(thk), dg.getWallVolume(thk), rtol=1e-4)
