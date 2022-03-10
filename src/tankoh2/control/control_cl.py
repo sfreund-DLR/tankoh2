@@ -7,7 +7,8 @@ from tankoh2.design.winding.vessel_cl import winding_helical_layer
 #from builtins import True, False
 #from builtins import
 
-sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
+#sys.path.append('C:/MikroWind/MyCrOChain_Version_0_95_4_x64/MyCrOChain_Version_0_95_4_x64/abaqus_interface_0_95_4')
+
 
 import os
 
@@ -22,7 +23,7 @@ from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_
 from tankoh2.control.control_winding import createDesign
 import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
-#from builtins import True
+
 
 def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
                            dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
@@ -340,9 +341,10 @@ def getLayerBook(directory, vesselName):
     
     vesselThickness = linerOuterDiameter
     for layerNo in range(vessel.getNumberOfLayers()):
-        vesselThickness = vesselThickness + 2.*(composite.getOrthotropLayer(layerNo).thickness)                         
-        log.info(f' { layerNo+1 }, {composite.getAngle(layerNo)}, {vessel.getPolarOpeningX(layerNo, True)}, {vessel.getPolarOpeningX(layerNo, True)}, {composite.getLayerThicknessFromWindingProps(layerNo)/2.}, {composite.getLayerThicknessFromWindingProps(layerNo)},{vessel.getPolarOpeningR(layerNo, True)},{vesselThickness}')
-        outArr.append([layerNo+1, composite.getAngle(layerNo), vessel.getPolarOpeningX(layerNo, True), vessel.getPolarOpeningX(layerNo, True), composite.getOrthotropLayer(layerNo).thickness/2.,composite.getOrthotropLayer(layerNo).thickness,vessel.getPolarOpeningR(layerNo, True), vesselThickness])
+        woundedPlyThickness = composite.getLayerThicknessFromWindingProps(layerNo) #composite.getOrthotropLayer(layerNo).thickness
+        vesselThickness = vesselThickness + 2.*woundedPlyThickness                         
+        log.info(f' { layerNo+1 }, {composite.getAngle(layerNo)}, {vessel.getHoopLayerShift(layerNo, True)}, {vessel.getHoopLayerShift(layerNo, True)}, {composite.getLayerThicknessFromWindingProps(layerNo)/2.}, {composite.getLayerThicknessFromWindingProps(layerNo)},{vessel.getPolarOpeningR(layerNo, True)},{vesselThickness}')
+        outArr.append([layerNo+1, composite.getAngle(layerNo), vessel.getHoopLayerShift(layerNo, True), vessel.getHoopLayerShift(layerNo, True), woundedPlyThickness/2.,woundedPlyThickness,vessel.getPolarOpeningR(layerNo, True), vesselThickness])
         # alternative thickness: composite.getLayerThicknessFromWindingProps(layerNo)
     
     with open(outputFileName, "w") as file:
@@ -409,11 +411,11 @@ def main():
 
 # - Optimized Design regarding sepcific parameters
     createDesign = True
-    #design = tankoh2.design.existingdesigns.NGTBITDesign
-    #design = tankoh2.design.existingdesigns.NGTBITDesign_small
     design = tankoh2.design.existingdesigns.NGTBITDesign
+    #design = tankoh2.design.existingdesigns.NGTBITDesign_small
+#    design = tankoh2.design.existingdesigns.NGTBITDesign    
     tankname = design.get('tankname')    
-    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
+    domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")    
     #domeContourFilename = None    
 
 #####################################################################################################
@@ -423,7 +425,7 @@ def main():
     
     createLayerBook = False
     #vesselFile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20211105_140505_70MPa_12_Rovings//"
-    directory = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20211105_140505_70MPa_12_Rovings"
+    directory = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20220218_182945_70MPa_6Rovings_T700"
     vesselName = "NGT-BIT-2020-09-16" 
      
 
@@ -435,8 +437,9 @@ def main():
                            dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
-    if createDesign:
+    if createDesign:    
         builtVesselByOptimizedDesign(design, domeContourFilename)
+        print(design)
     
     if createLayerBook:
         getLayerBook(directory, vesselName)

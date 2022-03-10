@@ -62,14 +62,14 @@ def createDesign(**kwargs):
     # Design Args
     pressure = None
     safetyFactor = None
-    if 'burstPressure' not in designArgs:
+    if 'burstPressure' not in designArgs:        
         safetyFactor = designArgs['safetyFactor']
         pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
         valveReleaseFactor = designArgs['valveReleaseFactor']
         useHydrostaticPressure = designArgs['useHydrostaticPressure']
         tankLocation = designArgs['tankLocation']
         hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
-        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
+        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor        
     burstPressure = designArgs['burstPressure']
     failureMode = designArgs['failureMode']
     useFibreFailure = failureMode.lower() == 'fibrefailure'
@@ -193,6 +193,10 @@ def createDesign(**kwargs):
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
+    
+    log.info('='*100)
+    log.info('Create frp winding design with these parameters: \n'+(indent(kwargs.items())))
+    log.info('='*100)
 
     return results
 
