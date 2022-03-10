@@ -23,7 +23,7 @@ def getMaterial(materialName):
 # from Winnefeld: Modelling and Designing Cryogenic Hydrogen Tanks for Future Aircraft Applications
 alu2219 = OrderedDict([  # at T=20K
     ('roh', 2825),  # kg/m**3
-    ('sigma_t', 172.4),  # MPa ultimate design conditions
+    ('sigma_t', 172.4),  # MPa ultimate design conditions including fatigue
     ('E', 72400), #MPa Alu2219T87 from Gomez: Liquid hydrogen fuel tanks for commercial aviation: Structural sizing and stress analysis
     ('weldEfficiency', 1),  # [-]
     ('c1', 0.),  # tbd

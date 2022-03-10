@@ -1,17 +1,17 @@
 """control a tank optimization"""
 
 import datetime
+import numpy as np
 
 from tankoh2 import log
-from tankoh2.service.utilities import indent
-from tankoh2.service.exception import Tankoh2Error
-from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere
+from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.metal.mechanics import getWallThickness
 from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
+from tankoh2.masses.massestimation import getInsulationMass, getFairingMass
 
 
 def createDesign(**kwargs):
@@ -40,15 +40,7 @@ def createDesign(**kwargs):
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
     lcylinder = designArgs['lcyl']  # mm
-    if domeType == 'circle':
-        dome = DomeSphere(dcly/2, polarOpeningRadius)
-    elif domeType == 'ellipse':
-        lDomeHalfAxis = designArgs['domeLengthByR'] * dcly / 2
-        dome = DomeEllipsoid(dcly/2, lDomeHalfAxis, polarOpeningRadius)
-    else:
-        raise Tankoh2Error(f'Dome type "{domeType}" not supported for metal tanks. '
-                           f'Please use [circle, ellipse, custom] and contact the developer '
-                           f'if you need this feature.')
+    dome = getDome(dcly/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
     length = lcylinder + 2 * dome.domeLength
 
     # Pressure Args
@@ -76,10 +68,17 @@ def createDesign(**kwargs):
     volume, area, linerLength = liner.volume / 1000 /1000, liner.area/100/100/100, liner.length
     wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
     wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
-    mass = material['roh'] * wallVol / 1000 # [kg]
+    massMetal = material['roh'] * wallVol / 1000  # [kg]
 
     duration = datetime.datetime.now() - startTime
-    results = mass, volume, area, linerLength, wallThickness, duration
+    if burstPressure > 5:
+        # compressed gas vessel
+        auxMasses = [0., 0.]
+    else:
+        # liquid, cryo vessel
+        auxMasses = [getInsulationMass(liner), getFairingMass(liner)]
+    totalMass = np.sum([massMetal]+auxMasses)
+    results = massMetal, *auxMasses, totalMass, volume, area, linerLength, wallThickness, duration
 
     saveParametersAndResults(designArgs, results)
 
@@ -102,7 +101,6 @@ if __name__ == '__main__':
         params['materialName'] = 'alu2219'
         createDesign(**params)
     elif 1:
-        import numpy as np
         r = h = 100
         asp = 4*np.pi*r**2
         vs = 4/3*np.pi*r**3

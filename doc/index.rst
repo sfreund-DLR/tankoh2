@@ -2,8 +2,8 @@
 ..
 .. SPDX-License-Identifier: MIT
 
-fa_pyutils documentation
-========================
+tankoh2 documentation
+=====================
 
 
 .. only:: html
@@ -34,7 +34,6 @@ Reference
 .. toctree::
    :maxdepth: 2
 
-   tank_preliminaries
    winding
    metal
    tankoh2

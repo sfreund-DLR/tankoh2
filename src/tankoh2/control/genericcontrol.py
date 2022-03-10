@@ -2,6 +2,7 @@
 
 import numpy as np
 import os
+import logging
 
 from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
@@ -11,11 +12,14 @@ from tankoh2.geometry.dome import DomeEllipsoid
 from tankoh2.geometry.liner import Liner
 from tankoh2.settings import useRstOutput
 
-resultNamesFrp = ['shellMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
-resultUnitsFrp = ['kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
+resultNamesFrp = ['shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
+                  'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles',
+                  'hoopLayerShifts']
+resultUnitsFrp = ['kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['metalMass', 'volume', 'area', 'lcylinder', 'wallThickness', 'duration']
-resultUnitsMetal = ['kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
+resultNamesMetal = ['metalMass', 'insultaion mass', 'fairing mass', 'total mass',  'volume', 'area',
+                    'lcylinder', 'wallThickness', 'duration']
+resultUnitsMetal = ['kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
 
@@ -64,7 +68,24 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     # update missing args with default design args
     inputKwArgs['runDir'] = inputKwArgs['runDir'] if 'runDir' in inputKwArgs else getRunDir()
     designArgs = defaultDesign.copy()
+
+    removeIfIncluded = np.array([('lcylByR', 'lcyl'),
+                        ('pressure', 'burstPressure'),
+                        ('safetyFactor', 'burstPressure'),
+                        ('valveReleaseFactor', 'burstPressure'),
+                        ('useHydrostaticPressure', 'burstPressure'),
+                        ('tankLocation', 'burstPressure'),
+                        ])
+    # cleanup default args so they don't interfere with dependent args from inputKwArgs
+    for arg in removeIfIncluded[:,1]:
+        if arg in designArgs:
+            designArgs.pop(arg)
     designArgs.update(inputKwArgs)
+
+    # remove args that are superseded by other args (e.g. due to inclusion of default design args)
+    for removeIt, included in removeIfIncluded:
+        if included in designArgs:
+            designArgs.pop(removeIt)
 
     # remove frp-only arguments
     allowed = ['frp', 'metal']
@@ -75,18 +96,6 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         for key in frpKeywords:
             inputKwArgs.pop(key, None)
 
-    # remove args that are superseded by other args (e.g. due to inclusion of default design args)
-    removeIfIncluded = [('lcylByR', 'lcyl'),
-                        ('pressure', 'burstPressure'),
-                        ('safetyFactor', 'burstPressure'),
-                        ('valveReleaseFactor', 'burstPressure'),
-                        ('useHydrostaticPressure', 'burstPressure'),
-                        ('tankLocation', 'burstPressure'),
-                        ]
-    for removeIt, included in removeIfIncluded:
-        if included in designArgs:
-            designArgs.pop(removeIt)
-
     # for elliptical domes, create the contour since µWind does not support is natively
     if designArgs['domeType'] == 'ellipse':
         if not designArgs['domeLengthByR']:
@@ -95,5 +104,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         r = designArgs['dcly'] / 2
         de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
         designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
+    if 'verbose' in designArgs and designArgs['verbose']:
+        log.setLevel(logging.DEBUG)
+        # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead
+    designArgs.pop('help',None)
     return designArgs
 
