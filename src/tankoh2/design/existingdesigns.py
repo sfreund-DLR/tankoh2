@@ -25,7 +25,7 @@ allArgs = pd.DataFrame(
         # Geometry
         ['domeType', 'Geometry', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
-        ['domeContour', 'Geometry', '(x,y)', (None,None), '',
+        ['domeContour', 'Geometry', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
         ['polarOpeningRadius', 'Geometry', 'r_po', 20, float, 'Polar opening radius [mm]', ''],
@@ -97,6 +97,7 @@ hymodDesign = OrderedDict([
 NGTBITDesign = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
     ('pressure', 70),
+    ('valveReleaseFactor', 1.),
     # Geometry
     ('polarOpeningRadius', 23),
     ('dcly', 400.),
@@ -115,6 +116,34 @@ NGTBITDesign = OrderedDict([
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
+    # optimizer settings
+    ('maxlayers', 200)
+    ])
+
+NGTBITDesign_old = OrderedDict([
+    ('tankname', 'NGT-BIT-2020-09-16'),
+    ('pressure', 70),
+    ('valveReleaseFactor', 1.),
+    # Geometry
+    ('nodeNumber', 1000),
+    ('polarOpeningRadius', 23),
+    #('dcly', 400.),
+    ('lcyl', 500.),
+
+    ('dcly', 0.2754 * 2 * 1000),  # mm
+    #('lcyl', 0.68862939 * 1000),  # mm
+    # design philosophy
+    ('safetyFactor', 2.0),
+    ('failureMode', 'fibreFailure'),
+    # material
+    ('materialName', 'CFRP_T700SC_LY556'),
+    # fibre roving parameter
+    ('hoopLayerThickness', 0.125),
+    ('helixLayerThickenss', 0.129),
+    ('rovingWidth', 3.175),
+    ('numberOfRovings', 4), # number of spools usabale at INVENT
+    ('tex', 446),
+    ('fibreDensity', 1.78),
     # optimizer settings
     ('maxlayers', 200)
     ])
@@ -192,25 +221,27 @@ kautextDesign = OrderedDict([
 
 ttDesignLh2 = OrderedDict([
     ('tankname', 'tt_lh2'),
-    #('polarOpeningRadius', 40),  # mm
-    ('polarOpeningRadius', 1),  # mm
-    ('dcly', 0.228659348*2*1000),  # mm
-    #('lcyl', 0.5716483709*1000), #mm
-    ('lcyl', 200), #mm
+    ('polarOpeningRadius', 40),  # mm
+    ('dcly', 223.862*2),  # mm
+    ('lcyl', 559.6572), #mm
     ('safetyFactor', 2.0),
     ('pressure', 0.25),  # pressure in MPa (bar / 10.)
-    ('domeType', 'ellipse'),
-    ('domeLengthByR',2)
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
 ])
 
 ttDesignCh2 = OrderedDict([
     ('tankname', 'tt_ch2'),
     ('polarOpeningRadius', 40),  # mm
-    ('dcly', 0.228659348*2*1000),  # mm
-    ('lcyl', 0.5716483709*1000), #mm
+    ('dcly', 269.66362*2),  # mm
+    ('lcyl', 674.15906),  # mm
     ('safetyFactor', 2.0),
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
-    ('domeType', 'ellipse'),
+    ('domeType', 'isotensoid'),
+    #('domeType', 'ellipse'),
+    ('useHydrostaticPressure', True),
+    ('maxlayers', 200),
 ])
 
 if __name__ == '__main__':
