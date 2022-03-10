@@ -57,7 +57,7 @@ def domeContourLength(dome):
 
 def getDome(cylinderRadius, polarOpening, domeType=None,
             x=None, r=None):
-    """
+    """creates a µWind dome
 
     :param cylinderRadius: radius of the cylinder
     :param polarOpening: polar opening radius
@@ -84,7 +84,11 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
             raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: {validDomeTypes}')
     # build  dome
     dome = pychain.winding.Dome()
-    dome.buildDome(cylinderRadius, polarOpening, domeType)
+    try:
+        dome.buildDome(cylinderRadius, polarOpening, domeType)
+    except IndexError as e:
+        log.error(f'Got an error with these parameters: {(cylinderRadius, polarOpening, domeType)}')
+        raise
 
     if x is not None and r is not None:
         if not np.allclose(r[0], cylinderRadius):
