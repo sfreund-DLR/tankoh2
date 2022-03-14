@@ -10,6 +10,40 @@ from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
 
+def getDome(cylinderRadius, polarOpening, domeType=None, lDomeHalfAxis = None):
+    """creates a dome analog to tankoh2.desig.winding.contour.getDome()
+
+    :param cylinderRadius: radius of the cylinder
+    :param polarOpening: polar opening radius
+    :param domeType: pychain.winding.DOME_TYPES.ISOTENSOID or pychain.winding.DOME_TYPES.CIRCLE
+    :param lDomeHalfAxis: ellipse half axis describing the dome length for elliptical domes
+    """
+    validDomeTypes = ['isotensoid', 'circle',
+                      'ellipse', # allowed by own implementation in tankoh2.geometry.contour
+                      1, 2,  # types from µWind
+                      ]
+
+    if domeType is None:
+        domeType = 'isotensoid'
+    elif isinstance(domeType, str):
+        domeType = domeType.lower()
+    elif isinstance(domeType, int) and domeType in validDomeTypes:
+        domeType = {1:'isotensoid', 2:'circle'}[domeType]
+    else:
+        raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: {validDomeTypes}')
+    # build  dome
+    if domeType == 'ellipse':
+        dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
+    elif domeType == 'circle':
+        dome = DomeSphere(cylinderRadius, polarOpening)
+    elif domeType == 'isotensoid':
+        from tankoh2.design.winding.contour import getDome as getDomeMuWind
+        domeMuWind = getDomeMuWind(cylinderRadius, polarOpening, domeType)
+        x, r = domeMuWind.getXCoords(), domeMuWind.getRCoords()
+        dome = DomeGeneric(x,r)
+
+    return dome
+
 class AbstractDome(metaclass=ABCMeta):
     """Abstract class defining domes"""
 
@@ -35,12 +69,16 @@ class AbstractDome(metaclass=ABCMeta):
         return np.sum(np.pi * (x[1:] - x[:-1]) / 3 * (R**2 + R*r + r**2))
 
     @abstractmethod
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used
 
         :param wallThickness: thickness of the dome material
-        :return: scalar, wall volume
         """
+        otherDome = self.getDomeResizedByThickness(wallThickness)
+        return otherDome.volume - self.volume
 
     @property
     def domeLength(self):
@@ -69,6 +107,48 @@ class AbstractDome(metaclass=ABCMeta):
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
 
+
+class DomeGeneric(AbstractDome):
+
+    def __init__(self, x, r):
+        """
+        :param x: vector x is increasing
+        :param r: vector r starts at cylinder radius decreasing
+        """
+        AbstractDome.__init__(self)
+        self._x = x
+        self._r = r
+
+
+
+    @property
+    def rPolarOpening(self):
+        return self._r[-1]
+
+    @property
+    def rCyl(self):
+        return self._r[0]
+
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        diff = np.array([self._x[:-1]-self._x[1:], self._r[:-1]-self._r[1:]])
+        normals = diff
+        normals[0] *= -1
+        normals = normals[::-1,:]
+        normals = np.append([[0],[1]], normals,axis=1) # add normal vector for conjunction to cylindrical part
+        fac = np.linalg.norm(normals, axis=0)
+        normals = normals / fac * thickness
+        x, r = normals + [self._x, self._r]
+
+        return DomeGeneric(x, r)
+
+    def getContour(self, nodeNumber=250):
+        """Return the countour of the dome
+
+        :param nodeNumber: unused
+        :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
+        """
+        return self._x, self._r
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -123,13 +203,10 @@ class DomeEllipsoid(AbstractDome):
         """Returns true if the dome length represents the major half axis of the ellipse"""
         return self.lDomeHalfAxis > self.rCyl
 
-    def getWallVolume(self, wallThickness):
-        """Calculate the volume of the material used
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        return DomeEllipsoid(self.rCyl + thickness, self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
-        :param wallThickness: thickness of the dome material
-        """
-        otherDome = DomeEllipsoid(self.rCyl + wallThickness, self.lDomeHalfAxis + wallThickness, self.rPolarOpening)
-        return otherDome.volume - self.volume
 
     def _getPolarOpeningArcLenEllipse(self):
         a, b = self.halfAxes

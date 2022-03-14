@@ -1,3 +1,5 @@
+"""utility functions"""
+
 import math
 
 import re
@@ -172,10 +174,9 @@ def wrap_npstr(text):
 
 
 def wrap_onspace(text, width):
-    """
-    A word-wrap function that preserves existing line breaks
+    """A word-wrap function that preserves existing line breaks
     and most spaces in the text. Expects that existing line
-    breaks are posix newlines (\n).
+    breaks are posix newlines (\\n).
     """
     return functools.reduce(lambda line, word, width=width: '%s%s%s' %
                                                             (line,
@@ -199,3 +200,20 @@ def wrap_always(text, width):
     It doesn't split the text in words."""
     return '\n'.join([text[width * i:width * (i + 1)] \
                       for i in range(int(math.ceil(1. * len(text) / width)))])
+
+
+if __name__ == '__main__':
+    input = [
+        ['Material', 'Density (lb / ft**2)', 'Density (kg / m**2)', 'Thermal conductivity (Btu / h ft °F)', 'Thermal conductivity (W / (m*K))'],
+        ['Polymethacrylimide - rigid, closed cell (Rohacell® 41S)', '2.2', '0.018 (at 43°F)'],
+        ['Polyurethane - rigid, open cell', '2.0', '0.021 (at 39°F)'],
+        ['Polyurethane + 10 % chopped - glass fibers, rigid, closed cell(A.D.Little Co.)', '4.0', '0.012 (at - 20°F)'],
+        ['Polyvinylchloride - rigid, closed cell (Klegecell H917)', '3.1', '0.0087 (at - 110°F)'],
+    ]
+    densFac = 0.0421401101
+    thcondFac = 0.293071 / 0.3048 / 5/9
+    for it in input[1:]:
+        it.insert(2, float(it[1])*densFac)
+        it.insert(4, float(it[3].split()[0])*thcondFac)
+    print(createRstTable(input))
+

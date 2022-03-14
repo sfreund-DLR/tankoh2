@@ -18,8 +18,10 @@ parser = ArgumentParser(prog = name, description=parserDesc, add_help=False,
                         formatter_class=ArgumentDefaultsHelpFormatter)
 
 grouped=allArgs.groupby('group')
+groupNames = allArgs['group'].unique()
 
-for groupName, argsGroup in grouped:
+for groupName in groupNames:
+    argsGroup = allArgs[allArgs['group']==groupName]
     parserGroup = parser.add_argument_group(groupName)
     for name, group, metavar, default, dataType, helpStr, action in argsGroup.iloc:
         kwargs = {}
@@ -43,4 +45,7 @@ try:
 except:
     sys.stdout.flush()
     raise
+
+
+
 

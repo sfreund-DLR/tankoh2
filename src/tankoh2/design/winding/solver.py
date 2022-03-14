@@ -86,43 +86,48 @@ def getLinearResults(vessel, puckProperties, layerNumber, burstPressure, dropInd
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
 
 
-def getMaxFibreFailureByAngle(angle, args):
+def getMaxPuckByAngle(angle, args):
     """Returns the maximum puck fibre failure index after setting and winding the given angle"""
-    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, useFibreFailure, verbose = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
     if angle is not None:
+        log.debug(f'Layer {layerNumber}, wind angle {angle}')
         actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
         if actualPolarOpening is np.inf:
             return np.inf
-    maxFF, maxIndex = _getMaxFibreFailure(args)
+    maxPuck, maxIndex = _getMaxPuck(args)
     if verbose:
-        log.info(f'angle {angle}, max fibre failure {maxFF}, index {maxIndex}')
-    return maxFF
+        failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
+        log.info(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
+    return maxPuck
 
 
-def getMaxFibreFailureByShift(shift, args):
+def getMaxPuckByShift(shift, args):
     """Returns the maximum puck fibre failure index after setting and winding the given hoop layer shift"""
     if hasattr(shift, '__iter__'):
         shift = shift[0]
-    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, useFibreFailure, verbose = args
     vessel.setHoopLayerShift(layerNumber, shift, True)
     actualPolarOpening = windLayer(vessel, layerNumber, verbose=verbose)
     if actualPolarOpening is np.inf:
         return np.inf
-    maxFF, maxIndex = _getMaxFibreFailure(args)
+    maxPuck, maxIndex = _getMaxPuck(args)
     if verbose:
-        log.info(f'hoop shift {shift}, max fibre failure {maxFF}, index {maxIndex}')
-    return maxFF
+        failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
+        log.info(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
+    return maxPuck
 
 
-def _getMaxFibreFailure(args):
+def _getMaxPuck(args):
     """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, verbose = args
-    maxPerElement = getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies)[0].max(axis=1)
+    vessel, layerNumber, puckProperties, burstPressure, dropIndicies, useFibreFailure, verbose = args
+    index = 0 if useFibreFailure else 1
+    maxPerElement = getPuckLinearResults(
+        vessel, puckProperties, burstPressure, dropIndicies)[index].max(axis=1)
     maxIndex = maxPerElement.idxmax()
-    maxFF = maxPerElement.max()
-    return maxFF, maxIndex
+    maxPuck = maxPerElement.max()
+    return maxPuck, maxIndex
 
 def getPuckLinearResults(vessel, puckProperties, burstPressure, dropIndicies=None):
     """Calculates puck results and returns them as dataframe

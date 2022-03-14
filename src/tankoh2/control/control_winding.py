@@ -2,7 +2,7 @@
 
 import os
 import datetime
-from numpy.testing._private.parameterized import param
+import numpy as np
 
 from tankoh2 import log, pychain, programDir
 from tankoh2.design.winding.designopt import designLayers
@@ -15,7 +15,9 @@ from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
-
+from tankoh2.masses.massestimation import getInsulationMass, getFairingMass, getLinerMass
+from tankoh2.geometry.dome import getDome as getDomeTankoh
+from tankoh2.geometry.liner import Liner
 
 
 def createDesign(**kwargs):
@@ -53,6 +55,8 @@ def createDesign(**kwargs):
         designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
     lcylinder = designArgs['lcyl']  # mm
     dome = getDome(dcly / 2., polarOpeningRadius, domeType, domeX, domeR)
+    domeLength = (designArgs['domeLengthByR'] * dcly / 2) if 'domeLengthByR' in designArgs else None
+    domeTankoh = getDomeTankoh(dcly / 2, polarOpeningRadius, domeType, domeLength)
     length = lcylinder + 2 * dome.domeLength
 
     # Design Args
@@ -100,6 +104,7 @@ def createDesign(**kwargs):
     # Create Liner
     # #########################################################################################
     liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
+    linerTankoh = Liner(domeTankoh, lcylinder)
     fitting = liner.getFitting(False)
     fitting.r3 = 40.
 
@@ -118,6 +123,28 @@ def createDesign(**kwargs):
     vessel.setLiner(liner)
     vessel.setComposite(composite)
 
+    if 0:
+        from tankoh2.design.winding.winding import windLayer, windHoopLayer
+        angShifts = np.array([
+            (12.72038202799424, 0), (90, 35.94180392812206), (23.124005957067567, 0), (90, 33.46518505785303),
+            (14.297902386637837, 0), (14.32189665594325, 0), (13.667957693130539, 0), (90, 37.94368025883611),
+            (13.50092137527006, 0), (13.02563160830356, 0), (90, 37.713072256057366), (12.029427674482442, 0),
+            (29.059614964583034, 0), (90, 35.72851759988427), (90, 37.11035956801891),
+            (60.2965179108075, 0)
+        ])
+        angles = angShifts[:,0]
+        compositeArgs[0] = [helixLayerThickenss]*len(angles)
+        vessel.setComposite(getComposite(angles, *compositeArgs))
+
+        if 0:
+            for layerNumber, (angle, shift) in enumerate(angShifts):
+                if shift:
+                    windHoopLayer(vessel, layerNumber, shift)
+                else:
+                    windLayer(vessel, layerNumber, angle)
+        windLayer(vessel, 14, None, verbose)
+        vessel.saveToFile(os.path.join(runDir, 'vessel_before_error.vessel.json'))
+        windLayer(vessel, 15, 69.2965179108075, verbose)
     # #############################################################################
     # run winding simulation
     # #############################################################################
@@ -129,9 +156,16 @@ def createDesign(**kwargs):
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.datetime.now() - startTime
-    results = frpMass, volume, area, liner.linerLength, composite.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
+    if burstPressure > 5:
+        # compressed gas vessel
+        auxMasses = [0., 0., 0.]
+    else:
+        # liquid, cryo vessel
+        auxMasses = [getLinerMass(linerTankoh), getInsulationMass(linerTankoh), getFairingMass(linerTankoh)]
+    totalMass = np.sum([frpMass]+auxMasses)
+    results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
+        composite.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
-    # save vessel
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:
@@ -176,12 +210,19 @@ if __name__ == '__main__':
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
-        createDesign(**parameters.ttDesignLh2)
-    elif 1:
+
+        params = parameters.ttDesignCh2
+        # params = allParamSets.vphDesign1
+        # params['verbose'] = True
+
+        params['safetyFactor'] = 2.0
+        #params['failureMode'] = 'interfibrefailure'
+
+        createDesign(**params.copy())
+    elif 0:
         createDesign(**parameters.ttDesignCh2)
     elif 1:
-        params = parameters.defaultDesign.copy()
-        params['domeType'] = 'circle'
+        params = parameters.NGTBITDesign_old.copy()
         createDesign(**params)
     elif 0:
         createDesign(pressure=5)

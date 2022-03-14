@@ -32,18 +32,20 @@ class Liner():
         domeVolume = (self.dome.volume + self.dome2.volume) if self.dome2 else 2 * self.dome.volume
         return self._cylVolume + domeVolume
 
+    def getLinerResizedByThickness(self, thickness):
+        """return a liner that has a resized geometry by given thickness"""
+        dome = self.dome.getDomeResizedByThickness(thickness)
+        dome2 = None if self.dome2 is None else self.dome2.getDomeResizedByThickness(thickness)
+        return Liner(dome, self.lcyl, dome2)
+
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used
 
         :param wallThickness: thickness of the dome material
         :return: scalar, wall volume
         """
-        if self.dome2:
-            domeWallVol = (self.dome.getWallVolume(wallThickness) + self.dome2.getWallVolume(wallThickness))
-        else:
-            domeWallVol = 2 * self.dome.getWallVolume(wallThickness)
-        biggerCylVol = np.pi * (self.rCyl+wallThickness) ** 2 * self.lcyl
-        return biggerCylVol-self._cylVolume + domeWallVol
+        otherLiner = self.getLinerResizedByThickness(wallThickness)
+        return otherLiner.volume - self.volume
 
     @property
     def length(self):

@@ -5,9 +5,8 @@ from scipy import optimize
 
 from tankoh2.service.pyhsicalprops import rhoLh2ByP, rhoGh2NonCryo
 from tankoh2.design.existingdesigns import allArgs
-from tankoh2.geometry.dome import DomeEllipsoid
+from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
-from tankoh2.service.exception import Tankoh2Error
 
 
 def getLengthRadiusFromVolume(
@@ -15,30 +14,33 @@ def getLengthRadiusFromVolume(
         lcylByR = float(allArgs[allArgs['name']=='lcylByR']['default']),
         domeLengthByR = float(allArgs[allArgs['name']=='domeLengthByR']['default']),
         polarOpeningRadius = float(allArgs[allArgs['name']=='polarOpeningRadius']['default']),
-        mode = 'accurate'):
+        mode = 'accurate',
+        domeType = allArgs[allArgs['name']=='domeType']['default'].to_list()[0],
+):
     """Calculate cylindrical length and radius from volume
     :param volume: volume [mm**3]
     :param lcylByR: cylindrical length by cylindrical radius
     :param domeLengthByR: dome length by cylindrical radius
     :param polarOpeningRadius: polar opening radius [mm]
     :param mode: [quick, accurate] Quick does not consider the polar opening reducing the effective dome vol
+    :param domeType: type of dome
     :return:
     """
-    def getVol(r):
-        if polarOpeningRadius > r:
+    def getVol(rCyl):
+        if polarOpeningRadius > rCyl:
             return volume
-        r = r[0]
-        dome = DomeEllipsoid(r, r*domeLengthByR, polarOpeningRadius)
-        liner = Liner(dome, r*lcylByR)
+        rCyl = rCyl[0]
+        dome = getDome(rCyl, polarOpeningRadius, domeType,  rCyl * domeLengthByR)
+        liner = Liner(dome, rCyl * lcylByR)
         return abs(liner.volume - volume)
 
     if mode == 'quick':
-        r = np.cbrt(volume / (np.pi*(4/3*domeLengthByR+lcylByR)))
+        radius = np.cbrt(volume / (np.pi*(4/3*domeLengthByR+lcylByR)))
     else:
-        res = optimize.minimize(getVol, np.cbrt(volume*3/4/np.pi), bounds=((polarOpeningRadius*1.1, np.inf),))
-        r = res.x[0]
-    l = r*lcylByR
-    return r, l
+        res = optimize.minimize(getVol, np.cbrt(volume*3/4/np.pi), bounds=((polarOpeningRadius*1.5, np.inf),))
+        radius = res.x[0]
+    length = radius*lcylByR
+    return radius, length
 
 
 def getRequiredVolume(lh2Mass, operationalPressure, maxFill = 0.9, roh=None, lh2OrCh2='lh2'):
@@ -62,5 +64,5 @@ def getRequiredVolume(lh2Mass, operationalPressure, maxFill = 0.9, roh=None, lh2
 
 
 if __name__ == '__main__':
-    print(getLengthRadiusFromVolume(0.11893647322374, polarOpeningRadius=0.01))
-    print(getLengthRadiusFromVolume(0.2079145, polarOpeningRadius=0.01))
+    print(getLengthRadiusFromVolume(0.11893647322374*1e9, polarOpeningRadius=15.))
+    print(getLengthRadiusFromVolume(0.2079145*1e9, polarOpeningRadius=20))
