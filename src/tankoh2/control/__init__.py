@@ -17,8 +17,7 @@ if __name__ == '__main__':
     #params = allParamSets.vphDesign1
     #params['verbose'] = True
 
-
-    #createDesignWinding(**params.copy())
+    createDesignWinding(**params.copy())
     params['materialName'] = 'alu2219'
     createDesignMetal(**params.copy())
 

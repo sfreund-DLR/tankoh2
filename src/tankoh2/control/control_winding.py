@@ -158,7 +158,7 @@ def createDesign(**kwargs):
     duration = datetime.datetime.now() - startTime
     if burstPressure > 5:
         # compressed gas vessel
-        auxMasses = [0., 0., 0.]
+        auxMasses = [getLinerMass(linerTankoh), 0., 0.]
     else:
         # liquid, cryo vessel
         auxMasses = [getLinerMass(linerTankoh), getInsulationMass(linerTankoh), getFairingMass(linerTankoh)]
@@ -211,8 +211,8 @@ if __name__ == '__main__':
         createDesign(**params)
     elif 1:
 
-        params = parameters.ttDesignCh2
-        # params = allParamSets.vphDesign1
+        #params = parameters.ttDesignCh2
+        params = parameters.vphDesign1
         # params['verbose'] = True
 
         params['safetyFactor'] = 2.0
