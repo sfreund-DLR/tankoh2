@@ -12,14 +12,14 @@ from tankoh2.geometry.dome import DomeEllipsoid
 from tankoh2.geometry.liner import Liner
 from tankoh2.settings import useRstOutput
 
-resultNamesFrp = ['shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'lcylinder', 'numberOfLayers', 'iterations', 'duration', 'angles',
+resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
+                  'area', 'length axial', 'numberOfLayers', 'iterations', 'duration', 'angles',
                   'hoopLayerShifts']
-resultUnitsFrp = ['kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
+resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['metalMass', 'insultaion mass', 'fairing mass', 'total mass',  'volume', 'area',
-                    'lcylinder', 'wallThickness', 'duration']
-resultUnitsMetal = ['kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
+resultNamesMetal = ['Output Name', 'metalMass', 'insultaion mass', 'fairing mass', 'total mass',  'volume', 'area',
+                    'length axial', 'wallThickness', 'duration']
+resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
 
@@ -33,17 +33,17 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
         indentFunc(inputKwArgs.items())
     ]
     if results is not None:
-        if len(results) == len(resultNamesFrp):
+        if len(results) == len(resultNamesFrp) - 1:
             resultNames, resultUnits = resultNamesFrp, resultUnitsFrp
         else:
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
         outputStr += ['\n\nOUTPUTS\n\n',
-                      indentFunc(zip(resultNames, resultUnits, results))]
+                      indentFunc(zip(resultNames, resultUnits, ['value']+list(results)))]
     logFunc = log.info if verbose else log.debug
     logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
     if results is not None:
-        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, results])]
+        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value']+list(results)])]
     outputStr = ''.join(outputStr)
     with open(os.path.join(runDir, filename), 'w') as f:
         f.write(outputStr)
@@ -66,7 +66,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         log.warning(f'These input keywords are unknown: {notDefinedArgs}')
 
     # update missing args with default design args
-    inputKwArgs['runDir'] = inputKwArgs['runDir'] if 'runDir' in inputKwArgs else getRunDir()
+    inputKwArgs['runDir'] = inputKwArgs['runDir'] if 'runDir' in inputKwArgs else getRunDir(inputKwArgs.get('tankname', ''))
     designArgs = defaultDesign.copy()
 
     removeIfIncluded = np.array([('lcylByR', 'lcyl'),

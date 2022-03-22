@@ -230,7 +230,7 @@ ttDesignLh2 = OrderedDict([
     ('polarOpeningRadius', 40),  # mm
     ('dcly', 223.862*2),  # mm
     ('lcyl', 559.6572), #mm
-    ('safetyFactor', 2.0),
+    ('safetyFactor', 1.55),
     ('pressure', 0.25),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
     ('failureMode', 'interFibreFailure'),
@@ -242,7 +242,7 @@ ttDesignCh2 = OrderedDict([
     ('polarOpeningRadius', 40),  # mm
     ('dcly', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
-    ('safetyFactor', 2.0),
+    ('safetyFactor', 1.55),
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
     #('domeType', 'ellipse'),
