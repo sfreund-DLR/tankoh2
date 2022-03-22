@@ -95,13 +95,13 @@ hymodDesign = OrderedDict([
 
 
 NGTBITDesign = OrderedDict([
-    ('tankname', 'NGT-BIT-2020-09-16'),
+    ('tankname', 'NGT-BIT-2022-03-04'),
     ('pressure', 70), # MPa
     ('burstPressure', 140.), # MPa
     ('valveReleaseFactor', 1.),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dcly', 400.),
+    ('dcly', 422.),
     ('lcyl', 500.),
     # design philosophy
     ('safetyFactor', 2.0),
@@ -110,20 +110,21 @@ NGTBITDesign = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     # single ply thickness with 62% FVG
-#    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
-#    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
+    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG    
+    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
     # single ply thickness with 55% FVG
     #('hoopLayerThickness', 0.101010101), # thickness for 55% FVG
     #('helixLayerThickenss', 0.101010101), # thickness for 55% FVG
     # single ply thickness with 60% FVG
-    ('hoopLayerThickness', 0.092592593), # thickness for 60% FVG
-    ('helixLayerThickenss', 0.092592593), # thickness for 60% FVG
+    #('hoopLayerThickness', 0.092592593), # thickness for 60% FVG    
+    #('helixLayerThickenss', 0.092592593), # thickness for 60% FVG          
     ('rovingWidth', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
     # optimizer settings
-    ('maxlayers', 200)
+    ('maxlayers', 200), 
+    ('verbose', True)
     ])
 
 NGTBITDesign_old = OrderedDict([

@@ -88,7 +88,7 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
 
     
 
-    angles, thicknesses, wendekreisradien, krempenradien = readLayupData(layupDataFilename)
+    angles, thicknesses, wendekreisradien, krempenradien, hoopShifts = readLayupData(layupDataFilename)
     log.info(f'{angles[0:layersToWind]}')
     composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness,
                              helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
@@ -110,14 +110,14 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     vessel.resetWindingSimulation()
     anzHoop = 0.
     anzHelix = 0.
-    for i, angle, krempenradius, wendekreisradius in zip(range(layersToWind), angles, krempenradien,
-                                                         wendekreisradien):  # len(angle_degree)
+    for i, angle, krempenradius, wendekreisradius, hoopShift in zip(range(layersToWind), angles, krempenradien,
+                                                         wendekreisradien, hoopShifts):  # len(angle_degree)
         log.info('--------------------------------------------------')
         layerindex = i
         # Hoop Layer
         if abs(angle - 90.) < 1e-8:
             #po_goal = krempenradius
-            po_goal = hoopStart + lcylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
+            po_goal = hoopShift #hoopStart + lcylinder/2. - anzHoop*hoopRisePerBandwidth*bandWidthHoop
             anzHoop = anzHoop+1
             #po_goal = wendekreisradius
             log.info(f'apply layer {i+1} with angle {angle}, and hoop position {po_goal}')
@@ -128,13 +128,13 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
                      f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')                
             else:
                 # winding without optimization, but direct correction of shift
-                vessel.setHoopLayerShift(layerindex, 0., True)
+                vessel.setHoopLayerShift(layerindex, hoopShift, True)
                 vessel.runWindingSimulation(layerindex + 1)     
-                coor = po_goal - vessel.getPolarOpeningX(layerindex, True)
-                vessel.setHoopLayerShift(layerindex, coor, True)
+                #coor = po_goal - vessel.getPolarOpeningX(layerindex, True)                 
+                #vessel.setHoopLayerShift(layerindex, coor, True)
                 if symmetricTank == False:
-                    vessel.setHoopLayerShift(layerindex, -coor, False) # shift in opposite direction on opposite dome/mandrel
-                vessel.runWindingSimulation(layerindex + 1)     
+                    vessel.setHoopLayerShift(layerindex, -hoopShift, False) # shift in opposite direction on opposite dome/mandrel
+                #vessel.runWindingSimulation(layerindex + 1)     
 
         # Helix layer
         else:
@@ -145,9 +145,9 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
             # arr_wk = []
             po_goal = max(wendekreisradius, polarOpening) # prevent bandmiddle path corssing polar opening
             log.info(f'apply layer {i+1} with band mid path at polar opening of {po_goal}')
-            po = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerindex - 1).getOuterMandrel1(), wendekreisradius, bandWidthHelical)
-            log.info(f'applied layer {i+1} with angle {angle} without friction with band outer path at polar opening {po}')
-            log.info(f'radius difference is {po-wendekreisradius} with bandwith {bandWidthHelical}')
+            #po = getRadiusByShiftOnMandrel(vessel.getVesselLayer(layerindex - 1).getOuterMandrel1(), wendekreisradius, bandWidthHelical)
+            #log.info(f'applied layer {i+1} with angle {angle} without friction with band outer path at polar opening {po}')
+            #log.info(f'radius difference is {po-wendekreisradius} with bandwith {bandWidthHelical}')
             
             # firts estimation with no frcition
             vessel.setLayerFriction(layerindex, 0., True)
@@ -373,27 +373,27 @@ def main():
     symmetricTank = True
     servicepressure = 700. #bar
     saftyFactor = 1.
-    layersToWind = 48 #48
+    layersToWind = 95 #48
     
-    optimizeWindingHelical = True #False
+    optimizeWindingHelical = False #False
     optimizeWindingHoop = False
         
-    tankname = 'NGT-BIT-2020-09-16'
+    tankname = 'NGT-BIT-2021-03-04'
     dataDir = os.path.join(programDir, 'data')
-    dcly = 400.  # mm
-    polarOpening = 46./2.  # mm
+    dcly = 422.  # mm
+    polarOpening = 23.  # mm
     lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
-    defaultLayerthickness = 0.125
-    hoopLayerThickness = 0.125
-    helixLayerThickenss = 0.129  
+    defaultLayerthickness = 0.17921146953405018 
+    hoopLayerThickness = 0.17921146953405018 
+    helixLayerThickenss = 0.17921146953405018  
     
     
-    rovingWidth = 3.175
-    numberOfRovingsHelical = 18
-    numberOfRovingsHoop = 18
+    rovingWidth = 8
+    numberOfRovingsHelical = 6
+    numberOfRovingsHoop = 6
     
-    tex = 446  # g / km
+    tex = 800  # g / km
     rho = 1.78  # g / cm^3
     
     hoopStart = 5.*rovingWidth # start position axial direction for first hoop layer
@@ -401,7 +401,7 @@ def main():
     
     # Set thickness solver options
     # default minThicknessValue  = 0.01 / hoopLayerCompressionStart = 0.5   
-    minThicknessValue = 0.2
+    minThicknessValue = 0.01
     hoopLayerCompressionStart = 0.5 
     
     domeContourFilename = os.path.join(dataDir, "Dome_contour_" + tankname + ".txt")
@@ -426,7 +426,7 @@ def main():
     createLayerBook = False
     #vesselFile = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20211105_140505_70MPa_12_Rovings//"
     directory = "C://DATA//Projekte//NGT_lokal//09_Projektdaten//03_Simulationsmodelle//01_Tankmodellierung_MikroWind//Projekt_MikroWind//Current_vessel//Optimierung//00_FINAL_tank_20220218_182945_70MPa_6Rovings_T700"
-    vesselName = "NGT-BIT-2020-09-16" 
+    vesselName = "NGT-BIT-2021-03-04" 
      
 
 #####################################################################################################
