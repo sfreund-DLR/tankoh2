@@ -3,7 +3,7 @@
 from tankoh2.masses.massdata import insulationDens, linerDens, fairingDens
 
 
-def getLinerMass(liner, linerMatName = None, linerThickness = 1):
+def getLinerMass(liner, linerMatName = None, linerThickness = 0.5):
     """
     :param liner: object of type tankoh2.geometry.liner.Liner
     :param linerMatName: name of liner material in linerDens
@@ -35,7 +35,7 @@ def getInsulationMass(liner, insulationMatName = None,
     return rho * volume
 
 
-def getFairingMass(liner, fairingMatName = None, fairingThickness = 1, insulationCfrpThickness = 127):
+def getFairingMass(liner, fairingMatName = None, fairingThickness = 0.5, insulationCfrpThickness = 127):
     """
     :param liner: object of type tankoh2.geometry.liner.Liner
     :param fairingMatName: name of fairing material in linerDens
