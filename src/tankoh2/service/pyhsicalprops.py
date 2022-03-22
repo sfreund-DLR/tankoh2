@@ -53,3 +53,5 @@ rhoGh2NonCryo = interpolate.interp2d(pressures, temperatures, rohs, kind='linear
                                      fill_value=-1, bounds_error=True)
 
 
+if __name__ == '__main__':
+    print(rhoLh2ByP(0.2), rhoLh2ByP(0.25))
