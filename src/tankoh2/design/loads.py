@@ -1,7 +1,7 @@
 import numpy as np
 
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.service.pyhsicalprops import rhoLh2, g
+from tankoh2.service.physicalprops import rhoLh2, g
 
 
 def getHydrostaticPressure(tankLocation, length, diameter, baffleDist = None):

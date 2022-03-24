@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-
+psiToMPa = 6.89476
+MPaToPsi = 1/psiToMPa
 
 # properties at equilibrium pressure
 lh2Properties = pd.DataFrame(

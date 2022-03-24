@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import optimize
 
-from tankoh2.service.pyhsicalprops import rhoLh2ByP, rhoGh2NonCryo
+from tankoh2.service.physicalprops import rhoLh2ByP, rhoGh2NonCryo
 from tankoh2.design.existingdesigns import allArgs
 from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
