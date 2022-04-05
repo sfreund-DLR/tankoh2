@@ -148,7 +148,7 @@ class DomeGeneric(AbstractDome):
         :param nodeNumber: unused
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
-        return self._x, self._r
+        return np.array([self._x, self._r])
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
