@@ -229,6 +229,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puck, None,
                       vlines=[elemIdxmax, hoopOrHelicalIndex, newDesignIndex], vlineColors=['red', 'black', 'green'],
                       yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
+        vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:
         log.warning('Reached max layers. You need to specify more initial layers')
 

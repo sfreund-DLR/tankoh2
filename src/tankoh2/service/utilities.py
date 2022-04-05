@@ -51,6 +51,8 @@ def getRunDir(runDirExtension='', useMilliSeconds=False):
         C:/tankoh2/tmp/tank_20170206_152323_bar
 
     """
+    if runDirExtension and runDirExtension[0] != '_':
+        runDirExtension = '_' + runDirExtension
     while True:
         runDir = os.path.join(programDir, 'tmp', 'tank_' + getTimeString(useMilliSeconds)) + runDirExtension
         if os.path.exists(runDir):

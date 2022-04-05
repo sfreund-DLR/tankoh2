@@ -1,3 +1,9 @@
+"""Create a bokeh plot with tank cycle data from
+
+T. Burschyk, Y. Cabac, D. Silberhorn, B. Boden, B. Nagel (2021): Liquid hydrogen storage design trades for a short-range aircraft concept. In: DLRK.
+"""
+
+
 import itertools
 
 import numpy as np

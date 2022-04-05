@@ -210,14 +210,8 @@ if __name__ == '__main__':
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
-
         #params = parameters.ttDesignCh2
         params = parameters.vphDesign1
-        # params['verbose'] = True
-
-        params['safetyFactor'] = 2.0
-        #params['failureMode'] = 'interfibrefailure'
-
         createDesign(**params.copy())
     elif 0:
         createDesign(**parameters.ttDesignCh2)
