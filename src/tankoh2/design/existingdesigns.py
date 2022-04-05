@@ -39,6 +39,7 @@ allArgs = pd.DataFrame(
         ['valveReleaseFactor', 'Design', 'f_pv', 1.1, float,
          'Factor defining additional pressure to account for the valve pressure inaccuracies', ''],
         ['pressure', 'Design', 'p_op', 5., float, 'Operational pressure [MPa]', ''],
+        ['minPressure', 'Design', 'p_op_min', 0.1, float, 'Minimal operational pressure [MPa]', ''],
         ['burstPressure', 'Design', 'p_b', 10., float, 'Burst pressure [MPa]', ''],
         ['useHydrostaticPressure', 'Design', '', False, '',
          'Flag whether hydrostatic pressure according to CS 25.963 (d) should be applied', 'store_true'],
@@ -134,11 +135,9 @@ NGTBITDesign_old = OrderedDict([
     # Geometry
     ('nodeNumber', 1000),
     ('polarOpeningRadius', 23),
-    #('dcly', 400.),
+    ('dcly', 400.),
     ('lcyl', 500.),
 
-    ('dcly', 0.2754 * 2 * 1000),  # mm
-    #('lcyl', 0.68862939 * 1000),  # mm
     # design philosophy
     ('safetyFactor', 2.0),
     ('failureMode', 'fibreFailure'),
@@ -179,17 +178,20 @@ NGTBITDesign_small = OrderedDict([
     ])
 
 vphDesign1 = OrderedDict([
-    ('tankname', 'vph_design1'),
+    ('tankname', 'vph_design1_iff_sf2.25'),
     ('lcyl', 3218.8),
     ('dcly', 1200.*2),
     ('safetyFactor', 2.25),
     ('pressure', .2),  # pressure in MPa (bar / 10.)
     ('polarOpeningRadius', 120),
+    ('failureMode', 'interFibreFailure'),
     ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
 ])
 
-
-
+vphDesign1_isotensoid = vphDesign1.copy()
+vphDesign1_isotensoid.update([
+    ('lcyl', vphDesign1['lcyl'] + 546.66423),
+    ('domeType', 'isotensoid'),])
 
 kautextDesign = OrderedDict([
                              # General
@@ -238,18 +240,15 @@ ttDesignLh2 = OrderedDict([
     ('useHydrostaticPressure', True),
 ])
 
-ttDesignCh2 = OrderedDict([
+ttDesignCh2 = ttDesignLh2.copy()
+ttDesignCh2.update([
     ('tankname', 'tt_ch2'),
-    ('polarOpeningRadius', 40),  # mm
     ('dcly', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
-    ('safetyFactor', 1.55),
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
-    ('domeType', 'isotensoid'),
-    #('domeType', 'ellipse'),
-    ('useHydrostaticPressure', True),
     ('maxlayers', 200),
-])
+    ])
+
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

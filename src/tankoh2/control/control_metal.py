@@ -7,7 +7,7 @@ from tankoh2 import log
 from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
 from tankoh2.design.loads import getHydrostaticPressure
-from tankoh2.design.metal.mechanics import getWallThickness
+from tankoh2.design.metal.mechanics import getWallThickness, getMaxWallThickness
 from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
@@ -66,7 +66,8 @@ def createDesign(**kwargs):
     # run calculate wall thickness
     # #############################################################################
     volume, area, linerLength = liner.volume / 1000 /1000, liner.area/100/100/100, liner.length
-    wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
+    wallThickness = getMaxWallThickness(pressure*valveReleaseFactor, material, dcly, safetyFactor)
+    #wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
     wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
     massMetal = material['roh'] * wallVol / 1000  # [kg]
 
