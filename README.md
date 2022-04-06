@@ -69,7 +69,7 @@ python -m tankoh2 --materialName alu2219 --windingOrMetal metal --domeType circl
 ```
 
 ## Usage
-A full list the available parameters can be found with 
+A full list the available parameters is created with 
 
 ```
 cd <path_to_tankoh2>/src

@@ -7,7 +7,7 @@ import logging
 from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.design.existingdesigns import defaultDesign, allArgs, frpKeywords
+from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
 from tankoh2.geometry.liner import Liner
 from tankoh2.settings import useRstOutput
@@ -88,13 +88,16 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             designArgs.pop(removeIt)
 
     # remove frp-only arguments
-    allowed = ['frp', 'metal']
-    if not frpOrMetal in allowed:
-        raise Tankoh2Error(f'The parameter windingOrMetal can only be one of {allowed} but got '
-                           f'"{frpOrMetal}" instead.')
     if frpOrMetal == 'metal':
-        for key in frpKeywords:
-            inputKwArgs.pop(key, None)
+        removeKeys = windingOnlyKeywords
+    elif frpOrMetal == 'frp':
+        removeKeys = metalOnlyKeywords
+    else:
+        raise Tankoh2Error(f'The parameter windingOrMetal can only be one of {["frp", "metal"]} but got '
+                           f'"{frpOrMetal}" instead.')
+
+    for key in removeKeys:
+        inputKwArgs.pop(key, None)
 
     # for elliptical domes, create the contour since µWind does not support is natively
     if designArgs['domeType'] == 'ellipse':

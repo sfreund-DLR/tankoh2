@@ -4,10 +4,10 @@ import datetime
 import numpy as np
 
 from tankoh2 import log
-from tankoh2.geometry.dome import getDome
+from tankoh2.geometry.dome import getDome, DomeGeneric
 from tankoh2.geometry.liner import Liner
 from tankoh2.design.loads import getHydrostaticPressure
-from tankoh2.design.metal.mechanics import getWallThickness, getMaxWallThickness
+from tankoh2.design.metal.mechanics import getMaxWallThickness
 from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
@@ -40,7 +40,10 @@ def createDesign(**kwargs):
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
     lcylinder = designArgs['lcyl']  # mm
-    dome = getDome(dcly/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
+    if domeX is not None and domeR is not None:
+        dome = DomeGeneric(domeX, domeR)
+    else:
+        dome = getDome(dcly/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
     length = lcylinder + 2 * dome.domeLength
 
     # Pressure Args

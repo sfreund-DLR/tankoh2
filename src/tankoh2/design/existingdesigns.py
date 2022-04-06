@@ -64,22 +64,24 @@ allArgs = pd.DataFrame(
          'Number of rovings (rovingWidth*numberOfRovings=bandWidth)', ''],
         ['tex', 'Fiber roving parameters', '', 446, float, 'tex number [g/km]', ''],
         ['fibreDensity', 'Fiber roving parameters', '', 1.78, float, 'Fibre density [g/cm^3]', ''],
+        # fatigue parameters
+        ['pressure min', 'Fatigue parameters', 'p_min',0.1, float, 'Minimal operating pressure [MPa]', ''],
+        ['cycles', 'Fatigue parameters', '', 50000, int, 'Number of operational cycles [-]', ''],
+        ['heatUpCycles', 'Fatigue parameters', '', 100, int, 'Number of cycles to amibent T and p [-]', ''],
+        ['simulatedLives', 'Fatigue parameters', '', 5, int, 'Number of simulated lifes (scatter) [-]', ''],
+        ['Kt', 'Fatigue parameters', 'Kt', 5., float, 'Stress concentration factor [-]', ''],
     ],
     columns=['name', 'group', 'metavar', 'default', 'type', 'help', 'action']
 )
 
-frpKeywords = (
-    'domeContour',
-    'polarOpeningRadius',
-    'dcly',
-    'lcylByR',
-    'safetyFactor',
-    'valveReleaseFactor',
-    'pressure',
-    'useHydrostaticPressure',
-    'tankLocation',
-    'materialName',
-)
+#  keywords only used for winding calculations
+windingOnlyKeywords = allArgs[allArgs['group'] == 'Fiber roving parameters']['name'].tolist() + \
+                      allArgs[allArgs['group'] == 'Optimization']['name'].tolist()
+windingOnlyKeywords += ['failureMode']
+
+#  keywords only used for metal calculations
+metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].tolist()
+
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 # hymod design
