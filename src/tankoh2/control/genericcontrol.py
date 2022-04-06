@@ -9,7 +9,7 @@ from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
-from tankoh2.geometry.liner import Liner
+from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
 resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
@@ -113,3 +113,30 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     designArgs.pop('help',None)
     return designArgs
 
+
+def getBurstPressure(designArgs, length):
+    """Calculate burst pressure
+
+    The limit and ultimate pressure is calculated as
+
+    .. math::
+
+        p_{limit} = (p_{des} * f_{valve} + p_{hyd})
+
+    .. math::
+
+        p_{ult} = p_{limit} * f_{ult}
+
+    - :math:`p_{des}` maximum operating pressure [MPa] (pressure in designArgs)
+    - :math:`f_{valve}` factor for valve release (valveReleaseFactor in designArgs)
+    - :math:`p_{hyd}` hydrostatic pressure according to CS 25.963 (d)
+    - :math:`f_{ult}` ultimate load factor (safetyFactor in designArgs)
+    """
+    dcly = designArgs['dcly']
+    safetyFactor = designArgs['safetyFactor']
+    pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
+    valveReleaseFactor = designArgs['valveReleaseFactor']
+    useHydrostaticPressure = designArgs['useHydrostaticPressure']
+    tankLocation = designArgs['tankLocation']
+    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
+    return (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor

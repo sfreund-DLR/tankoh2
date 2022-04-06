@@ -6,11 +6,10 @@ import numpy as np
 from tankoh2 import log
 from tankoh2.geometry.dome import getDome, DomeGeneric
 from tankoh2.geometry.liner import Liner
-from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.metal.mechanics import getMaxWallThickness
 from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
-from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
+from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs, getBurstPressure
 from tankoh2.masses.massestimation import getInsulationMass, getFairingMass
 
 
@@ -48,14 +47,9 @@ def createDesign(**kwargs):
 
     # Pressure Args
     if 'burstPressure' not in designArgs:
-        safetyFactor = designArgs['safetyFactor']
-        pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
-        valveReleaseFactor = designArgs['valveReleaseFactor']
-        useHydrostaticPressure = designArgs['useHydrostaticPressure']
-        tankLocation = designArgs['tankLocation']
-        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
-        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
+        designArgs['burstPressure'] = getBurstPressure(designArgs, length)
     burstPressure = designArgs['burstPressure']
+    designPressure = designArgs['pressure']
 
     materialName = designArgs['materialName']
     material = getMaterial(materialName)
@@ -69,7 +63,7 @@ def createDesign(**kwargs):
     # run calculate wall thickness
     # #############################################################################
     volume, area, linerLength = liner.volume / 1000 /1000, liner.area/100/100/100, liner.length
-    wallThickness = getMaxWallThickness(pressure*valveReleaseFactor, material, dcly, safetyFactor)
+    wallThickness = getMaxWallThickness(designPressure, burstPressure, material, dcly)
     #wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
     wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
     massMetal = material['roh'] * wallVol / 1000  # [kg]

@@ -8,13 +8,12 @@ from tankoh2 import log, pychain, programDir
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
-from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
-from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs
+from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs, getBurstPressure
 from tankoh2.masses.massestimation import getInsulationMass, getFairingMass, getLinerMass
 from tankoh2.geometry.dome import getDome as getDomeTankoh
 from tankoh2.geometry.liner import Liner
@@ -62,15 +61,11 @@ def createDesign(**kwargs):
     # Design Args
     pressure = None
     safetyFactor = None
-    if 'burstPressure' not in designArgs:        
-        safetyFactor = designArgs['safetyFactor']
-        pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
-        valveReleaseFactor = designArgs['valveReleaseFactor']
-        useHydrostaticPressure = designArgs['useHydrostaticPressure']
-        tankLocation = designArgs['tankLocation']
-        hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
-        designArgs['burstPressure'] = (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor        
+
+    if 'burstPressure' not in designArgs:
+        designArgs['burstPressure'] = getBurstPressure(designArgs, length)
     burstPressure = designArgs['burstPressure']
+
     failureMode = designArgs['failureMode']
     useFibreFailure = failureMode.lower() == 'fibrefailure'
 
