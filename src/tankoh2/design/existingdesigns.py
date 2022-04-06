@@ -65,9 +65,10 @@ allArgs = pd.DataFrame(
         ['tex', 'Fiber roving parameters', '', 446, float, 'tex number [g/km]', ''],
         ['fibreDensity', 'Fiber roving parameters', '', 1.78, float, 'Fibre density [g/cm^3]', ''],
         # fatigue parameters
-        ['pressure min', 'Fatigue parameters', 'p_min',0.1, float, 'Minimal operating pressure [MPa]', ''],
-        ['cycles', 'Fatigue parameters', '', 50000, int, 'Number of operational cycles [-]', ''],
-        ['heatUpCycles', 'Fatigue parameters', '', 100, int, 'Number of cycles to amibent T and p [-]', ''],
+        ['pressureMin', 'Fatigue parameters', 'p_min',0.1, float, 'Minimal operating pressure [MPa]', ''],
+        ['cycles', 'Fatigue parameters', '', 50000, int,
+         'Number of operational cycles from pressureMin to pressure [-]', ''],
+        ['heatUpCycles', 'Fatigue parameters', '', 100, int, 'Number of cycles to ambient T and p [-]', ''],
         ['simulatedLives', 'Fatigue parameters', '', 5, int, 'Number of simulated lifes (scatter) [-]', ''],
         ['Kt', 'Fatigue parameters', 'Kt', 5., float, 'Stress concentration factor [-]', ''],
     ],

@@ -3,11 +3,10 @@ import numpy as np
 
 from tankoh2.design.metal.material import defaultMetalMaterial
 from tankoh2.design.metal.mechanics import getWallThickness, getStress
-from tankoh2.design.metal.fatigue import getFatigueLifeAircraftTanks
 
 
 def test_getWallThickness():
-    thkRef = 0.0029086678
+    thkRef = 0.00119189
     thk = getWallThickness(defaultMetalMaterial, 1, 1)
     assert np.allclose(thk, thkRef)
 

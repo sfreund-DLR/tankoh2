@@ -10,7 +10,7 @@ from reliability.PoF import stress_strain_life_parameters_from_data
 
 import tankoh2.design.existingdesigns as allParamSets
 from tankoh2.design.metal.material import alu6061T6
-from tankoh2.design.metal.mechanics import getMaxWallThickness2
+from tankoh2.design.metal.mechanics import getMaxWallThickness
 
 
 def massPlot():
@@ -103,8 +103,8 @@ def fatiguePlot(createData = True, plotData = True):
         for pMinRelative,heatUpCycles in zip(X.flatten(),np.power(10,Y.flatten())):
             pDesign = 0.24
             pMinOperation = pDesign * pMinRelative
-            t, ff = getMaxWallThickness2(pDesign, alu6061T6, 2400, 2.25, pMinOperation=pMinOperation,
-                                 heatUpCycles=heatUpCycles, Kt=4)
+            t, ff = getMaxWallThickness(pDesign, 2.25*pDesign, alu6061T6, 2400, pMinOperation=pMinOperation,
+                                        heatUpCycles=heatUpCycles, Kt=4)
             Z.append(ff)
 
         Z=np.reshape(Z, (count,count))
@@ -135,59 +135,6 @@ def fatiguePlot(createData = True, plotData = True):
         plt.show()
 
 
-
-def strainLifePlot():
-    # values from mmpds
-    E = 68258.124
-    epsilon_f = 3.5
-    sigma_f = 803.65
-    b, c = -0.1351, -0.9745
-
-    plt.figure(figsize=(9, 4))
-    plt.rcParams['font.size'] = 20
-    cycles_2Nt = (epsilon_f * E / sigma_f) ** (1 / (b - c))
-    cycles_2Nf_array = np.logspace(1, 8, 1000)
-    epsilon_total = (sigma_f / E) * cycles_2Nf_array ** b + epsilon_f * cycles_2Nf_array ** c
-    epsilon_total_at_cycles_2Nt = (sigma_f / E) * cycles_2Nt ** b + epsilon_f * cycles_2Nt ** c
-    plt.loglog(cycles_2Nf_array, epsilon_total, color='red', alpha=0.8,
-               label=str(r'$\epsilon_{tot}$ = $\epsilon_{plastic}$ + $\epsilon_{elastic}$'), linewidth=3)
-    plt.plot([cycles_2Nt, cycles_2Nt], [10 ** -6, epsilon_total_at_cycles_2Nt], 'red', linestyle='--',
-             alpha=0.5, linewidth=2)
-    flightCycles = 50000
-    epsilon_total_at__flight_cycles = (sigma_f / E) * flightCycles ** b + epsilon_f * flightCycles ** c
-    plt.plot([flightCycles] * 2, [10 ** -6, epsilon_total_at__flight_cycles], 'black', linestyle='--',
-             alpha=0.5, linewidth=2)
-    plastic_strain_line = epsilon_f * cycles_2Nf_array ** c
-    elastic_strain_line = sigma_f / E * cycles_2Nf_array ** b
-    plt.plot(cycles_2Nf_array, plastic_strain_line, 'orange', alpha=0.7, label='$\epsilon_{plastic}$',
-             linewidth=3)
-    plt.plot(cycles_2Nf_array, elastic_strain_line, 'steelblue', alpha=0.8, label='$\epsilon_{elastic}$',
-             linewidth=3)
-    # plt.scatter(cycles_2Nf, strain, 80, marker='.', color='k', label='Fatigue data')
-    plt.xlabel('Reversals to failure $(N_f)$')
-    plt.ylabel('Strain amplitude $(\epsilon_a)$')
-    # plt.title('Strain-Life diagram')
-    # cycles_min_log = 10 ** (int(np.floor(np.log10(min(cycles_2Nf)))) - 1)
-    # cycles_max_log = 10 ** (int(np.ceil(np.log10(max(cycles_2Nf)))) + 1)
-    # strain_min_log = 10 ** (int(np.floor(np.log10(min(strain)))) - 1)
-    # strain_max_log = 10 ** (int(np.ceil(np.log10(max(strain)))) + 1)
-    cycles_min_log = 10 ** (1)
-    cycles_max_log = 10 ** (6)
-    strain_min_log = 10 ** (-4)
-    strain_max_log = 10 ** (-1)
-    plt.text(cycles_2Nt, strain_min_log, str('$N_t$'), verticalalignment='bottom')
-    plt.text(flightCycles, strain_min_log, str(r'$N_{flights}$'), verticalalignment='bottom')
-    plt.xlim(cycles_min_log, cycles_max_log)
-    plt.ylim(strain_min_log, strain_max_log)
-    plt.grid(True)
-
-    leg2 = plt.legend(bbox_to_anchor=(.8, 1.2), loc='upper left', borderaxespad=0.)
-    # this is to make the first legend entry (the equation) bigger
-    legend_texts2 = leg2.get_texts()
-    legend_texts2[0]._fontproperties = legend_texts2[1]._fontproperties.copy()
-    # legend_texts2[0].set_size(13)
-    plt.tight_layout()
-    plt.show()
 
 def getLinerContour(designArgs):
     from tankoh2.geometry.dome import getDome
@@ -225,10 +172,8 @@ def domeContourPlot():
 
 
 if __name__ == '__main__':
-    if 1:
+    if 0:
         massPlot()
     elif 0:
         fatiguePlot()
-    else:
-        myplot()
 

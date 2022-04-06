@@ -31,7 +31,7 @@ alu2219 = OrderedDict([ # T851
     ('c1', 0.),  # tbd
     ('c2', 0.),  # tbd
     ('SN_parameters', [20.68, -9.84, 0.63, 0]), # see formula in tankoh2.design.metal.mechanics.getCyclesToFailure
-    ('Kt_used', 2.), # Kt factor used to create SN_parameters
+    ('Kt_curve', 2.), # Kt factor used to create SN_parameters
 ])
 
 defaultMetalMaterial = alu2219.copy()
@@ -52,7 +52,7 @@ alu6061T6 = OrderedDict([  # at T=20K
     ('c1', 0.),  # tbd
     ('c2', 0.),  # tbd
     ('SN_parameters', [20.68, -9.84, 0.63, 0]), # see formula in tankoh2.design.metal.mechanics.getCyclesToFailure
-    ('Kt_used', 1.), # Kt factor used to create SN_parameters
+    ('Kt_curve', 1.), # Kt factor used to create SN_parameters
     # ('', ''),
 ])
 
