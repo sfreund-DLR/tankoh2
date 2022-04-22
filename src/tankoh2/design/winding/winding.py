@@ -42,7 +42,17 @@ def windHoopLayer(vessel, layerNumber, shift = 0, verbose = False):
     vessel.runWindingSimulation(layerNumber + 1)
 
 def windLayer(vessel, layerNumber, angle=None, verbose = False):
-    """wind up to the given layer(0-based count) and return polar opening angle"""
+    """wind up to the given layer and return polar opening angle
+
+
+    :param vessel: µWind vessel instance
+    :param layerNumber: number of the layer to wind (0-based indexed)
+    :param angle: angle of the layer to wind [°]. If no angle is given, the angle should be given in the
+        actual µWind design.
+    :param verbose: flag if more output should be given
+    :return: polar opening radius of the new layer [mm]
+    """
+
     if angle:
         vessel.setLayerAngle(layerNumber, angle)
     try:

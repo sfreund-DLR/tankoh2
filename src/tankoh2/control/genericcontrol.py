@@ -82,6 +82,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             designArgs.pop(arg)
     designArgs.update(inputKwArgs)
 
+    if designArgs['domeType'] != 'ellipse':
+        designArgs.pop('domeLengthByR')
+
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
@@ -97,7 +100,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                            f'"{frpOrMetal}" instead.')
 
     for key in removeKeys:
-        inputKwArgs.pop(key, None)
+        designArgs.pop(key, None)
 
     # for elliptical domes, create the contour since µWind does not support is natively
     if designArgs['domeType'] == 'ellipse':

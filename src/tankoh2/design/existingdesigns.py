@@ -252,6 +252,32 @@ ttDesignCh2.update([
     ('maxlayers', 200),
     ])
 
+atheat = OrderedDict([
+    # Medium: Helium
+    ('tankname', 'atheat_He'),
+    ('polarOpeningRadius', 15),  # mm
+    ('dcly', 438 - 10),  # mm d_a - 2*t_estimate
+    ('lcyl', 21.156),  # mm - just an estimate for now
+    ('safetyFactor', 1.5),
+    ('pressure', 35),  # pressure in MPa (bar / 10.)
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', False),
+])
+
+tkms_cgh2 = OrderedDict([
+    ('tankname', 'tkms_cgh2'),
+    ('polarOpeningRadius', 50),  # mm
+    ('dcly', 590),  # mm d_a - 2*t_estimate
+    ('lcyl', 4500),  # mm - just an estimate for now
+    ('safetyFactor', 1.5),
+    ('pressure', 70),  # pressure in MPa (bar / 10.)
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('verbose', False),
+])
+
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
