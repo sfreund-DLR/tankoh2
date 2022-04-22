@@ -15,29 +15,31 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.winding.solver import getMaxPuckByAngle
 
 
-def optimizeAngle(vessel, targetPolarOpening, layerNumber, minAngle, verbose=False,
-                  targetFunction = getPolarOpeningDiffByAngle):
+def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=False,
+                  targetFunction=getPolarOpeningDiffByAngle):
     """optimizes the angle of the actual layer to realize the desired polar opening
 
     :param vessel: vessel object
     :param targetPolarOpening: polar opening radius that should be realized
     :param layerNumber: number of the actual layer
+    :param angleBounds: bounds of the angles used (min angle, max angle)
     :param verbose: flag if more output should be given
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
+    from tankoh2.design.winding.designopt import maxHelicalAngle
     tol = 1e-2
     popt = minimize_scalar(targetFunction, method='bounded',
-                           bounds=[minAngle, 75],  # bounds of the angle
+                           bounds=angleBounds,
                            args=[vessel, layerNumber, targetPolarOpening, verbose],
                            options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     if not popt.success:
-        raise Tankoh2Error('Could not finde optimal solution')
+        raise Tankoh2Error('Could not find optimal solution')
     angle, funVal, iterations = popt.x, popt.fun, popt.nfev
     if popt.fun > 1 and targetFunction is getPolarOpeningDiffByAngle:
         # desired polar opening not met. This happens, when polar opening is near fitting.
         # There is a discontinuity at this point. Switch target function to search from the fitting side.
-        angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber, verbose,
-                                                        getNegAngleAndPolarOpeningDiffByAngle)
+        angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
+                                                  verbose, getNegAngleAndPolarOpeningDiffByAngle)
     else:
         windLayer(vessel, layerNumber, angle)
     #angle2 = vessel.estimateCylinderAngle(layerNumber, targetPolarOpening)
