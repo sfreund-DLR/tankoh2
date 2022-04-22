@@ -197,7 +197,7 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 1:
-        params = parameters.tkms_cgh2.copy()
+        params = parameters.tk_cgh2.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignCh2

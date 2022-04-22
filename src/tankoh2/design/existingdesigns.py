@@ -265,7 +265,7 @@ atheat = OrderedDict([
     ('useHydrostaticPressure', False),
 ])
 
-tkms_cgh2 = OrderedDict([
+tk_cgh2 = OrderedDict([
     ('tankname', 'tkms_cgh2'),
     ('polarOpeningRadius', 50),  # mm
     ('dcly', 590),  # mm d_a - 2*t_estimate
