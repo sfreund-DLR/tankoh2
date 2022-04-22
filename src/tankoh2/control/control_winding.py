@@ -101,7 +101,9 @@ def createDesign(**kwargs):
     liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     linerTankoh = Liner(domeTankoh, lcylinder)
     fitting = liner.getFitting(False)
-    fitting.r3 = 40.
+    fitting.r0 = polarOpeningRadius / 4
+    fitting.r1 = polarOpeningRadius
+    fitting.rD = 2 * polarOpeningRadius
 
     # ###########################################
     # Create material
@@ -189,30 +191,18 @@ def createDesign(**kwargs):
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
     
-    log.info('='*100)
-    log.info('Create frp winding design with these parameters: \n'+(indent(kwargs.items())))
-    log.info('='*100)
-
     return results
 
 
 
 if __name__ == '__main__':
-    if 0:
-        params = parameters.defaultDesign.copy()
-        params['domeType'] = 'ellipse'
-        params['domeLengthByR'] = 0.5
-        params['relRadiusHoopLayerEnd'] = 0.95
+    if 1:
+        params = parameters.tkms_cgh2.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignCh2
         params = parameters.vphDesign1
         createDesign(**params.copy())
-    elif 0:
-        createDesign(**parameters.ttDesignCh2)
-    elif 1:
-        params = parameters.NGTBITDesign_old.copy()
-        createDesign(**params)
     elif 0:
         createDesign(pressure=5)
     elif 1:
