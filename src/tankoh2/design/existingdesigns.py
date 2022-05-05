@@ -252,6 +252,14 @@ ttDesignCh2.update([
     ('maxlayers', 200),
     ])
 
+conicalDesign = OrderedDict([
+    ('tankname', 'conical'),
+    ('polarOpeningRadius', 40),  # mm
+    ('dcly', 223.862*2),  # mm
+    ('lcyl', 559.6572), #mm
+    ('domeType', 'conical'),
+])
+
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

@@ -76,5 +76,3 @@ class Liner():
         """creates a plot of the outer liner contour"""
         points = self.getContour()
         plotContour(True, '', points[0,:], points[1,:])
-
-

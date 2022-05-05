@@ -7,7 +7,7 @@ from tankoh2.service.exception import Tankoh2Error
 
 myCrOSettings = None
 useRstOutput = False
-exampleFileName = 'settings_example.json'
+exampleFileName = 'settings.json'
 
 class PychainMock():
     """This class is a mock of pychain.

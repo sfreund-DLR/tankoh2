@@ -67,6 +67,7 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
     """
     validDomeTypes = ['isotensoid', 'circle',
                       'ellipse', # allowed by own implementation in tankoh2.geometry.contour
+                      'conical',
                       ]
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID

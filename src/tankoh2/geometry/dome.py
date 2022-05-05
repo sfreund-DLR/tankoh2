@@ -5,21 +5,35 @@ import numpy as np
 from scipy import special
 from scipy import optimize
 
+import sys, os
+
+basePath = 'C:\\Users\\bier_ju\\AppData\\Local\\Programs\\FreeCAD 0.19\\'
+
+freecadLibPaths = [basePath + 'lib', basePath + 'bin']
+sys.path.extend(freecadLibPaths)
+os.environ['PATH'] = ';'.join(freecadLibPaths + [os.environ['PATH']])
+
+import FreeCAD
+from Part import LineSegment, Point
+import Sketcher
+
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
-
-def getDome(cylinderRadius, polarOpening, domeType=None, lDomeHalfAxis = None):
-    """creates a dome analog to tankoh2.desig.winding.contour.getDome()
+def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None):
+    """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
     :param polarOpening: polar opening radius
     :param domeType: pychain.winding.DOME_TYPES.ISOTENSOID or pychain.winding.DOME_TYPES.CIRCLE
     :param lDomeHalfAxis: ellipse half axis describing the dome length for elliptical domes
+    :param rConeSmall: small radius of conical tank section
+    :param rConeLarge: large radius of conical tank section
+    :param lCone: length of conical tank section
     """
     validDomeTypes = ['isotensoid', 'circle',
-                      'ellipse', # allowed by own implementation in tankoh2.geometry.contour
+                      'ellipse', 'conical', # allowed by own implementation in tankoh2.geometry.contour
                       1, 2,  # types from µWind
                       ]
 
@@ -34,6 +48,8 @@ def getDome(cylinderRadius, polarOpening, domeType=None, lDomeHalfAxis = None):
     # build  dome
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
+    if domeType == 'conical':
+        dome = DomeConical(cylinderRadius, lDomeHalfAxis, polarOpening)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -86,7 +102,6 @@ class AbstractDome(metaclass=ABCMeta):
         x, _ = self.getContour()
         return abs(x[0]-x[-1])
 
-
     @property
     def area(self):
         """calc dome area numerically by slices of circular conical frustums"""
@@ -107,7 +122,6 @@ class AbstractDome(metaclass=ABCMeta):
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
 
-
 class DomeGeneric(AbstractDome):
 
     def __init__(self, x, r):
@@ -118,8 +132,6 @@ class DomeGeneric(AbstractDome):
         AbstractDome.__init__(self)
         self._x = x
         self._r = r
-
-
 
     @property
     def rPolarOpening(self):
@@ -149,6 +161,111 @@ class DomeGeneric(AbstractDome):
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
         return np.array([self._x, self._r])
+
+class DomeConical(AbstractDome):
+    """Calculcate ellipsoid contour with conical tank
+
+    :param rConeSmall: small radius of conical tank section
+    :param rConeLarge: large radius of conical tank section
+    :param lCone: length of conical tank section
+    :param lDomeHalfAxis: axial length of the ellipse (half axis)
+    :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
+
+    ::
+
+        |              rPolarOpening
+        |                 ←--→
+        |             ..--    --..          ↑
+        |         .-~              ~-.      |   lDomeHalfAxis
+        |        /                    \     |
+        |       |  rConeLarge         |     ↓
+        |       \←---------→         /      ↑
+        |        \                  /       |
+        |         \                /        |   lCone
+        |          \              /         |
+        |           \            /          ↓
+        |            ←----→
+        |          rConeSmall
+        |
+    """
+
+    def __init__(self, rConeSmall, rConeLarge, lCone, lDomeHalfAxis, rPolarOpening):
+        AbstractDome.__init__(self)
+        if rPolarOpening >= rConeLarge:
+            raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
+        if rConeSmall > rConeLarge:
+            raise Tankoh2Error('Small radius should not be larger than large radius')
+        self._rConeSmall = rConeSmall
+        self._rConeLarge = rConeLarge
+        self._lCone = lCone
+        self._lDomeHalfAxis = lDomeHalfAxis
+        self._rPolarOpening = rPolarOpening
+        self.halfAxes = (self.lDomeHalfAxis, self._rConeLarge) if self.lDomeHalfAxis > self._rConeLarge else (self.rConeLarge, self.lDomeHalfAxis)
+
+    @property
+    def eccentricitySq(self):
+        """return eccentricity squared"""
+        a, b = self.halfAxes
+        return 1.0 - b ** 2 / a ** 2
+
+    @property
+    def rPolarOpening(self):
+        return self._rPolarOpening
+
+    @property
+    def rConeLarge(self):
+        return self._rConeLarge
+
+    @property
+    def rConeSmall(self):
+        return self._rConeSmall
+
+    @property
+    def lDomeHalfAxis(self):
+        return self._lDomeHalfAxis
+
+    @property
+    def coneAngle(self):
+        """return angle of the cone in rad"""
+        return np.atan((self.rConeLarge - self.rConeSmall) / self.lCone)
+
+    @property
+    def aIsDomeLength(self):
+        """Returns true if the dome length represents the major half axis of the ellipse"""
+        return self.lDomeHalfAxis > self.rConeLarge
+
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        return DomeConical(self.rConeLarge + thickness, self.rConeSmall + thickness,  self.lDomeHalfAxis + thickness, self.rPolarOpening)
+
+    def getTankShape(self):
+
+        tank = App.newDocument('title')
+        App.activeDocument().addObject('Sketcher::SketchObject', 'Sketch')
+        sketch = App.getDocument('title').getObject('Sketch')
+        App.activeDocument().Sketch.Placement = App.Placement(App.Vector(0.000000, 0.000000, 0.000000), App.Rotation(0.000000, 0.000000, 0.000000, 1.000000))
+        App.activeDocument().Sketch.MapMode = "Deactivated"
+
+        sketch.addGeometry(Part.LineSegment(App.Vector(self.lDomeHalfAxis, self.rConeSmall, 0), App.Vector(self.lCone + self.lDomeHalfAxis, self.rConeLarge, 0)), False)
+        sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(App.Vector(self.lDomeHalfAxis, self.rConeSmall, 0), App.Vector(0, 0, 0), App.Vector(self.lDomeHalfAxis, 0, 0)), 0, 1), False)
+        sketch.exposeInternalGeometry(1)
+
+        sketch.addConstraint(Sketcher.Constraint('Vertical', 2))
+        sketch.addConstraint(Sketcher.Constraint('Coincident', 1, 1, 0, 1))
+        sketch.addConstraint(Sketcher.Constraint('Tangent', 1, 0))
+
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', 3, 1, 1, 3, self.lDomeHalfAxis))
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 1, 0, 2, self.lCone))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 0, 2, self.rConeLarge))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 0, 1, self.rConeSmall))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 1, 2, self.rPolarOpening))
+
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 1, 2, 0))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 1, 3, 0))
+
+        geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
+
+        a = 1
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -207,7 +324,6 @@ class DomeEllipsoid(AbstractDome):
         """return a dome that has a resized geometry by given thickness"""
         return DomeEllipsoid(self.rCyl + thickness, self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
-
     def _getPolarOpeningArcLenEllipse(self):
         a, b = self.halfAxes
         if self.aIsDomeLength:
@@ -227,7 +343,6 @@ class DomeEllipsoid(AbstractDome):
             return arcLen
         quaterEllipseLength = self.getArcLength(np.pi/2)
         return quaterEllipseLength - arcLen
-
 
     def getPoints(self, phis):
         """Calculates a point on the ellipse
@@ -250,12 +365,10 @@ class DomeEllipsoid(AbstractDome):
         xs = a/b*np.sqrt(b**2-ys**2)
         return np.array([xs,ys])
 
-
     def getArcLength(self, phi):
         """Calculates the arc length"""
         a = self.halfAxes[0]
         return a * special.ellipeinc(phi, self.eccentricitySq)
-
 
     def getContour(self, nodeNumber=250):
         """Return the countour of the dome
@@ -304,7 +417,6 @@ class DomeEllipsoid(AbstractDome):
         points = self.getContour(20)
         plotContour(True, '', points[0,:], points[1,:])
 
-
 class DomeSphere(DomeEllipsoid):
     """Defines a spherical dome"""
 
@@ -329,7 +441,7 @@ class DomeSphere(DomeEllipsoid):
 
 
 def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType='circular'):
-    """Calculates the countour of a dome and a attached conical structure
+    """Calculates the contour of a dome and a attached conical structure
 
     ATTENTION:
 
@@ -413,9 +525,8 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     de = DomeEllipsoid(2,1,1)
-    #de = DomeEllipsoid(1,2,0.5)
-    de.plotContour()
-
+    #dc = DomeConical()
+    #de.plotContour()
 
     # getCountourConical(20 ,60 ,100 ,40)
     pass
