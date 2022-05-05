@@ -238,7 +238,7 @@ class DomeConical(AbstractDome):
         """return a dome that has a resized geometry by given thickness"""
         return DomeConical(self.rConeLarge + thickness, self.rConeSmall + thickness,  self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
-    def getTankShape(self):
+    def getContour(self, nodeNumber=250):
 
         tank = App.newDocument('title')
         App.activeDocument().addObject('Sketcher::SketchObject', 'Sketch')
@@ -246,7 +246,7 @@ class DomeConical(AbstractDome):
         App.activeDocument().Sketch.Placement = App.Placement(App.Vector(0.000000, 0.000000, 0.000000), App.Rotation(0.000000, 0.000000, 0.000000, 1.000000))
         App.activeDocument().Sketch.MapMode = "Deactivated"
 
-        sketch.addGeometry(Part.LineSegment(App.Vector(self.lDomeHalfAxis, self.rConeSmall, 0), App.Vector(self.lCone + self.lDomeHalfAxis, self.rConeLarge, 0)), False)
+        sketch.addGeometry(Part.LineSegment(App.Vector(self.lDomeHalfAxis, self.rConeSmall, 0), App.Vector(self._lCone + self.lDomeHalfAxis, self.rConeLarge, 0)), False)
         sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(App.Vector(self.lDomeHalfAxis, self.rConeSmall, 0), App.Vector(0, 0, 0), App.Vector(self.lDomeHalfAxis, 0, 0)), 0, 1), False)
         sketch.exposeInternalGeometry(1)
 
@@ -255,7 +255,7 @@ class DomeConical(AbstractDome):
         sketch.addConstraint(Sketcher.Constraint('Tangent', 1, 0))
 
         sketch.addConstraint(Sketcher.Constraint('DistanceX', 3, 1, 1, 3, self.lDomeHalfAxis))
-        sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 1, 0, 2, self.lCone))
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 1, 0, 2, self._lCone))
         sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 0, 2, self.rConeLarge))
         sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 0, 1, self.rConeSmall))
         sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 3, 1, 2, self.rPolarOpening))
@@ -265,15 +265,17 @@ class DomeConical(AbstractDome):
 
         geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
 
-        num = 1000
-
         # Dome
-        xDome = np.linspace(0, geometry[0].StartPoint[0], num)
-        yDome = np.sqrt((1 - ((x - geometry[1].Center[0]) ** 2 / self.rPolarOpening ** 2)) * geometry[1].MajorRadius ** 2)
+        self.xDome = np.linspace(0, geometry[0].StartPoint[0], nodeNumber)
+        self.yDome = np.sqrt((1 - ((self.xDome - geometry[1].Center[0]) ** 2 / self.rPolarOpening ** 2)) * geometry[1].MajorRadius ** 2)
 
         # Cone
-        xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], num)
-        yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], num)
+        self.xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], nodeNumber)
+        self.yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], nodeNumber)
+
+        plt.scatter(self.xDome, self.yDome)
+        plt.scatter(self.xCone, self.yCone)
+        plt.show()
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -532,9 +534,11 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    de = DomeEllipsoid(2,1,1)
-    #dc = DomeConical()
-    #de.plotContour()
+    # de = DomeEllipsoid(2,1,1)
+    # de.plotContour()
+
+    dc = DomeConical(2, 3, 5, 1, 0.5)
+    dc.getContour()
 
     # getCountourConical(20 ,60 ,100 ,40)
     pass
