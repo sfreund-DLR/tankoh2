@@ -265,7 +265,15 @@ class DomeConical(AbstractDome):
 
         geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
 
-        a = 1
+        num = 1000
+
+        # Dome
+        xDome = np.linspace(0, geometry[0].StartPoint[0], num)
+        yDome = np.sqrt((1 - ((x - geometry[1].Center[0]) ** 2 / self.rPolarOpening ** 2)) * geometry[1].MajorRadius ** 2)
+
+        # Cone
+        xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], num)
+        yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], num)
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
