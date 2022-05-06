@@ -56,4 +56,3 @@ def plotContour(show, filename, x, r):
     if show:
         plt.show()
     plt.close(fig)
-

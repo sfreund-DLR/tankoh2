@@ -21,7 +21,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
-def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None):
+def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
@@ -31,6 +31,7 @@ def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis 
     :param rConeSmall: small radius of conical tank section
     :param rConeLarge: large radius of conical tank section
     :param lCone: length of conical tank section
+    :param lRadius: length of radius between conical and cylindrical section
     """
     validDomeTypes = ['isotensoid', 'circle',
                       'ellipse', 'conical', # allowed by own implementation in tankoh2.geometry.contour
@@ -49,7 +50,7 @@ def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis 
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
     if domeType == 'conical':
-        dome = DomeConical(cylinderRadius, lDomeHalfAxis, polarOpening)
+        dome = DomeConical(rConeSmall, rConeLarge, lCone, lDomeHalfAxis, rPolarOpening, lRadius)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -170,26 +171,26 @@ class DomeConical(AbstractDome):
     :param lCone: length of conical tank section
     :param lDomeHalfAxis: axial length of the ellipse (half axis)
     :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
+    :param lRadius: length of radius between conical and cylindrical section
 
     ::
 
         |              rPolarOpening
         |                 ←--→
-        |             ..--    --..          ↑
-        |         .-~              ~-.      |   lDomeHalfAxis
-        |        /                    \     |
-        |       |  rConeLarge         |     ↓
-        |       \←---------→         /      ↑
-        |        \                  /       |
-        |         \                /        |   lCone
-        |          \              /         |
-        |           \            /          ↓
-        |            ←----→
-        |          rConeSmall
+        |             ..--    --..              ↑
+        |         .-~              ~-.          |   lDomeHalfAxis
+        |        /                    \         ↓
+        |       /←---------→           \        ↑
+        |      /   rConeSmall           \       |
+        |     /                          \      |   lCone
+        |    /                            \     |
+        |   /←------------→                \    ↓
+        |  :   rConeSmall                   :   ↑   lRadius
+        | |                                 |   ↓
         |
     """
 
-    def __init__(self, rConeSmall, rConeLarge, lCone, lDomeHalfAxis, rPolarOpening):
+    def __init__(self, rConeSmall, rConeLarge, lCone, lDomeHalfAxis, rPolarOpening, lRadius):
         AbstractDome.__init__(self)
         if rPolarOpening >= rConeLarge:
             raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
@@ -200,6 +201,8 @@ class DomeConical(AbstractDome):
         self._lCone = lCone
         self._lDomeHalfAxis = lDomeHalfAxis
         self._rPolarOpening = rPolarOpening
+        self._lRadius = lRadius
+
         self.halfAxes = (self.lDomeHalfAxis, self._rConeLarge) if self.lDomeHalfAxis > self._rConeLarge else (self.rConeLarge, self.lDomeHalfAxis)
 
     @property
@@ -263,19 +266,32 @@ class DomeConical(AbstractDome):
         sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 1, 2, 0))
         sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 1, 3, 0))
 
+        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(App.Vector(1.5 * self._lCone, self.rConeLarge / 2, 0), App.Vector(0, 0, 1), self.rConeLarge / 2), 1, 2), False)
+        sketch.addConstraint(Sketcher.Constraint('Vertical', 6, 1, 6, 3))
+        sketch.addConstraint(Sketcher.Constraint('Tangent', 6, 2, 0, 2))
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 2, 6, 1, self._lRadius))
+
         geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
 
-        # Dome
-        self.xDome = np.linspace(0, geometry[0].StartPoint[0], nodeNumber)
-        self.yDome = np.sqrt((1 - ((self.xDome - geometry[1].Center[0]) ** 2 / self.rPolarOpening ** 2)) * geometry[1].MajorRadius ** 2)
+        xDome = np.linspace(0, geometry[0].StartPoint[0], nodeNumber)
+        yDome = np.sqrt((1 - ((xDome - geometry[1].Center[0]) ** 2 / geometry[1].MinorRadius ** 2)) * geometry[1].MajorRadius ** 2)
 
-        # Cone
-        self.xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], nodeNumber)
-        self.yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], nodeNumber)
+        xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], nodeNumber)
+        yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], nodeNumber)
 
-        plt.scatter(self.xDome, self.yDome)
-        plt.scatter(self.xCone, self.yCone)
-        plt.show()
+        xRadius = np.linspace(geometry[0].EndPoint[0], geometry[6].StartPoint[0], nodeNumber)
+        yRadius = np.sqrt(geometry[6].Radius ** 2 - (xRadius - geometry[6].Center[0]) ** 2) + geometry[6].Center[1]
+
+        x = np.concatenate([xDome, xCone, xRadius])
+        y = np.concatenate([yDome, yCone, yRadius])
+
+        points = np.array([x, y])
+        return points
+
+    def plotContour(self):
+        """creates a plot of the outer liner contour"""
+        points = self.getContour()
+        plotContour(True, '', points[0, :], points[1, :])
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -529,16 +545,15 @@ def getCountourConical(rPolarOpening, rSmall, rLarge, lConical, domeType='circul
     log.error('This method is not fully implemented and uses hardcoded values')
     return x, r
 
-
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    # de = DomeEllipsoid(2,1,1)
-    # de.plotContour()
+    de = DomeEllipsoid(2,1,1)
+    de.plotContour()
 
-    dc = DomeConical(2, 3, 5, 1, 0.5)
-    dc.getContour()
+    dc = DomeConical(1.5, 3, 3.5, 1, 0.5, 0.5)
+    dc.plotContour()
 
     # getCountourConical(20 ,60 ,100 ,40)
     pass
