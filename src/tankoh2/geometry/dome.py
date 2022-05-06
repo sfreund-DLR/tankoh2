@@ -242,7 +242,6 @@ class DomeConical(AbstractDome):
         return DomeConical(self.rConeLarge + thickness, self.rConeSmall + thickness,  self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
     def getContour(self, nodeNumber=250):
-
         tank = App.newDocument('title')
         App.activeDocument().addObject('Sketcher::SketchObject', 'Sketch')
         sketch = App.getDocument('title').getObject('Sketch')
@@ -273,13 +272,13 @@ class DomeConical(AbstractDome):
 
         geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
 
-        xDome = np.linspace(0, geometry[0].StartPoint[0], nodeNumber)
+        xDome = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber / 3))
         yDome = np.sqrt((1 - ((xDome - geometry[1].Center[0]) ** 2 / geometry[1].MinorRadius ** 2)) * geometry[1].MajorRadius ** 2)
 
-        xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], nodeNumber)
-        yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], nodeNumber)
+        xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], round(nodeNumber / 3))
+        yCone = np.linspace(geometry[0].StartPoint[1], geometry[0].EndPoint[1], round(nodeNumber / 3))
 
-        xRadius = np.linspace(geometry[0].EndPoint[0], geometry[6].StartPoint[0], nodeNumber)
+        xRadius = np.linspace(geometry[0].EndPoint[0], geometry[6].StartPoint[0], round(nodeNumber / 3))
         yRadius = np.sqrt(geometry[6].Radius ** 2 - (xRadius - geometry[6].Center[0]) ** 2) + geometry[6].Center[1]
 
         x = np.concatenate([xDome, xCone, xRadius])
@@ -549,11 +548,10 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    de = DomeEllipsoid(2,1,1)
-    de.plotContour()
+    # de = DomeEllipsoid(2,1,1)
+    # de.plotContour()
 
-    dc = DomeConical(1.5, 3, 3.5, 1, 0.5, 0.5)
+    dc = DomeConical(1.5, 3, 4, 1, 0.5, 0.5)
     dc.plotContour()
 
-    # getCountourConical(20 ,60 ,100 ,40)
     pass
