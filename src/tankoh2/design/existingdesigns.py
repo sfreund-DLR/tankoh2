@@ -253,13 +253,17 @@ ttDesignCh2.update([
     ])
 
 conicalDesign = OrderedDict([
-    ('tankname', 'conical'),
-    ('polarOpeningRadius', 40),  # mm
-    ('dcly', 223.862*2),  # mm
-    ('lcyl', 559.6572), #mm
+    ('tankname', 'conical_tank'),
+    ('rConeSmall', 75),  # mm
+    ('rConeLarge', 150),  # mm
+    ('lCone', 350),  # mm
+    ('lDomeHalfAxis', 40),  # mm
+    ('rPolarOpening', 20),  # mm
+    ('lRadius', 30),  # mm
+    ('xApex', 175),  # mm
+    ('yApex', 10),  # mm
     ('domeType', 'conical'),
 ])
-
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
