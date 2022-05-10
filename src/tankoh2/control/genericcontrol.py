@@ -107,6 +107,8 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         r = designArgs['dcly'] / 2
         de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
         designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
+    elif designArgs['domeType'] == 'conical':
+        pass
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
         # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead

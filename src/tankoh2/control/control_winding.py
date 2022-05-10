@@ -1,7 +1,7 @@
 """control a tank optimization"""
 
 import os
-import datetime
+from datetime import datetime
 import numpy as np
 
 from tankoh2 import log, pychain, programDir
@@ -24,7 +24,7 @@ def createDesign(**kwargs):
 
     For a list of possible parameters, please refer to tankoh2.design.existingdesigns.allDesignKeywords
     """
-    startTime = datetime.datetime.now()
+    startTime = datetime.now()
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -55,7 +55,7 @@ def createDesign(**kwargs):
     lcylinder = designArgs['lcyl']  # mm
     dome = getDome(dcly / 2., polarOpeningRadius, domeType, domeX, domeR)
     domeLength = (designArgs['domeLengthByR'] * dcly / 2) if 'domeLengthByR' in designArgs else None
-    domeTankoh = getDomeTankoh(dcly / 2, polarOpeningRadius, domeType, domeLength)
+    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, domeType, domeLength)
     length = lcylinder + 2 * dome.domeLength
 
     # Design Args
@@ -150,7 +150,7 @@ def createDesign(**kwargs):
                            composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd)
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
-    duration = datetime.datetime.now() - startTime
+    duration = datetime.now() - startTime
     if burstPressure > 5:
         # compressed gas vessel
         auxMasses = [getLinerMass(linerTankoh), 0., 0.]
@@ -205,8 +205,8 @@ if __name__ == '__main__':
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
-        #params = parameters.ttDesignCh2
-        params = parameters.vphDesign1
+        params = parameters.ttDesignLh2
+        #params = parameters.conicalDesign
         createDesign(**params.copy())
     elif 0:
         createDesign(**parameters.ttDesignCh2)
