@@ -254,15 +254,17 @@ ttDesignCh2.update([
 
 conicalDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('rConeSmall', 75),  # mm
-    ('rConeLarge', 150),  # mm
+    ('dConeSmall', 150),  # mm
+    ('dConeLarge', 300),  # mm
     ('lCone', 350),  # mm
-    ('lDomeHalfAxis', 40),  # mm
+    ('domeLengthByR', 0.4),  # mm
     ('rPolarOpening', 20),  # mm
-    ('lRadius', 30),  # mm
-    ('xApex', 175),  # mm
-    ('yApex', 10),  # mm
+    ('lengthRadiusByLengthCone', 0.15),  # mm
+    ('xPosApexByLengthCone', 0.5),  # mm
+    ('yPosApexByLargeRadius', 0.3),  # mm
     ('domeType', 'conical'),
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
 ])
 
 if __name__ == '__main__':

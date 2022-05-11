@@ -236,7 +236,7 @@ class DomeConical(AbstractDome):
         """return a dome that has a resized geometry by given thickness"""
         return DomeConical(self.rConeLarge + thickness, self.rConeSmall + thickness,  self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
-    def getContour(self, nodeNumber = 250):
+    def getContour(self, nodeNumber = 1000):
 
         tank = App.newDocument('title')
         App.activeDocument().addObject('Sketcher::SketchObject', 'Sketch')
@@ -311,17 +311,17 @@ class DomeConical(AbstractDome):
 
             geometry = App.ActiveDocument.ActiveObject.getPropertyByName('Geometry')
 
-            xDome = np.linspace(geometry[3].EndPoint[0], geometry[3].StartPoint[0], round(nodeNumber/3))
+            xDome = np.linspace(geometry[3].EndPoint[0], geometry[3].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] / geometry[8].StartPoint[0])))
             yDome = np.sqrt((1 - ((xDome - geometry[3].Center[0]) ** 2 / geometry[3].MinorRadius ** 2)) * geometry[3].MajorRadius ** 2)
 
             a = np.array([[geometry[0].StartPoint[0] ** 2, geometry[0].StartPoint[0], 1], [geometry[0].EndPoint[0] ** 2, geometry[0].EndPoint[0], 1], [geometry[0].Center[0] ** 2, geometry[0].Center[0], 1]])
             b = np.array([geometry[0].StartPoint[1], geometry[0].EndPoint[1], geometry[0].Center[1]])
             parCoeff = np.linalg.solve(a, b)
 
-            xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], round(nodeNumber/3))
+            xCone = np.linspace(geometry[0].StartPoint[0], geometry[0].EndPoint[0], round(nodeNumber * (geometry[0].EndPoint[0] - geometry[0].StartPoint[0]) / geometry[8].StartPoint[0]))
             yCone = parCoeff[0] * xCone ** 2 + parCoeff[1] * xCone + parCoeff[2]
 
-            xRadius = np.linspace(geometry[8].EndPoint[0], geometry[8].StartPoint[0], round(nodeNumber/3))
+            xRadius = np.linspace(geometry[8].EndPoint[0], geometry[8].StartPoint[0], round(nodeNumber * (geometry[8].StartPoint[0] - geometry[8].EndPoint[0]) / geometry[8].StartPoint[0]))
             yRadius = np.sqrt(geometry[8].Radius ** 2 - (xRadius - geometry[8].Center[0]) ** 2) + geometry[8].Center[1]
 
         App.getDocument("title").saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/tank_shape.FCStd")
@@ -335,10 +335,10 @@ class DomeConical(AbstractDome):
     def plotContour(self):
         """creates a plot of the outer liner contour"""
         points = self.getContour()
-        print(points)
-        plt.plot(points[0, :], points[1, :])
+        plotContour(True, '', points[0, :], points[1, :])
 
-        plt.show()
+        #plt.plot(points[0, :], points[1, :])
+        #plt.show()
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
