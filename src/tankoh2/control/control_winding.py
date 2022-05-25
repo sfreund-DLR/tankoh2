@@ -45,18 +45,20 @@ def createDesign(**kwargs):
     layersToWind = designArgs['maxlayers']
     relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
 
-    # Geometry
-    domeType = designArgs['domeType'].lower() # CIRCLE; ISOTENSOID
-    domeX, domeR = designArgs['domeContour'] # (x,r)
+    # Geometry - generic
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
     dcly = designArgs['dcly']  # mm
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
     lcylinder = designArgs['lcyl']  # mm
-    dome = getDome(dcly / 2., polarOpeningRadius, domeType, domeX, domeR)
-    domeLength = (designArgs['domeLengthByR'] * dcly / 2) if 'domeLengthByR' in designArgs else None
-    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, domeType, domeLength)
-    length = lcylinder + 2 * dome.domeLength
+
+    # Geometry - domes
+    dome = getDome(dcly / 2., polarOpeningRadius, designArgs['domeType'].lower(), *designArgs['domeContour'])
+    dome2 = None if designArgs['dome2Type'] is None else getDome(dcly / 2., polarOpeningRadius,
+                                                                 designArgs['dome2Type'].lower(),
+                                                                 *designArgs['dome2Contour'])
+
+    length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
 
     # Design Args
     pressure = None
@@ -98,8 +100,7 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
-    linerTankoh = Liner(domeTankoh, lcylinder)
+    liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r0 = polarOpeningRadius / 4
     fitting.r1 = polarOpeningRadius
@@ -153,6 +154,11 @@ def createDesign(**kwargs):
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
+
+    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, designArgs['domeType'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcly / 2,
+                                                           designArgs['dome2Type'].lower(), dome.domeLength)
+    linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
         # compressed gas vessel
         auxMasses = [getLinerMass(linerTankoh), 0., 0.]
@@ -197,7 +203,7 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 1:
-        params = parameters.defaultDesign.copy()
+        params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
         params = parameters.ttDesignLh2

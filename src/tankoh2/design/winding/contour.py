@@ -122,7 +122,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     deltaLengthSpline = contourLength / nodeNumber  # just use half side
 
     if dome2 is not None:
-        log.info("Creat unsymmetric vessel")
+        log.info("Create unsymmetric vessel")
         liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
     else:
         log.info("Create symmetric vessel")

@@ -22,25 +22,25 @@ allArgs = pd.DataFrame(
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
         # Geometry_Cylinder
-        ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
-        ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
-        ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
+        ['dcly', 'Geometry_Cylinder', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
+        ['lcyl', 'Geometry_Cylinder', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
+        ['lcylByR', 'Geometry_Cylinder', '', 2.5, float, 'only if lcyl is not given [-]', ''],
         # Geometry_Dome
-        ['domeType', 'Geometry', '', 'isotensoid', '',
+        ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
-        ['domeContour', 'Geometry', '(x,r)', (None,None), '',
+        ['domeContour', 'Geometry_Dome', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
         ['polarOpeningRadius', 'Geometry', 'r_po', 20, float, 'Polar opening radius [mm]', ''],
-        ['domeLengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
+        ['domeLengthByR', 'Geometry_Dome', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         # Geometry_Dome2
-        ['dome2Type', 'Geometry', '', None, '',
+        ['dome2Type', 'Geometry_Dome2', '', None, '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
-        ['dome2Contour', 'Geometry', '(x,r)', (None, None), '',
+        ['dome2Contour', 'Geometry_Dome2', '(x,r)', (None, None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
-        ['dome2LengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
+        ['dome2LengthByR', 'Geometry_Dome2', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         # Design
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
