@@ -103,16 +103,17 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs.pop(key, None)
 
     # for elliptical domes, create the contour since µWind does not support is natively
-    if designArgs['domeType'] == 'ellipse':
-        if not designArgs['domeLengthByR']:
-            raise Tankoh2Error('domeType == "ellipse" but "domeLengthByR" is not defined')
+    for domeName in ['dome', 'dome2']:
+        if designArgs[f'{domeName}Type'] == 'ellipse':
+            if not designArgs[f'{domeName}LengthByR']:
+                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
 
-        r = designArgs['dcly'] / 2
-        de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
-        designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
+            r = designArgs['dcly'] / 2
+            de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
+            designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
+
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
-        # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead
     designArgs.pop('help',None)
     return designArgs
 

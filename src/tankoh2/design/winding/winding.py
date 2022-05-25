@@ -74,22 +74,22 @@ def windLayer(vessel, layerNumber, angle=None, verbose = False):
     return vessel.getPolarOpeningR(layerNumber, True)
 
 def getPolarOpeningDiffHelical(friction, args):
-    vessel, wendekreisradius, layerindex, verbose = args
+    vessel, targetPolarOpeningR, layerindex, verbose = args
     vessel.setLayerFriction(layerindex, friction[0], True)
     try:
         vessel.runWindingSimulation(layerindex + 1)
-        wk = vessel.getPolarOpeningR(layerindex, True)
+        polarOpeningR = vessel.getPolarOpeningR(layerindex, True)
     except (IOError, ValueError, IOError, ZeroDivisionError):
         raise
         log.info('I have to pass')
 
     if verbose:
-        log.info(f"layer {layerindex}, friction {friction}, po actual {wk}, po target {wendekreisradius}, po diff {wk-wendekreisradius}")
+        log.info(f"layer {layerindex}, friction {friction}, po actual {polarOpeningR}, po target {targetPolarOpeningR}, po diff {polarOpeningR-targetPolarOpeningR}")
     # log.info('this helical layer shoud end at', wendekreisradius[layerindex], 'mm but is at', wk, 'mm so there is a
     # deviation of', wendekreisradius[layerindex]-wk, 'mm') if abs(wendekreisradius[layerindex]-wk) < 2.:
     # arr_fric.append(abs(friction)) arr_wk.append(wk)
 
-    return abs(wk - wendekreisradius)
+    return abs(polarOpeningR - targetPolarOpeningR)
 
 def getPolarOpeningDiffHelicalUsingLogFriction(friction, args):
         
