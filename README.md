@@ -32,9 +32,7 @@ Python Packages:
 - Pandas
 
 Requirements from [µChain](https://www.mefex.de/software/):
-- Python 3.6 (x64) + Numpy 1.16.2
-- Python 3.8 (x64) + Numpy 1.19.1
-
+- Python 3.8 (x64) + Numpy 1.20.0
 
 ### Installation from source
 Get tankoh2 from 

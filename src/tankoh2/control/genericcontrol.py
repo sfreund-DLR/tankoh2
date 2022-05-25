@@ -82,6 +82,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             designArgs.pop(arg)
     designArgs.update(inputKwArgs)
 
+    if designArgs['domeType'] != 'ellipse':
+        designArgs.pop('domeLengthByR')
+
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
@@ -97,37 +100,40 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                            f'"{frpOrMetal}" instead.')
 
     for key in removeKeys:
-        inputKwArgs.pop(key, None)
+        designArgs.pop(key, None)
 
     # for elliptical domes, create the contour since µWind does not support is natively
-    if designArgs['domeType'] == 'ellipse':
-        if not designArgs['domeLengthByR']:
-            raise Tankoh2Error('domeType == "ellipse" but "domeLengthByR" is not defined')
+    for domeName in ['dome', 'dome2']:
+        if designArgs[f'{domeName}Type'] == 'ellipse':
+            if not designArgs[f'{domeName}LengthByR']:
+                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
 
-        r = designArgs['dcly'] / 2
-        de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
-        designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
+            r = designArgs['dcly'] / 2
+            de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
+            designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
 
-    # for conical domes, create the contour since µWind does not support is natively
-    elif designArgs['domeType'] == 'conical':
-        if not designArgs['domeLengthBySmallRadius']:
-            raise Tankoh2Error('domeType == "conical" but "domeLengthByR" is not defined')
-        if not designArgs['lengthRadiusByLengthCone']:
-            raise Tankoh2Error('domeType == "conical" but "lengthRadiusByLengthCone" is not defined')
-        if not designArgs['xPosApexByLengthCone']:
-            raise Tankoh2Error('domeType == "conical" but "xPosApexByLengthCone" is not defined')
-        if not designArgs['yPosApexByLargeRadius']:
-            raise Tankoh2Error('domeType == "conical" but "yPosApexByLargeRadius" is not defined')
+        if domeName == 'dome2':
+            break # no conical structures for second dome
 
-        rSmall = designArgs['dConeSmall'] / 2
-        rLarge = designArgs['dConeLarge'] / 2
-        lCone = designArgs['lCone']
-        dc = DomeConical(rSmall, rLarge, lCone, designArgs['domeLengthBySmallRadius'] * rSmall, designArgs['polarOpeningRadius'], designArgs['lengthRadiusByLengthCone'] * lCone, designArgs['xPosApexByLengthCone'] * lCone, designArgs['yPosApexByLargeRadius'] * rLarge)
-        designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
+        # for conical domes, create the contour since µWind does not support is natively
+        if designArgs['domeType'] == 'conical':
+            if not designArgs['domeLengthBySmallRadius']:
+                raise Tankoh2Error('domeType == "conical" but "domeLengthByR" is not defined')
+            if not designArgs['lengthRadiusByLengthCone']:
+                raise Tankoh2Error('domeType == "conical" but "lengthRadiusByLengthCone" is not defined')
+            if not designArgs['xPosApexByLengthCone']:
+                raise Tankoh2Error('domeType == "conical" but "xPosApexByLengthCone" is not defined')
+            if not designArgs['yPosApexByLargeRadius']:
+                raise Tankoh2Error('domeType == "conical" but "yPosApexByLargeRadius" is not defined')
+
+            rSmall = designArgs['dConeSmall'] / 2
+            rLarge = designArgs['dConeLarge'] / 2
+            lCone = designArgs['lCone']
+            dc = DomeConical(rSmall, rLarge, lCone, designArgs['domeLengthBySmallRadius'] * rSmall, designArgs['polarOpeningRadius'], designArgs['lengthRadiusByLengthCone'] * lCone, designArgs['xPosApexByLengthCone'] * lCone, designArgs['yPosApexByLargeRadius'] * rLarge)
+            designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
-        # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead
     designArgs.pop('help',None)
     return designArgs
 

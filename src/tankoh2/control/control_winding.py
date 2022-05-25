@@ -5,9 +5,9 @@ from datetime import datetime
 import numpy as np
 
 from tankoh2 import log, pychain, programDir
-from tankoh2.design.winding.designopt import designLayers
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
+from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
@@ -101,7 +101,9 @@ def createDesign(**kwargs):
     liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
     linerTankoh = Liner(domeTankoh, lcylinder)
     fitting = liner.getFitting(False)
-    fitting.r3 = 40.
+    fitting.r0 = polarOpeningRadius / 4
+    fitting.r1 = polarOpeningRadius
+    fitting.rD = 2 * polarOpeningRadius
 
     # ###########################################
     # Create material
@@ -189,30 +191,18 @@ def createDesign(**kwargs):
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
     
-    log.info('='*100)
-    log.info('Create frp winding design with these parameters: \n'+(indent(kwargs.items())))
-    log.info('='*100)
-
     return results
 
 
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         params = parameters.defaultDesign.copy()
-        params['domeType'] = 'ellipse'
-        params['domeLengthByR'] = 0.5
-        params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
         params = parameters.ttDesignLh2
         #params = parameters.conicalDesign
         createDesign(**params.copy())
-    elif 0:
-        createDesign(**parameters.ttDesignCh2)
-    elif 1:
-        params = parameters.NGTBITDesign_old.copy()
-        createDesign(**params)
     elif 0:
         createDesign(pressure=5)
     elif 1:

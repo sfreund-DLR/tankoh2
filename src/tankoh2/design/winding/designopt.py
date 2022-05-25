@@ -16,6 +16,8 @@ from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses
 from tankoh2.service.utilities import getTimeString
 
 
+maxHelicalAngle = 70
+
 def printLayer(layerNumber, verbose = False, postfix = ''):
     sep = '\n' + '=' * 80
     log.info((sep if verbose else '') + f'\nLayer {layerNumber} {postfix}' + (sep if verbose else ''))
@@ -48,9 +50,9 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
     if verbose:
         log.info('Optimize helical layer')
     # get location of critical element
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, 1., False,
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), False,
                                    targetFunction=getAngleAndPolarOpeningDiffByAngle)
-    bounds = [minAngle, 65]
+    bounds = [minAngle, maxHelicalAngle]
 
     layerOk = False
     while not layerOk:
@@ -73,8 +75,14 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     shift, funcVal, loopIt = minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, useFibreFailure,
                                                  puckProperties, burstPressure,
                                                  targetFunction=getMaxPuckByShift, verbose=verbose)
-    newDesignIndex = 0
-    log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}')
+
+    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+    r, l = mandrel.getRArray(), mandrel.getLArray()
+    cylLenIdx = len(r) - np.argmin(np.abs(r - r[0])[::-1]) # np.argmin from the back of the mandrels radii
+    hoopLength = l[cylLenIdx] + shift
+    newDesignIndex = np.argmin(np.abs(l - hoopLength))
+    log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}, '
+              f'hoop end contour coord {newDesignIndex}')
     return shift, funcVal, loopIt, newDesignIndex
 
 def _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoopLayerEnd):
@@ -143,12 +151,12 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     liner = vessel.getLiner()
     dome = liner.getDome1()
 
-    radiusDropThreshold = windLayer(vessel, layerNumber, 70)
+    radiusDropThreshold = windLayer(vessel, layerNumber, maxHelicalAngle)
     mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
     dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
     elementCount = mandrel.getRArray().shape[0]-1
     log.debug('Find minimal possible angle')
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, 1., False,
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), False,
                                    targetFunction=getAngleAndPolarOpeningDiffByAngle)
     plotContour(False,  os.path.join(runDir, f'contour.png'), mandrel.getXArray(), mandrel.getRArray())
 
@@ -157,7 +165,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
 
     # introduce layer up to the fitting. Optimize required angle
     printLayer(layerNumber, verbose, '- initial helical layer')
-    angle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, minAngle, False,
+    angle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (minAngle, maxHelicalAngle), False,
                                 targetFunction=getNegAngleAndPolarOpeningDiffByAngle)
     anglesShifts.append((angle,0))
     layerNumber += 1

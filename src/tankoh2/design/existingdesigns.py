@@ -6,7 +6,6 @@ Characterize design input parameter for various projects
 
 from collections import OrderedDict
 import pandas as pd
-import os
 
 
 allArgs = pd.DataFrame(
@@ -22,17 +21,26 @@ allArgs = pd.DataFrame(
         ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-        # Geometry
+        # Geometry_Cylinder
+        ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
+        ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
+        ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
+        # Geometry_Dome
         ['domeType', 'Geometry', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
         ['domeContour', 'Geometry', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
         ['polarOpeningRadius', 'Geometry', 'r_po', 20, float, 'Polar opening radius [mm]', ''],
-        ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
-        ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
-        ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
         ['domeLengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
+         'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
+        # Geometry_Dome2
+        ['dome2Type', 'Geometry', '', None, '',
+         'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
+        ['dome2Contour', 'Geometry', '(x,r)', (None, None), '',
+         'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
+         '"[x1,x2],[r1,r2]" in [mm]', ''],
+        ['dome2LengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         # Design
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
@@ -85,10 +93,16 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
+
+defaultUnsymmetricDesign = defaultDesign.copy()
+defaultUnsymmetricDesign.update([
+    ('dome2Type', 'circle'), #defaultUnsymmetricDesign['domeType']),
+    ('dome2Contour', defaultUnsymmetricDesign['dome2Contour']),
+    ('dome2LengthByR', defaultUnsymmetricDesign['dome2LengthByR']),
+    ])
+
 # hymod design
 # 12mm thickness in cylindrical section
-#
-
 hymodDesign = OrderedDict([
     ('tankname', 'hymodDesign'),
     ('burstPressure', 77.85),
@@ -251,6 +265,32 @@ ttDesignCh2.update([
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
     ('maxlayers', 200),
     ])
+
+atheat = OrderedDict([
+    # Medium: Helium
+    ('tankname', 'atheat_He'),
+    ('polarOpeningRadius', 15),  # mm
+    ('dcly', 438 - 10),  # mm d_a - 2*t_estimate
+    ('lcyl', 21.156),  # mm - just an estimate for now
+    ('safetyFactor', 1.5),
+    ('pressure', 35),  # pressure in MPa (bar / 10.)
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', False),
+])
+
+tk_cgh2 = OrderedDict([
+    ('tankname', 'tkms_cgh2'),
+    ('polarOpeningRadius', 50),  # mm
+    ('dcly', 590),  # mm d_a - 2*t_estimate
+    ('lcyl', 4500),  # mm - just an estimate for now
+    ('safetyFactor', 1.5),
+    ('pressure', 70),  # pressure in MPa (bar / 10.)
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('verbose', False),
+])
 
 conicalDesign = OrderedDict([
     ('tankname', 'conical_tank'),
