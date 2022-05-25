@@ -5,9 +5,9 @@ import datetime
 import numpy as np
 
 from tankoh2 import log, pychain, programDir
-from tankoh2.design.winding.designopt import designLayers
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
+from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
@@ -197,7 +197,7 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 1:
-        params = parameters.tk_cgh2.copy()
+        params = parameters.defaultDesign.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignCh2

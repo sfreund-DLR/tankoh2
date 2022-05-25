@@ -75,8 +75,14 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     shift, funcVal, loopIt = minimizeUtilization(vessel, layerNumber, bounds, dropIndicies, useFibreFailure,
                                                  puckProperties, burstPressure,
                                                  targetFunction=getMaxPuckByShift, verbose=verbose)
-    newDesignIndex = 0
-    log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}')
+
+    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+    r, l = mandrel.getRArray(), mandrel.getLArray()
+    cylLenIdx = len(r) - np.argmin(np.abs(r - r[0])[::-1]) # np.argmin from the back of the mandrels radii
+    hoopLength = l[cylLenIdx] + shift
+    newDesignIndex = np.argmin(np.abs(l - hoopLength))
+    log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}, '
+              f'hoop end contour coord {newDesignIndex}')
     return shift, funcVal, loopIt, newDesignIndex
 
 def _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoopLayerEnd):

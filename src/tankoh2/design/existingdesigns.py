@@ -6,7 +6,6 @@ Characterize design input parameter for various projects
 
 from collections import OrderedDict
 import pandas as pd
-import os
 
 
 allArgs = pd.DataFrame(
