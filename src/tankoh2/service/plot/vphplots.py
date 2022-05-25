@@ -27,7 +27,7 @@ def massPlot():
             columns=['Aluminium 6061', 'CFRP IFF circ', 'CFRP FF circ', 'CFRP IFF isotensoid', 'CFRP linerless', 'CFRP vaccuum'],
             index=['Liner', 'Shell', 'Insulation', '2nd shell']).T
         refSum = df.loc['CFRP IFF circ', :].sum()
-    elif 0:
+    elif 1:
         df = pd.DataFrame([
             [0, 31, 31, 0],  # liner mass from thomas
             [435.445, 341.637493, 107.8643, 341.637493],
@@ -36,6 +36,7 @@ def massPlot():
             ],
             columns=['Aluminium 6061', 'CFRP circ', 'CFRP isotensoid', 'CFRP linerless'],
             index=['Liner', 'Inner shell', 'Insulation', 'Outer shell']).T
+        df = df.drop(index=['CFRP linerless'])
         refSum = df.loc['CFRP circ',:].sum()
     else:
         df = pd.DataFrame([
