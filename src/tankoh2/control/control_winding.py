@@ -18,7 +18,6 @@ from tankoh2.masses.massestimation import getInsulationMass, getFairingMass, get
 from tankoh2.geometry.dome import getDome as getDomeTankoh
 from tankoh2.geometry.liner import Liner
 
-
 def createDesign(**kwargs):
     """Create a winding design
 
@@ -205,8 +204,8 @@ if __name__ == '__main__':
         params['relRadiusHoopLayerEnd'] = 0.95
         createDesign(**params)
     elif 1:
-        params = parameters.ttDesignLh2
-        #params = parameters.conicalDesign
+        #params = parameters.ttDesignLh2
+        params = parameters.conicalDesign
         createDesign(**params.copy())
     elif 0:
         createDesign(**parameters.ttDesignCh2)

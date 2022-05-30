@@ -9,6 +9,7 @@ from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
 from tankoh2.geometry.dome import DomeEllipsoid
+from tankoh2.geometry.dome import DomeConical
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
@@ -111,7 +112,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     # for conical domes, create the contour since µWind does not support is natively
     elif designArgs['domeType'] == 'conical':
         if not designArgs['domeLengthBySmallRadius']:
-            raise Tankoh2Error('domeType == "conical" but "domeLengthByR" is not defined')
+            raise Tankoh2Error('domeType == "conical" but "domeLengthBySmallRadius" is not defined')
         if not designArgs['lengthRadiusByLengthCone']:
             raise Tankoh2Error('domeType == "conical" but "lengthRadiusByLengthCone" is not defined')
         if not designArgs['xPosApexByLengthCone']:
@@ -130,7 +131,6 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead
     designArgs.pop('help',None)
     return designArgs
-
 
 def getBurstPressure(designArgs, length):
     """Calculate burst pressure
