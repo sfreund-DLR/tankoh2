@@ -297,11 +297,11 @@ conicalDesign = OrderedDict([
     ('dConeSmall', 150),  # mm
     ('dConeLarge', 300),  # mm
     ('lCone', 350),  # mm
-    ('domeLengthByR', 0.4),  # mm
+    ('domeLengthBySmallRadius', 0.4),
     ('rPolarOpening', 20),  # mm
-    ('lengthRadiusByLengthCone', 0.15),  # mm
-    ('xPosApexByLengthCone', 0.5),  # mm
-    ('yPosApexByLargeRadius', 0.3),  # mm
+    ('lengthRadiusByLengthCone', 0.15),
+    ('xPosApexByLengthCone', 0.5),
+    ('yPosApexByLargeRadius', 0.3),
     ('domeType', 'conical'),
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),

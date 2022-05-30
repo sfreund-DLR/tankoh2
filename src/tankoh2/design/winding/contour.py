@@ -55,8 +55,7 @@ def domeContourLength(dome):
     contourLength = np.sum(np.linalg.norm(contourDiffs, axis=1))
     return contourLength
 
-def getDome(cylinderRadius, polarOpening, domeType=None,
-            x=None, r=None):
+def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None, xApex = None, yApex = None):
     """creates a µWind dome
 
     :param cylinderRadius: radius of the cylinder
