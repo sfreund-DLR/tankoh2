@@ -49,7 +49,10 @@ def test_linerWallVol():
 #    ref = liner.dome.getWallVolume(thk)+liner.dome2.getWallVolume(thk)+np.pi*l*((r+thk)**2-r**2)
 #    assert np.allclose(liner.getWallVolume(thk), ref)
 
-
+def test_unsymmSteadyX():
+    liner = getLiner(singleDome=False, polarOpeningR=0)
+    x,r = liner.getContour()
+    assert np.alltrue(x[1:]-x[:-1] > 0)
 
 
 

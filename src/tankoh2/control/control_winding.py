@@ -9,7 +9,7 @@ from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
-from tankoh2.design.winding.contour import getLiner, getDome
+from tankoh2.design.winding.contour import getLiner, getDome, saveLiner
 from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
@@ -52,9 +52,9 @@ def createDesign(**kwargs):
     lcylinder = designArgs['lcyl']  # mm
 
     # Geometry - domes
-    dome = getDome(dcly / 2., polarOpeningRadius, designArgs['domeType'].lower(), *designArgs['domeContour'])
+    dome = getDome(dcly / 2., polarOpeningRadius, designArgs['domeType'], *designArgs['domeContour'])
     dome2 = None if designArgs['dome2Type'] is None else getDome(dcly / 2., polarOpeningRadius,
-                                                                 designArgs['dome2Type'].lower(),
+                                                                 designArgs['dome2Type'],
                                                                  *designArgs['dome2Contour'])
 
     length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
@@ -99,11 +99,12 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2, nodeNumber=nodeNumber)
+    liner = getLiner(dome, lcylinder, dome2=dome2, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
     fitting.r0 = polarOpeningRadius / 4
     fitting.r1 = polarOpeningRadius
     fitting.rD = 2 * polarOpeningRadius
+    saveLiner(liner, linerFilename, 'liner_'+tankname)
 
     # ###########################################
     # Create material

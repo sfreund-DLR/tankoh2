@@ -55,7 +55,7 @@ def domeContourLength(dome):
     contourLength = np.sum(np.linalg.norm(contourDiffs, axis=1))
     return contourLength
 
-def getDome(polarOpening, cylinderRadius = None, domeType = None, x=None, r=None):
+def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     """creates a µWind dome
 
     :param cylinderRadius: radius of the cylinder
@@ -121,7 +121,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     else:
         contourLength = length / 2 + domeContourLength(dome)  # use half model (one dome, half cylinder)
         nodeNumber //= 2
-    deltaLengthSpline = contourLength / nodeNumber  # just use half side
+    deltaLengthSpline = contourLength / nodeNumber
 
     if dome2 is not None:
         log.info("Create unsymmetric vessel")
@@ -129,14 +129,17 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     else:
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
-    
-    if linerFilename:
-        liner.saveToFile(linerFilename)
-        updateName(linerFilename, linerName, ['liner'])
-        copyAsJson(linerFilename, 'liner')      
-        liner.loadFromFile(linerFilename)
-        
+
+    if linerFilename and linerName:
+        saveLiner(liner, linerFilename, linerName)
     return liner
 
-    
-    
+def saveLiner(liner, linerFilename, linerName):
+    """
+    :param linerFilename: the liner is saved to this file for visualization in µChainWind
+    :param linerName: name of the liner written to the file
+    """
+    liner.saveToFile(linerFilename)
+    updateName(linerFilename, linerName, ['liner'])
+    copyAsJson(linerFilename, 'liner')
+    liner.loadFromFile(linerFilename)

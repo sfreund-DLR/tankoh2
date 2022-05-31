@@ -21,7 +21,7 @@ from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
 
-def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None, xApex = None, yApex = None):
+def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None, xApex = None, yApex = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
@@ -507,30 +507,30 @@ class DomeEllipsoid(AbstractDome):
 
 
         """
-        if nodeNumber in self._contourCache:
-            return self._contourCache[nodeNumber]
-        initAngles = np.pi /2 * np.arange(nodeNumber) / nodeNumber
-        a, b = self.halfAxes
-        arcPo = self._getPolarOpeningArcLenEllipse()
-        if self.aIsDomeLength:
-            arcStart = 0.
-            arcEnd = arcPo
-        else:
-            arcStart = self.getArcLength(np.pi/2)
-            arcEnd = arcPo
-        arcLengths = np.linspace(arcStart, arcEnd, nodeNumber)
-        res = optimize.root(
-            lambda angles: (a * special.ellipeinc(angles, self.eccentricitySq) - arcLengths),
-            initAngles)
-        phis = res.x
-        points = np.array([a * np.sin(phis), b * np.cos(phis)])
-        if not self.aIsDomeLength:
-            points = points[::-1,:]
+        if nodeNumber not in self._contourCache:
 
-        points[:, 0] = [0, self.rCyl] # due to numerical inaccuracy
-        points[1, -1] = self.rPolarOpening # due to numerical inaccuracy
-        self._contourCache[nodeNumber] = points
-        return points
+            initAngles = np.pi /2 * np.arange(nodeNumber) / nodeNumber
+            a, b = self.halfAxes
+            arcPo = self._getPolarOpeningArcLenEllipse()
+            if self.aIsDomeLength:
+                arcStart = 0.
+                arcEnd = arcPo
+            else:
+                arcStart = self.getArcLength(np.pi/2)
+                arcEnd = arcPo
+            arcLengths = np.linspace(arcStart, arcEnd, nodeNumber)
+            res = optimize.root(
+                lambda angles: (a * special.ellipeinc(angles, self.eccentricitySq) - arcLengths),
+                initAngles)
+            phis = res.x
+            points = np.array([a * np.sin(phis), b * np.cos(phis)])
+            if not self.aIsDomeLength:
+                points = points[::-1,:]
+
+            points[:, 0] = [0, self.rCyl] # due to numerical inaccuracy
+            points[1, -1] = self.rPolarOpening # due to numerical inaccuracy
+            self._contourCache[nodeNumber] = points
+        return self._contourCache[nodeNumber].copy()
 
     def plotContour(self):
         """creates a plot of the outer liner contour"""
