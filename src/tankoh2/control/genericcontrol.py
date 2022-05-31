@@ -145,8 +145,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
         lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
 
-        dc = DomeConical(rSmall, rLarge, lCone, lDome1, designArgs['polarOpeningRadius'], lRad, designArgs['xPosApex'] , designArgs['yPosApex'])
-            designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
+        dc = DomeConical(rSmall, rLarge, lCone, lDome1, designArgs['polarOpeningRadius'], lRad,
+                         designArgs['xPosApex'] , designArgs['yPosApex'])
+        designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
