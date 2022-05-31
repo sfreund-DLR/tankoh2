@@ -130,16 +130,16 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
 
-    if linerFilename and linerName:
-        saveLiner(liner, linerFilename, linerName)
-    return liner
+    polarOpeningRadius = dome.polarOpening
+    for fitting in [liner.getFitting(True), liner.getFitting(False)]:
+        fitting.r0 = polarOpeningRadius / 4
+        fitting.r1 = polarOpeningRadius
+        fitting.rD = 2 * polarOpeningRadius
 
-def saveLiner(liner, linerFilename, linerName):
-    """
-    :param linerFilename: the liner is saved to this file for visualization in µChainWind
-    :param linerName: name of the liner written to the file
-    """
-    liner.saveToFile(linerFilename)
-    updateName(linerFilename, linerName, ['liner'])
-    copyAsJson(linerFilename, 'liner')
-    liner.loadFromFile(linerFilename)
+    if linerFilename and linerName:
+        liner.saveToFile(linerFilename)
+        updateName(linerFilename, linerName, ['liner'])
+        copyAsJson(linerFilename, 'liner')
+        liner.loadFromFile(linerFilename)
+
+    return liner

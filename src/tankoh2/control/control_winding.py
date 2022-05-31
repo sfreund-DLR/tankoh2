@@ -100,10 +100,6 @@ def createDesign(**kwargs):
     # Create Liner
     # #########################################################################################
     liner = getLiner(dome, lcylinder, dome2=dome2, nodeNumber=nodeNumber)
-    fitting = liner.getFitting(False)
-    fitting.r0 = polarOpeningRadius / 4
-    fitting.r1 = polarOpeningRadius
-    fitting.rD = 2 * polarOpeningRadius
     saveLiner(liner, linerFilename, 'liner_'+tankname)
 
     # ###########################################
