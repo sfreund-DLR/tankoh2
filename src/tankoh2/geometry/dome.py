@@ -4,16 +4,12 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import special
 from scipy import optimize
-import getpass
 import mpl_toolkits.mplot3d.axes3d as axes3d
 
-import sys, os
+from tankoh2.service.utilities import importFreeCad
 
-basePath = f'C:\\Users\\{getpass.getuser()}\\AppData\\Local\\Programs\\FreeCAD 0.19\\'
+importFreeCad()
 
-freecadLibPaths = [basePath + 'lib', basePath + 'bin']
-sys.path.extend(freecadLibPaths)
-os.environ['PATH'] = ';'.join(freecadLibPaths + [os.environ['PATH']])
 
 import FreeCAD
 import Part
@@ -23,6 +19,7 @@ import Sketcher
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
+
 
 def getDome(polarOpening, cylinderRadius = None, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None, xApex = None, yApex = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
