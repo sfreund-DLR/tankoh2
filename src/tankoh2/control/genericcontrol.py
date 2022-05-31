@@ -117,7 +117,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             break # no conical structures for second dome
 
         # for conical domes, create the contour since µWind does not support is natively
-        if designArgs['domeType'] == 'conical':
+        if designArgs[f'{domeName}Type'] == 'conical':
             if not designArgs['alpha']:
                 raise Tankoh2Error('domeType == "conical" but "alpha" is not defined')
             if not designArgs['beta']:
@@ -137,17 +137,17 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             if not designArgs['yPosApex']:
                 raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
 
-        rLarge = designArgs['dLarge'] / 2
-        rSmall = rLarge - designArgs['alpha'] * rLarge
-        lDome1 = designArgs['delta1'] * rSmall
-        lDome2 = designArgs['delta2'] * rLarge
-        lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
-        lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
-        lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
+            rLarge = designArgs['dLarge'] / 2
+            rSmall = rLarge - designArgs['alpha'] * rLarge
+            lDome1 = designArgs['delta1'] * rSmall
+            lDome2 = designArgs['delta2'] * rLarge
+            lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
+            lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
+            lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
 
-        dc = DomeConical(rSmall, rLarge, lCone, lDome1, designArgs['polarOpeningRadius'], lRad,
-                         designArgs['xPosApex'] , designArgs['yPosApex'])
-        designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
+            dc = DomeConical(rSmall, rLarge, lCone, lDome1, designArgs['polarOpeningRadius'], lRad,
+                             designArgs['xPosApex'] , designArgs['yPosApex'])
+            designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
