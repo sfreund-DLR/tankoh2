@@ -116,28 +116,6 @@ def createDesign(**kwargs):
     vessel.setLiner(liner)
     vessel.setComposite(composite)
 
-    if 0:
-        from tankoh2.design.winding.winding import windLayer, windHoopLayer
-        angShifts = np.array([
-            (12.72038202799424, 0), (90, 35.94180392812206), (23.124005957067567, 0), (90, 33.46518505785303),
-            (14.297902386637837, 0), (14.32189665594325, 0), (13.667957693130539, 0), (90, 37.94368025883611),
-            (13.50092137527006, 0), (13.02563160830356, 0), (90, 37.713072256057366), (12.029427674482442, 0),
-            (29.059614964583034, 0), (90, 35.72851759988427), (90, 37.11035956801891),
-            (60.2965179108075, 0)
-        ])
-        angles = angShifts[:,0]
-        compositeArgs[0] = [helixLayerThickenss]*len(angles)
-        vessel.setComposite(getComposite(angles, *compositeArgs))
-
-        if 0:
-            for layerNumber, (angle, shift) in enumerate(angShifts):
-                if shift:
-                    windHoopLayer(vessel, layerNumber, shift)
-                else:
-                    windLayer(vessel, layerNumber, angle)
-        windLayer(vessel, 14, None, verbose)
-        vessel.saveToFile(os.path.join(runDir, 'vessel_before_error.vessel.json'))
-        windLayer(vessel, 15, 69.2965179108075, verbose)
     # #############################################################################
     # run winding simulation
     # #############################################################################
@@ -150,8 +128,8 @@ def createDesign(**kwargs):
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
-    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, designArgs['domeType'].lower(), dome.domeLength)
-    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcly / 2,
+    domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcyl / 2,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
@@ -195,11 +173,35 @@ def createDesign(**kwargs):
     return results
 
 
+def createWindErr(compositeArgs,helixLayerThickenss,vessel):
+    """this creates a wind error - will be investigated soon"""
+    from tankoh2.design.winding.winding import windLayer, windHoopLayer
+    angShifts = np.array([
+        (12.72038202799424, 0), (90, 35.94180392812206), (23.124005957067567, 0), (90, 33.46518505785303),
+        (14.297902386637837, 0), (14.32189665594325, 0), (13.667957693130539, 0), (90, 37.94368025883611),
+        (13.50092137527006, 0), (13.02563160830356, 0), (90, 37.713072256057366), (12.029427674482442, 0),
+        (29.059614964583034, 0), (90, 35.72851759988427), (90, 37.11035956801891),
+        (60.2965179108075, 0)
+    ])
+    angles = angShifts[:, 0]
+    compositeArgs[0] = [helixLayerThickenss] * len(angles)
+    vessel.setComposite(getComposite(angles, *compositeArgs))
+
+    if 0:
+        for layerNumber, (angle, shift) in enumerate(angShifts):
+            if shift:
+                windHoopLayer(vessel, layerNumber, shift)
+            else:
+                windLayer(vessel, layerNumber, angle)
+    windLayer(vessel, 14, None, verbose)
+    vessel.saveToFile(os.path.join(runDir, 'vessel_before_error.vessel.json'))
+    windLayer(vessel, 15, 69.2965179108075, verbose)
+
 
 if __name__ == '__main__':
-    if 1:
-        #params = parameters.defaultDesign.copy()
-        params = parameters.defaultUnsymmetricDesign.copy()
+    if 0:
+        params = parameters.defaultDesign.copy()
+        #params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignLh2
