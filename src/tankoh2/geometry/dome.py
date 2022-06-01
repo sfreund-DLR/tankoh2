@@ -5,6 +5,8 @@ import numpy as np
 from scipy import special
 from scipy import optimize
 import mpl_toolkits.mplot3d.axes3d as axes3d
+from scipy.integrate import quad
+import statistics
 
 from tankoh2.service.utilities import importFreeCad
 
@@ -20,8 +22,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
-
-def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, rConeSmall = None, rConeLarge = None, lCone = None, lRadius = None, xApex = None, yApex = None):
+def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, rSmall = None, lCone = None, lRad = None, xApex = None, yApex = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
@@ -51,7 +52,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
     if domeType == 'conical':
-        dome = DomeConical(rConeSmall, rConeLarge, lCone, lDomeHalfAxis, polarOpening, lRadius, xApex, yApex)
+        dome = DomeConical(cylinderRadius, polarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -173,8 +174,8 @@ class DomeGeneric(AbstractDome):
 class DomeConical(AbstractDome):
     """Calculcate ellipsoid contour with conical tank
 
-    :param rConeSmall: small radius of conical tank section
-    :param rConeLarge: large radius of conical tank section
+    :param rSmall: small radius of conical tank section
+    :param rCyl: large radius of conical tank section
     :param lCone: length of conical tank section
     :param lDomeHalfAxis: axial length of the ellipse (half axis)
     :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
@@ -199,24 +200,24 @@ class DomeConical(AbstractDome):
         |       rLarge
     """
 
-    def __init__(self, rSmall, rLarge, lCone, lDomeHalfAxis, rPolarOpening, lRadius, xApex, yApex):
+    def __init__(self, rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex):
         AbstractDome.__init__(self)
-        if rPolarOpening >= rSmall:
-            raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
-        if rSmall > rLarge:
-            raise Tankoh2Error('Small radius should not be larger than cylindrical radius')
-        if xApex > lCone:
-            raise Tankoh2Error('The position of the apex must be within the conical part')
+        # if rPolarOpening >= rSmall:
+        #     raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
+        # if rSmall > rCyl:
+        #     raise Tankoh2Error('Small radius should not be larger than cylindrical radius')
+        # if xApex > lCone:
+        #     raise Tankoh2Error('The position of the apex must be within the conical part')
         self._rSmall = rSmall
-        self._rLarge = rLarge
+        self._rCyl = rCyl
         self._lCone = lCone
         self._lDomeHalfAxis = lDomeHalfAxis
         self._rPolarOpening = rPolarOpening
-        self._lRadius = lRadius
+        self._lRad = lRad
         self._xApex = xApex
         self._yApex = yApex
 
-        self.halfAxes = (self.lDomeHalfAxis, self._rLarge) if self.lDomeHalfAxis > self._rSmall else (self._rSmall, self.lDomeHalfAxis)
+        #self.halfAxes = (self.lDomeHalfAxis, self._rCyl) if self.lDomeHalfAxis > self._rSmall else (self._rSmall, self.lDomeHalfAxis)
 
     @property
     def eccentricitySq(self):
@@ -229,8 +230,8 @@ class DomeConical(AbstractDome):
         return self._rPolarOpening
 
     @property
-    def rLarge(self):
-        return self._rLarge
+    def rCyl(self):
+        return self._rCyl
 
     @property
     def rSmall(self):
@@ -242,9 +243,9 @@ class DomeConical(AbstractDome):
 
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
-        return DomeConical(self.rLarge + thickness, self.rSmall + thickness,  self.lDomeHalfAxis + thickness, self.rPolarOpening)
+        return DomeConical(self._rCyl + thickness, self.rSmall + thickness, self.lDomeHalfAxis + thickness, self.rPolarOpening)
 
-    def getContour(self, nodeNumber = 1000):
+    def getGeometry(self):
 
         FreeCAD.newDocument('title')
         tank = FreeCAD.activeDocument()
@@ -255,143 +256,146 @@ class DomeConical(AbstractDome):
 
         if self._xApex == 0 or self._yApex == 0:
 
-            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, self._rLarge / 2, 0), FreeCAD.Vector(0, 0, 1), self._rLarge / 2), 1, 2), False)
-            sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(self._lRadius, self._rLarge, 0),FreeCAD.Vector(self._lRadius + self._lCone, self._rSmall, 0)), False)
-            sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(FreeCAD.Vector(self._lRadius + self._lCone, self._rSmall, 0), FreeCAD.Vector(self._lRadius + self._lCone + self._lDomeHalfAxis), FreeCAD.Vector(self._lRadius + self._lCone, 0, 0)), 0.5, 1.5),False)
+            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, self._rCyl / 2, 0), FreeCAD.Vector(0, 0, 1), self._rCyl / 2), 1, 2), False)
+            sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(self._lRad, self._rCyl, 0), FreeCAD.Vector(self._lRad + self._lCone, self._rSmall, 0)), False)
+            sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(FreeCAD.Vector(self._lRad + self._lCone, self._rSmall, 0), FreeCAD.Vector(self._lRad + self._lCone + self._lDomeHalfAxis), FreeCAD.Vector(self._lRad + self._lCone, 0, 0)), 0.5, 1.5), False)
             sketch.exposeInternalGeometry(2)
 
-            sketch.addConstraint(Sketcher.Constraint('Vertical',0,3,0,2))
-            sketch.addConstraint(Sketcher.Constraint('Vertical',3))
+            sketch.addConstraint(Sketcher.Constraint('Vertical', 0, 3, 0, 2))
+            sketch.addConstraint(Sketcher.Constraint('Vertical', 3))
 
-            sketch.addConstraint(Sketcher.Constraint('Tangent',0,1,1,1))
-            sketch.addConstraint(Sketcher.Constraint('Tangent',1,2,2,2))
+            sketch.addConstraint(Sketcher.Constraint('Tangent', 0, 1, 1, 1))
+            sketch.addConstraint(Sketcher.Constraint('Tangent', 1, 2, 2, 2))
 
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,2,0))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,1,self._lRadius))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,1,2,self._lRadius + self._lCone))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',2,3,4,2,self._lDomeHalfAxis))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 2, 0))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 1, self._lRad))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 1, 2, self._lRad + self._lCone))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', 2, 3, 4, 2, self._lDomeHalfAxis))
 
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',2,3,-1,1,0))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,0,2,self._rLarge))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,2,self._rSmall))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,2,1,self._rPolarOpening))
-
-            geometry = tank.ActiveObject.getPropertyByName('Geometry')
-
-            xRadius = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[2].EndPoint[0]))
-            yRadius = np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]
-
-            xCone = np.linspace(geometry[1].StartPoint[0], geometry[1].EndPoint[0], round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[2].EndPoint[0]))
-            yCone = ((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))
-
-            xDome = np.linspace(geometry[2].StartPoint[0], geometry[2].EndPoint[0], round(nodeNumber * (geometry[2].EndPoint[0] - geometry[2].StartPoint[0]) / geometry[2].EndPoint[0]))
-            yDome = np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)
-
-            x = np.concatenate([xRadius, xCone, xDome])
-            y = np.concatenate([yRadius, yCone, yDome])
-
-            # Radius
-
-            uRadius = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[2].EndPoint[0]))
-            vRadius = np.linspace(0, 2 * np.pi, round(nodeNumber * (geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[2].EndPoint[0]))
-            URadius, VRadius = np.meshgrid(uRadius, vRadius)
-
-            xCoorRadius = URadius
-            yCoorRadius = (np.sqrt(geometry[0].Radius ** 2 - (xCoorRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]) * np.cos(VRadius)
-            zCoorRadius = (np.sqrt(geometry[0].Radius ** 2 - (xCoorRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]) * np.sin(VRadius)
-
-            # Cone
-
-            uCone = np.linspace(geometry[1].StartPoint[0], geometry[1].EndPoint[0], round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[2].EndPoint[0]))
-            vCone = np.linspace(0, 2 * np.pi, round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[2].EndPoint[0]))
-            UCone, VCone = np.meshgrid(uCone, vCone)
-
-            xCoorCone = UCone
-            yCoorCone = (((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCoorCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))) * np.cos(VCone)
-            zCoorCone = (((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCoorCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))) * np.sin(VCone)
-
-            # Dome
-
-            uDome = np.linspace(geometry[2].StartPoint[0], geometry[2].EndPoint[0], round(nodeNumber * ((geometry[2].EndPoint[0] - geometry[2].StartPoint[0]) / geometry[2].EndPoint[0])))
-            vDome = np.linspace(0, 2 * np.pi, round(nodeNumber * ((geometry[2].EndPoint[0] - geometry[2].StartPoint[0]) / geometry[2].EndPoint[0])))
-            UDome, VDome = np.meshgrid(uDome, vDome)
-
-            xCoorDome = UDome
-            yCoorDome = ((np.sqrt((1 - ((xCoorDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2))) * np.cos(VDome)
-            zCoorDome = ((np.sqrt((1 - ((xCoorDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2))) * np.sin(VDome)
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', 2, 3, -1, 1, 0))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 0, 2, self._rCyl))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 1, 2, self._rSmall))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 2, 1, self._rPolarOpening))
 
         else:
 
-            rotAngle = np.arctan((((self._rSmall * self._lRadius + 2 * self._lCone * self._rLarge) / (2 * self._lCone + self._lRadius)) - self._rSmall) / self._lCone)
+            rotAngle = np.arctan((((self._rSmall * self._lRad + 2 * self._lCone * self._rCyl) / (2 * self._lCone + self._lRad)) - self._rSmall) / self._lCone)
             self._xApexRot = self._xApex * np.cos(rotAngle) - self._yApex * np.sin(rotAngle)
             self._yApexRot = self._xApex * np.sin(rotAngle) + self._yApex * np.cos(rotAngle)
 
-            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, self._rLarge / 2, 0), FreeCAD.Vector(0, 0, 1), self._rLarge / 2), 1.5, 2), False)
-            sketch.addGeometry(Part.ArcOfParabola(Part.Parabola(FreeCAD.Vector(self._lCone / 10, -self._lCone, 0), FreeCAD.Vector(self._lDomeHalfAxis + self._lCone / 2, 0.8 * self._rLarge, 0), FreeCAD.Vector(0, 0, 1)), -50, 50), False)
+            sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, self._rCyl / 2, 0), FreeCAD.Vector(0, 0, 1), self._rCyl / 2), 1.5, 2), False)
+            sketch.addGeometry(Part.ArcOfParabola(Part.Parabola(FreeCAD.Vector(self._lCone / 10, -self._lCone, 0), FreeCAD.Vector(self._lDomeHalfAxis + self._lCone / 2, 0.8 * self._rCyl, 0),  FreeCAD.Vector(0, 0, 1)), -50, 50), False)
             sketch.exposeInternalGeometry(1)
-            sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(FreeCAD.Vector(self._lRadius + self._lCone, self._rSmall, 0), FreeCAD.Vector(self._lRadius + self._lCone + self._lDomeHalfAxis), FreeCAD.Vector(self._lRadius + self._lCone, 0, 0)), 0.5, 1.5), False)
+            sketch.addGeometry(Part.ArcOfEllipse(Part.Ellipse(FreeCAD.Vector(self._lRad + self._lCone, self._rSmall, 0), FreeCAD.Vector(self._lRad + self._lCone + self._lDomeHalfAxis), FreeCAD.Vector(self._lRad + self._lCone, 0, 0)), 0.5, 1.5), False)
             sketch.exposeInternalGeometry(4)
 
-            sketch.addConstraint(Sketcher.Constraint('Vertical',0,2,0,3))
-            sketch.addConstraint(Sketcher.Constraint('Vertical',5))
+            sketch.addConstraint(Sketcher.Constraint('Vertical', 0, 2, 0, 3))
+            sketch.addConstraint(Sketcher.Constraint('Vertical', 5))
 
-            sketch.addConstraint(Sketcher.Constraint('Tangent',1,1,0,1))
-            sketch.addConstraint(Sketcher.Constraint('Tangent',4,2,1,2))
+            sketch.addConstraint(Sketcher.Constraint('Tangent', 1, 1, 0, 1))
+            sketch.addConstraint(Sketcher.Constraint('Tangent', 4, 2, 1, 2))
 
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,2,0))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,1,self._lRadius))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,1,2,self._lRadius + self._lCone))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',4,3,6,2,self._lDomeHalfAxis))
-            sketch.addConstraint(Sketcher.Constraint('DistanceX',1,3,1,2,self._xApexRot))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 2, 0))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 1, self._lRad))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 1, 2, self._lRad + self._lCone))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', 4, 3, 6, 2, self._lDomeHalfAxis))
+            sketch.addConstraint(Sketcher.Constraint('DistanceX', 1, 3, 1, 2, self._xApexRot))
 
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,4,3,0))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,0,2,self._rLarge))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,2,self._rSmall))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,4,1,self._rPolarOpening))
-            sketch.addConstraint(Sketcher.Constraint('DistanceY', 1,2,1,3,self._yApexRot))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 4, 3, 0))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 0, 2, self._rCyl))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 1, 2, self._rSmall))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 4, 1, self._rPolarOpening))
+            sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 2, 1, 3, self._yApexRot))
 
-            geometry = tank.ActiveObject.getPropertyByName('Geometry')
+        #App.getDocument('title').saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes")
+
+        geometry = sketch.getPropertyByName('Geometry')
+
+        return geometry
+
+    def getContourLength(self):
+
+        geometry = DomeConical.getGeometry(self)
+
+        radiusArcLength = np.arcsin(geometry[0].StartPoint[0] / geometry[0].Radius) * geometry[0].Radius
+        coneArcLength = np.sqrt((geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) ** 2 + (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) ** 2)
+
+        angle1 = np.arctan(geometry[2].EndPoint[1] / (geometry[2].EndPoint[0] - geometry[2].Center[0]))
+        angle2 = np.arctan(geometry[2].StartPoint[1] / (geometry[2].StartPoint[0] - geometry[2].Center[0]))
+        t = np.linspace(angle1, angle2, 100)
+        def fun(t):
+            return np.sqrt(geometry[2].MinorRadius ** 2 * np.cos(t) ** 2 + geometry[2].MajorRadius ** 2 * np.sin(t) ** 2)
+        domeArcLength = quad(fun, angle1, angle2)[0]
+
+        totalArcLength = radiusArcLength + coneArcLength + domeArcLength
+
+        return totalArcLength
+
+    def getContour(self, nodeNumber = 1000):
+
+        geometry = DomeConical.getGeometry(self)
+
+        if self._xApex == 0 or self._yApex == 0:
+
+            xRadius = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[2].EndPoint[0]))
+            rRadius = np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]
+
+            xCone = np.linspace(geometry[1].StartPoint[0], geometry[1].EndPoint[0], round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[2].EndPoint[0]))
+            rCone = ((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))
+
+            xDome = np.linspace(geometry[2].StartPoint[0], geometry[2].EndPoint[0], nodeNumber - round(nodeNumber * ((geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[2].EndPoint[0])) - round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[2].EndPoint[0]))
+            rDome = np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)
+
+            x = np.concatenate([xRadius, xCone, xDome])
+            r = np.concatenate([rRadius, rCone, rDome])
+
+        else:
 
             xRadius = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] - geometry[0].EndPoint[0]) / geometry[4].EndPoint[0]))
-            yRadius = np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]
+            rRadius = np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]
 
             xCone = np.linspace(geometry[1].StartPoint[0], geometry[1].EndPoint[0], round(nodeNumber * (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) / geometry[4].EndPoint[0]))
             a = np.array([[geometry[1].StartPoint[0] ** 2, geometry[1].StartPoint[0], 1], [geometry[1].EndPoint[0] ** 2, geometry[1].EndPoint[0], 1], [geometry[1].Center[0] ** 2, geometry[1].Center[0], 1]])
             b = np.array([geometry[1].StartPoint[1], geometry[1].EndPoint[1], geometry[1].Center[1]])
             parCoeff = np.linalg.solve(a, b)
-            yCone = parCoeff[0] * xCone ** 2 + parCoeff[1] * xCone + parCoeff[2]
+            rCone = parCoeff[0] * xCone ** 2 + parCoeff[1] * xCone + parCoeff[2]
 
             xDome = np.linspace(geometry[4].StartPoint[0], geometry[4].EndPoint[0], round(nodeNumber * (geometry[4].EndPoint[0] - geometry[4].StartPoint[0]) / geometry[4].EndPoint[0]))
-            yDome = np.sqrt((1 - ((xDome - geometry[4].Center[0]) ** 2 / geometry[4].MinorRadius ** 2)) * geometry[4].MajorRadius ** 2)
+            rDome = np.sqrt((1 - ((xDome - geometry[4].Center[0]) ** 2 / geometry[4].MinorRadius ** 2)) * geometry[4].MajorRadius ** 2)
 
-            x = np.concatenate([xRadius, xCone, xDome])
-            y = np.concatenate([yRadius, yCone, yDome])
+        x = np.concatenate([xRadius, xCone, xDome])
+        r = np.concatenate([rRadius, rCone, rDome])
 
-        points = np.array([x, y])
+        points = np.array([x, r])
+
         return points
 
-    def plotContour(self):
+    def getVolume(self):
+
+        geometry = DomeConical.getGeometry(self)
+
+        def rRadiusFun(xRadius):
+            return (np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]) ** 2
+
+        def rConeFun(xCone):
+            return (((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))) ** 2
+
+        def rDomeFun(xDome):
+            return (np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)) ** 2
+
+        volumeConicalDome = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDomeFun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0]) * 1e-9
+
+        return volumeConicalDome
+
+    def plotContour(self, show = True, label='contour', **mplKwargs):
         """creates a plot of the outer liner contour"""
         points = self.getContour()
-        plt.plot(points[0,:], points[1,:])
+        plt.plot(points[0, :], points[1, :], label=label, **mplKwargs)
         plt.grid(color='black', linestyle='-', linewidth=0.3)
         plt.gca().set_aspect('equal', adjustable='box')
-
-        # fig = plt.figure()
-        #
-        # ax1 = fig.add_subplot(121)
-        # ax1.plot(x, y)
-        # ax1.set_xlim(xmin=0)
-        # ax1.set_ylim(ymin=0)
-        # plt.gca().set_aspect('equal', adjustable='box')
-        # plt.grid(color='black', linestyle='-', linewidth=0.3)
-
-        # ax2 = fig.add_subplot(122, projection='3d')
-        # ax2.plot_surface(xCoorRadius, yCoorRadius, zCoorRadius, alpha=0.3, color='black', rstride=6, cstride=12)
-        # ax2.plot_surface(xCoorCone, yCoorCone, zCoorCone, alpha=0.3, color='black', rstride=6, cstride=12)
-        # ax2.plot_surface(xCoorDome, yCoorDome, zCoorDome, alpha=0.3, color='black', rstride=6, cstride=12)
-
-        plt.show()
+        if show:
+            plt.legend()
+            plt.show()
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -649,7 +653,17 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    dc = DomeConical(100, 200, 350, 100, 40, 100, 150, 10)
-    dc.plotContour()
+    # d1 = DomeConical(3500, 2000, 100, 0.4, 0.5, 0.5, 0.5, 0.5, 0, 0)
+    # d1.plotContour()
+
+    # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex
+
+    dc1 = DomeConical(1500, 50, 250, 500, 1500, 500, 0, 0)
+    dc1.plotContour(True, 'dome1', linestyle='-', color='blue')
+    dc1.getContourLength()
+    print(dc1.getContourLength())
+
+    #dc2 = DomeConical(1000, 2000, 2500, 500, 100, 500, 0, 0)
+    #dc2.plotContour(linestyle=':')
 
     pass

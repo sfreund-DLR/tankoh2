@@ -26,7 +26,7 @@ import tankoh2.design.existingdesigns
 
 
 def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcyl, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
@@ -68,13 +68,13 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     # #########################################################################################
     x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
-    dome = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+    dome = getDome(dcyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     dome2 = None
     if symmetricTank == False:
         x, r = getReducedDomePoints(dome2ContourFilename,
                                 dpoints, fileNameReducedDome2Contour)
-        dome2 = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+        dome2 = getDome(dcyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2=dome2)
     #buildFromDome(dome, cylinderLength, deltaSpline)
@@ -380,7 +380,7 @@ def main():
         
     tankname = 'NGT-BIT-2021-03-04'
     dataDir = os.path.join(programDir, 'data')
-    dcly = 422.  # mm
+    dcyl = 422.  # mm
     polarOpening = 23.  # mm
     lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
@@ -434,7 +434,7 @@ def main():
 
     if AsBuilt: 
         builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcyl, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
     if createDesign:    

@@ -154,11 +154,11 @@ def getLinerContour(designArgs):
     from tankoh2.geometry.liner import Liner
     domeType = designArgs['domeType'].lower()
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
-    dcly = designArgs['dcly']  # mm
+    dcyl = designArgs['dcyl']  # mm
     if 'lcyl' not in designArgs:
-        designArgs['lcyl'] = designArgs['lcylByR'] * dcly / 2
+        designArgs['lcyl'] = designArgs['lcylByR'] * dcyl / 2
     lcylinder = designArgs['lcyl']  # mm
-    dome = getDome(dcly / 2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
+    dome = getDome(dcyl / 2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcyl / 2)
     liner = Liner(dome, lcylinder)
     return liner.getContour()
 

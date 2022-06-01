@@ -46,14 +46,14 @@ def createDesign(**kwargs):
 
     # Geometry - generic
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
-    dcly = designArgs['dcly']  # mm
+    dcyl = designArgs['dcyl']  # mm
     if 'lcyl' not in designArgs:
-        designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
+        designArgs['lcyl'] = designArgs['lcylByR'] * dcyl/2
     lcylinder = designArgs['lcyl']  # mm
 
     # Geometry - domes
-    dome = getDome(dcly / 2., polarOpeningRadius, designArgs['domeType'], *designArgs['domeContour'])
-    dome2 = None if designArgs['dome2Type'] is None else getDome(dcly / 2., polarOpeningRadius,
+    dome = getDome(dcyl / 2., polarOpeningRadius, designArgs['domeType'], *designArgs['domeContour'])
+    dome2 = None if designArgs['dome2Type'] is None else getDome(dcyl / 2., polarOpeningRadius,
                                                                  designArgs['dome2Type'],
                                                                  *designArgs['dome2Contour'])
 
@@ -150,8 +150,8 @@ def createDesign(**kwargs):
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
-    domeTankoh = getDomeTankoh(dcly / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
-    dome2Tankoh = None if dome2 is None else getDomeTankoh(dcly / 2, polarOpeningRadius,
+    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, designArgs['domeType'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcly / 2,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
@@ -191,7 +191,7 @@ def createDesign(**kwargs):
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
-    
+
     return results
 
 
@@ -220,7 +220,7 @@ if __name__ == '__main__':
                                 burstPressure=.5,
                                 domeType = pychain.winding.DOME_TYPES.ISOTENSOID,
                                 lcyl=l,
-                                dcly=2400,
+                                dcyl=2400,
                                 #polarOpeningRadius=30.,
                                 )
             rs.append(r)

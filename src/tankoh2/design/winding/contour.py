@@ -121,7 +121,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     else:
         contourLength = length / 2 + domeContourLength(dome)  # use half model (one dome, half cylinder)
         nodeNumber //= 2
-    deltaLengthSpline = contourLength / nodeNumber
+    deltaLengthSpline = contourLength / nodeNumber  # just use half side
 
     if dome2 is not None:
         log.info("Create unsymmetric vessel")
@@ -129,17 +129,14 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     else:
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
-
-    polarOpeningRadius = dome.polarOpening
-    for fitting in [liner.getFitting(True), liner.getFitting(False)]:
-        fitting.r0 = polarOpeningRadius / 4
-        fitting.r1 = polarOpeningRadius
-        fitting.rD = 2 * polarOpeningRadius
-
-    if linerFilename and linerName:
+    
+    if linerFilename:
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
-        copyAsJson(linerFilename, 'liner')
+        copyAsJson(linerFilename, 'liner')      
         liner.loadFromFile(linerFilename)
-
+        
     return liner
+
+    
+    

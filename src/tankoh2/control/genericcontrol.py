@@ -51,7 +51,6 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
     log.info('Inputs, Outputs:\n'+ outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
 
-
 def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     """Parse keyworded arguments, add missing parameters with defaults and return a new dict.
 
@@ -109,7 +108,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             if not designArgs[f'{domeName}LengthByR']:
                 raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
 
-            r = designArgs['dcly'] / 2
+            r = designArgs['dcyl'] / 2
             de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
             designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
 
@@ -130,23 +129,22 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                 raise Tankoh2Error('domeType == "conical" but "delta2" is not defined')
             if not designArgs['lTotal']:
                 raise Tankoh2Error('domeType == "conical" but "lTotal" is not defined')
-            if not designArgs['dLarge']:
+            if not designArgs['dCyl']:
                 raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
             if not designArgs['xPosApex']:
                 raise Tankoh2Error('domeType == "conical" but "xPosApex" is not defined')
             if not designArgs['yPosApex']:
                 raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
 
-            rLarge = designArgs['dLarge'] / 2
-            rSmall = rLarge - designArgs['alpha'] * rLarge
+            rCyl = designArgs['dcyl'] / 2
+            rSmall = rCyl - designArgs['alpha'] * rCyl
             lDome1 = designArgs['delta1'] * rSmall
-            lDome2 = designArgs['delta2'] * rLarge
+            lDome2 = designArgs['delta2'] * rCyl
             lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
             lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
             lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
 
-            dc = DomeConical(rSmall, rLarge, lCone, lDome1, designArgs['polarOpeningRadius'], lRad,
-                             designArgs['xPosApex'] , designArgs['yPosApex'])
+            dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'] , designArgs['yPosApex'])
             designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
@@ -172,11 +170,11 @@ def getBurstPressure(designArgs, length):
     - :math:`p_{hyd}` hydrostatic pressure according to CS 25.963 (d)
     - :math:`f_{ult}` ultimate load factor (safetyFactor in designArgs)
     """
-    dcly = designArgs['dcly']
+    dcyl = designArgs['dcyl']
     safetyFactor = designArgs['safetyFactor']
     pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
     valveReleaseFactor = designArgs['valveReleaseFactor']
     useHydrostaticPressure = designArgs['useHydrostaticPressure']
     tankLocation = designArgs['tankLocation']
-    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
+    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcyl) if useHydrostaticPressure else 0.
     return (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
