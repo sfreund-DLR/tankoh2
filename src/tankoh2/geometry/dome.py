@@ -22,7 +22,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
-def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, rSmall = None, lCone = None, lRad = None, xApex = None, yApex = None):
+def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, rSmall = None, lCone = None, lRad = None, xApex = None, yApex = None, lCyl = None, lDome2 = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
@@ -52,7 +52,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
     if domeType == 'conical':
-        dome = DomeConical(cylinderRadius, polarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex)
+        dome = DomeConical(cylinderRadius, polarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, lCyl, lDome2)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -194,7 +194,23 @@ class DomeConical(AbstractDome):
         |       rLarge
     """
 
-    def __init__(self, rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex):
+    # def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2, xApex, yApex):
+    #
+    #     AbstractDome.__init__(self)
+    #     self._rSmall = dCyl / 2 - alpha * dCyl / 2
+    #     self._rCyl = dCyl / 2
+    #     self._lDomeHalfAxis = delta1 * self._rSmall
+    #     self._lDome2 = delta2 * self._rCyl
+    #     self._rPolarOpening = rPolarOpening
+    #     self._lRad = beta * gamma * dCyl
+    #     self._lCone = beta * dCyl - self._lRad
+    #     self._volume = volume
+    #     self._xApex = xApex
+    #     self._yApex = yApex
+    #
+    #     self.halfAxes = (self._lDomeHalfAxis, self._rCyl) if self._lDomeHalfAxis > self._rSmall else (self._rSmall, self._lDomeHalfAxis)
+
+    def __init__(self, rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2):
         AbstractDome.__init__(self)
         # if rPolarOpening >= rSmall:
         #     raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
@@ -210,8 +226,10 @@ class DomeConical(AbstractDome):
         self._lRad = lRad
         self._xApex = xApex
         self._yApex = yApex
+        self._volume = volume
+        self._lDome2 = lDome2
 
-        #self.halfAxes = (self.lDomeHalfAxis, self._rCyl) if self.lDomeHalfAxis > self._rSmall else (self._rSmall, self.lDomeHalfAxis)
+        # self.halfAxes = (self.lDomeHalfAxis, self._rCyl) if self.lDomeHalfAxis > self._rSmall else (self._rSmall, self.lDomeHalfAxis)
 
     @property
     def eccentricitySq(self):
@@ -374,12 +392,20 @@ class DomeConical(AbstractDome):
         def rConeFun(xCone):
             return (((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))) ** 2
 
-        def rDomeFun(xDome):
+        def rDome1Fun(xDome):
             return (np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)) ** 2
 
-        volumeConicalDome = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDomeFun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0]) * 1e-9
+        xDome2 = np.linspace(0, np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), 1000)
 
-        return volumeConicalDome
+        def rDome2Fun(xDome2):
+            return np.sqrt((1 - ((xDome2 ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
+
+        volumeConicalAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0] + quad(rDome2Fun, 0 , self._lDome2)[0])
+
+        volumeCyl = self._volume * 1e9 - volumeConicalAndDomes
+        lCyl = volumeCyl / (np.pi * self._rCyl ** 2)
+
+        return lCyl
 
     def plotContour(self, show = True, label='contour', **mplKwargs):
         """creates a plot of the outer liner contour"""
@@ -647,15 +673,11 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    # d1 = DomeConical(3500, 2000, 100, 0.4, 0.5, 0.5, 0.5, 0.5, 0, 0)
-    # d1.plotContour()
-
-    # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex
-
-    dc1 = DomeConical(1500, 50, 250, 500, 1500, 500, 0, 0)
-    dc1.plotContour(True, 'dome1', linestyle='-', color='blue')
-    dc1.getContourLength()
-    print(dc1.getContourLength())
+    # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2
+    # dc1 = DomeConical(20, 3000, 50, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0)
+    # dc1.plotContour(True, 'dome1', linestyle='-')
+    # dc1.getContourLength()
+    # dc1.getVolume()
 
     #dc2 = DomeConical(1000, 2000, 2500, 500, 100, 500, 0, 0)
     #dc2.plotContour(linestyle=':')

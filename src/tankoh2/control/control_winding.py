@@ -155,8 +155,7 @@ def createDesign(**kwargs):
     duration = datetime.now() - startTime
 
     domeTankoh = getDomeTankoh(polarOpeningRadius, dcyl / 2, designArgs['domeType'].lower(), dome.domeLength)
-    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcyl / 2,
-                                                           designArgs['dome2Type'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcyl / 2, designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
         # compressed gas vessel
@@ -201,12 +200,12 @@ def createDesign(**kwargs):
 
 
 if __name__ == '__main__':
+    #if 1:
+        #params = parameters.defaultUnsymmetricDesign.copy()
+        #createDesign(**params)
     if 1:
-        params = parameters.defaultUnsymmetricDesign.copy()
-        createDesign(**params)
-    elif 1:
         #params = parameters.ttDesignLh2
-        params = parameters.conicalDesign
+        params = parameters.conicalTankDesign
         createDesign(**params.copy())
     elif 0:
         createDesign(pressure=5)

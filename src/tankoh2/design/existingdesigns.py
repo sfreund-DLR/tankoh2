@@ -292,13 +292,13 @@ tk_cgh2 = OrderedDict([
     ('verbose', False),
 ])
 
-conicalDesign = OrderedDict([
+conicalTankDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('lTotal', 5000),  # mm
-    ('dcyl', 2000),  # mm
-    ('polarOpeningRadius', 40),  # mm
+    ('volume', 25),  # mm
+    ('dcyl', 2500),  # mm
+    ('polarOpeningRadius', 100),  # mm
     ('alpha', 0.5),
-    ('beta', 0.5),
+    ('beta', 0.2),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),
     ('delta1', 0.5),
     ('delta2', 0.5),

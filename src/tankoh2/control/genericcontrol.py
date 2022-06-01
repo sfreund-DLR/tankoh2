@@ -127,9 +127,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                 raise Tankoh2Error('domeType == "conical" but "delta1" is not defined')
             if not designArgs['delta2']:
                 raise Tankoh2Error('domeType == "conical" but "delta2" is not defined')
-            if not designArgs['lTotal']:
-                raise Tankoh2Error('domeType == "conical" but "lTotal" is not defined')
-            if not designArgs['dCyl']:
+            if not designArgs['volume']:
+                raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
+            if not designArgs['dcyl']:
                 raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
             if not designArgs['xPosApex']:
                 raise Tankoh2Error('domeType == "conical" but "xPosApex" is not defined')
@@ -140,11 +140,10 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             rSmall = rCyl - designArgs['alpha'] * rCyl
             lDome1 = designArgs['delta1'] * rSmall
             lDome2 = designArgs['delta2'] * rCyl
-            lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
-            lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
-            lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
+            lRad = designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl']
+            lCone = designArgs['beta'] * designArgs['dcyl'] - lRad
 
-            dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'] , designArgs['yPosApex'])
+            dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'], designArgs['yPosApex'], designArgs['volume'], lDome2)
             designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
