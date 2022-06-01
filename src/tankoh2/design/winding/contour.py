@@ -88,7 +88,8 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None, lDome
     try:
         dome.buildDome(cylinderRadius, polarOpening, domeType)
     except IndexError as e:
-        log.error(f'Got an error with these parameters: {(cylinderRadius, polarOpening, domeType)}')
+        log.error(f'Got an error creating the dome with these parameters: '
+                  f'{(cylinderRadius, polarOpening, domeType)}')
         raise
 
     if x is not None and r is not None:
@@ -97,6 +98,8 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None, lDome
         if not np.allclose(r[-1], polarOpening):
             print(r[-1], polarOpening)
             raise Tankoh2Error('polarOpening and r-vector do not fit')
+        if len(r) != len(x):
+            raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
         dome.setPoints(x, r)
     return dome
 
@@ -123,7 +126,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     deltaLengthSpline = contourLength / nodeNumber  # just use half side
 
     if dome2 is not None:
-        log.info("Creat unsymmetric vessel")
+        log.info("Create unsymmetric vessel")
         liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
     else:
         log.info("Create symmetric vessel")

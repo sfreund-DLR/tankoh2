@@ -33,7 +33,7 @@ def getFatigueLifeAircraftTanks(material, sigMaxOperation, sigMinOperation,
     return getFatigueLife(material, sigMax, sigMin, occurences, Kt)
 
 
-def getFatigueLife(material, sigMax, sigMin, occurences, Kt=None, surfaceFac=1.):
+def getFatigueLife(material, sigMax, sigMin, occurences, Kt=None):
     """Assess fatigue life calculating the damage for each amplitude, use miner rule for damage accumulation
 
     A1 and A4 are corrected according to the given Kt value.
@@ -53,7 +53,6 @@ def getFatigueLife(material, sigMax, sigMin, occurences, Kt=None, surfaceFac=1.)
     :param occurences: list of occurences
     :param Kt: stress intensity factor
         Pilkey, Walter D.; Pilkey, Deborah F.; Peterson, Rudolph E.: Peterson's stress concentration factors
-    :param surfaceFac: surface factor for adjusting SN curves for other Kt than the measured one
     :return: accumulated damage factor. If this value is above 1, the structure is seen to be failed
     """
     A1, A2, A3, A4 = material['SN_parameters']
@@ -63,15 +62,15 @@ def getFatigueLife(material, sigMax, sigMin, occurences, Kt=None, surfaceFac=1.)
             log.warning(f'Scaling the measured SN curves from higher Kt {Kt_curve} to lower Kt {Kt} is not '
                         f'conservative. Please check if you can use SN-curves with a Kt smaller or equal'
                         f'than the requested Kt')
-        A1, A4 = correctSnParameters(A1, A2, A4, Kt_curve, Kt, surfaceFac)
+        A1, A4 = correctSnParameters(A1, A2, A4, Kt_curve, Kt)
 
     critCycles = getCyclesToFailure(sigMax, sigMin, A1, A2, A3, A4)
     return stressLifeMinerRule(occurences, critCycles)
 
 
-def correctSnParameters(A1, A2, A4, Kt_curve, Kt, surfaceFac):
-    A1 = A1 + A2 * np.log10(Kt / Kt_curve / surfaceFac)
-    A4 = (Kt_curve * surfaceFac) * A4 / Kt
+def correctSnParameters(A1, A2, A4, Kt_curve, Kt):
+    A1 = A1 + A2 * np.log10(Kt / Kt_curve)
+    A4 = Kt_curve * A4 / Kt
     return A1, A4
 
 

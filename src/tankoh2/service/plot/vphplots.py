@@ -27,7 +27,7 @@ def massPlot():
             columns=['Aluminium 6061', 'CFRP IFF circ', 'CFRP FF circ', 'CFRP IFF isotensoid', 'CFRP linerless', 'CFRP vaccuum'],
             index=['Liner', 'Shell', 'Insulation', '2nd shell']).T
         refSum = df.loc['CFRP IFF circ', :].sum()
-    else:
+    elif 1:
         df = pd.DataFrame([
             [0, 31, 31, 0],  # liner mass from thomas
             [435.445, 341.637493, 107.8643, 341.637493],
@@ -36,7 +36,20 @@ def massPlot():
             ],
             columns=['Aluminium 6061', 'CFRP circ', 'CFRP isotensoid', 'CFRP linerless'],
             index=['Liner', 'Inner shell', 'Insulation', 'Outer shell']).T
+        df = df.drop(index=['CFRP linerless'])
         refSum = df.loc['CFRP circ',:].sum()
+    else:
+        df = pd.DataFrame([
+            [0, 31, 31, 0, 31],  # liner mass from thomas
+            [435.445, 341.637493, 107.8643, 341.637493, 66.188744],
+            #[271+90] * 4,  # Mirco spheres + emergency insulation
+            #[400] * 4,
+            ],
+            columns=['Aluminium 6061', 'CFRP circ', 'CFRP isotensoid', 'CFRP linerless', 'CFRP fibre failure'],
+            index=['Liner', 'Shell', #'Insulation', 'Outer shell'
+                   ]).T
+        refSum = df.loc['CFRP circ',:].sum()
+
     df = df.round()
     yName = 'Mass [-]'
     if 1: # use relative values
@@ -55,7 +68,7 @@ def massPlot():
     indexes = np.arange(len(df.index))
     for colName in df:
         row = df[colName]
-        kwargs = {'hatch':'/'} if colName == df.columns[-1] else {}
+        kwargs = {'hatch':'/'} if colName == 'Outer shell' else {}
         if horizontal:
             bc = ax.barh(indexes, row, width, left=bottoms, label=colName, **kwargs)
         else:
@@ -172,7 +185,7 @@ def domeContourPlot():
 
 
 if __name__ == '__main__':
-    if 0:
+    if 1:
         massPlot()
     elif 0:
         fatiguePlot()

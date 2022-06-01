@@ -5,9 +5,9 @@ from datetime import datetime
 import numpy as np
 
 from tankoh2 import log, pychain, programDir
-from tankoh2.design.winding.designopt import designLayers
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
+from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
@@ -44,18 +44,20 @@ def createDesign(**kwargs):
     layersToWind = designArgs['maxlayers']
     relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
 
-    # Geometry
-    domeType = designArgs['domeType'].lower() # CIRCLE; ISOTENSOID
-    domeX, domeR = designArgs['domeContour'] # (x,r)
+    # Geometry - generic
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
     dcyl = designArgs['dCyl']  # mm
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * dcyl/2
     lcylinder = designArgs['lcyl']  # mm
-    dome = getDome(dcyl / 2., polarOpeningRadius, domeType, domeX, domeR)
-    domeLength = (designArgs['domeLengthByR'] * dcyl / 2) if 'domeLengthByR' in designArgs else None
-    domeTankoh = getDomeTankoh(polarOpeningRadius, dcyl / 2, domeType, domeLength)
-    length = lcylinder + 2 * dome.domeLength
+
+    # Geometry - domes
+    dome = getDome(dcyl / 2., polarOpeningRadius, designArgs['domeType'].lower(), *designArgs['domeContour'])
+    dome2 = None if designArgs['dome2Type'] is None else getDome(dcyl / 2., polarOpeningRadius,
+                                                                 designArgs['dome2Type'].lower(),
+                                                                 *designArgs['dome2Contour'])
+
+    length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
 
     # Design Args
     pressure = None
@@ -97,10 +99,11 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = getLiner(dome, lcylinder, linerFilename, tankname, nodeNumber=nodeNumber)
-    linerTankoh = Liner(domeTankoh, lcylinder)
+    liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2, nodeNumber=nodeNumber)
     fitting = liner.getFitting(False)
-    fitting.r3 = 40.
+    fitting.r0 = polarOpeningRadius / 4
+    fitting.r1 = polarOpeningRadius
+    fitting.rD = 2 * polarOpeningRadius
 
     # ###########################################
     # Create material
@@ -150,6 +153,11 @@ def createDesign(**kwargs):
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
+
+    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, designArgs['domeType'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcly / 2,
+                                                           designArgs['dome2Type'].lower(), dome.domeLength)
+    linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
         # compressed gas vessel
         auxMasses = [getLinerMass(linerTankoh), 0., 0.]
@@ -187,31 +195,19 @@ def createDesign(**kwargs):
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
-    
-    log.info('='*100)
-    log.info('Create frp winding design with these parameters: \n'+(indent(kwargs.items())))
-    log.info('='*100)
 
     return results
 
 
 
 if __name__ == '__main__':
-    if 0:
-        params = parameters.defaultDesign.copy()
-        params['domeType'] = 'ellipse'
-        params['domeLengthByR'] = 0.5
-        params['relRadiusHoopLayerEnd'] = 0.95
+    if 1:
+        params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignLh2
         params = parameters.conicalDesign
         createDesign(**params.copy())
-    elif 0:
-        createDesign(**parameters.ttDesignCh2)
-    elif 1:
-        params = parameters.NGTBITDesign_old.copy()
-        createDesign(**params)
     elif 0:
         createDesign(pressure=5)
     elif 1:

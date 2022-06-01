@@ -82,6 +82,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             designArgs.pop(arg)
     designArgs.update(inputKwArgs)
 
+    if designArgs['domeType'] != 'ellipse':
+        designArgs.pop('domeLengthByR')
+
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
@@ -97,52 +100,55 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                            f'"{frpOrMetal}" instead.')
 
     for key in removeKeys:
-        inputKwArgs.pop(key, None)
+        designArgs.pop(key, None)
 
     # for elliptical domes, create the contour since µWind does not support is natively
-    if designArgs['domeType'] == 'ellipse':
-        if not designArgs['domeLengthByR']:
-            raise Tankoh2Error('domeType == "ellipse" but "domeLengthByR" is not defined')
+    for domeName in ['dome', 'dome2']:
+        if designArgs[f'{domeName}Type'] == 'ellipse':
+            if not designArgs[f'{domeName}LengthByR']:
+                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
 
-        r = designArgs['dcly'] / 2
-        de = DomeEllipsoid(r, designArgs['domeLengthByR'] * r, designArgs['polarOpeningRadius'])
-        designArgs['domeContour'] = de.getContour(designArgs['nodeNumber'] // 2)
+            r = designArgs['dcly'] / 2
+            de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
+            designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
 
-    # for conical domes, create the contour since µWind does not support is natively
-    elif designArgs['domeType'] == 'conical':
-        if not designArgs['alpha']:
-            raise Tankoh2Error('domeType == "conical" but "alpha" is not defined')
-        if not designArgs['beta']:
-            raise Tankoh2Error('domeType == "conical" but "beta" is not defined')
-        if not designArgs['gamma']:
-            raise Tankoh2Error('domeType == "conical" but "gamma" is not defined')
-        if not designArgs['delta1']:
-            raise Tankoh2Error('domeType == "conical" but "delta1" is not defined')
-        if not designArgs['delta2']:
-            raise Tankoh2Error('domeType == "conical" but "delta2" is not defined')
-        if not designArgs['lTotal']:
-            raise Tankoh2Error('domeType == "conical" but "lTotal" is not defined')
-        if not designArgs['dCyl']:
-            raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
-        if not designArgs['xPosApex']:
-            raise Tankoh2Error('domeType == "conical" but "xPosApex" is not defined')
-        if not designArgs['yPosApex']:
-            raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
+        if domeName == 'dome2':
+            break # no conical structures for second dome
 
-        rCyl = designArgs['dCyl'] / 2
-        rSmall = rCyl - designArgs['alpha'] * rCyl
-        lDome1 = designArgs['delta1'] * rSmall
-        lDome2 = designArgs['delta2'] * rCyl
-        lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
-        lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
-        lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
+        # for conical domes, create the contour since µWind does not support is natively
+        if designArgs[f'{domeName}Type'] == 'conical':
+            if not designArgs['alpha']:
+                raise Tankoh2Error('domeType == "conical" but "alpha" is not defined')
+            if not designArgs['beta']:
+                raise Tankoh2Error('domeType == "conical" but "beta" is not defined')
+            if not designArgs['gamma']:
+                raise Tankoh2Error('domeType == "conical" but "gamma" is not defined')
+            if not designArgs['delta1']:
+                raise Tankoh2Error('domeType == "conical" but "delta1" is not defined')
+            if not designArgs['delta2']:
+                raise Tankoh2Error('domeType == "conical" but "delta2" is not defined')
+            if not designArgs['lTotal']:
+                raise Tankoh2Error('domeType == "conical" but "lTotal" is not defined')
+            if not designArgs['dCyl']:
+                raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
+            if not designArgs['xPosApex']:
+                raise Tankoh2Error('domeType == "conical" but "xPosApex" is not defined')
+            if not designArgs['yPosApex']:
+                raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
 
-        dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'] , designArgs['yPosApex'])
-        designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
+            rCyl = designArgs['dCyl'] / 2
+            rSmall = rCyl - designArgs['alpha'] * rCyl
+            lDome1 = designArgs['delta1'] * rSmall
+            lDome2 = designArgs['delta2'] * rCyl
+            lCyl = designArgs['beta'] * (designArgs['lTotal'] - lDome1 - lDome2)
+            lRad = designArgs['gamma'] * (designArgs['lTotal'] - lDome1 - lDome2 - lCyl)
+            lCone = designArgs['lTotal'] - lDome1 - lDome2 - lCyl - lRad
+
+            dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'] , designArgs['yPosApex'])
+            designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
-        # todo: pop verbose arg and remove verbose in subsequent functions, using log.debug instead
     designArgs.pop('help',None)
     return designArgs
 

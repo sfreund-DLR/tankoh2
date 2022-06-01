@@ -4,18 +4,14 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import special
 from scipy import optimize
-import getpass
 import mpl_toolkits.mplot3d.axes3d as axes3d
 from scipy.integrate import quad
 import statistics
 
-import sys, os
+from tankoh2.service.utilities import importFreeCad
 
-basePath = f'C:\\Users\\{getpass.getuser()}\\AppData\\Local\\Programs\\FreeCAD 0.19\\'
+importFreeCad()
 
-freecadLibPaths = [basePath + 'lib', basePath + 'bin']
-sys.path.extend(freecadLibPaths)
-os.environ['PATH'] = ';'.join(freecadLibPaths + [os.environ['PATH']])
 
 import FreeCAD
 import Part

@@ -42,7 +42,17 @@ def windHoopLayer(vessel, layerNumber, shift = 0, verbose = False):
     vessel.runWindingSimulation(layerNumber + 1)
 
 def windLayer(vessel, layerNumber, angle=None, verbose = False):
-    """wind up to the given layer(0-based count) and return polar opening angle"""
+    """wind up to the given layer and return polar opening angle
+
+
+    :param vessel: µWind vessel instance
+    :param layerNumber: number of the layer to wind (0-based indexed)
+    :param angle: angle of the layer to wind [°]. If no angle is given, the angle should be given in the
+        actual µWind design.
+    :param verbose: flag if more output should be given
+    :return: polar opening radius of the new layer [mm]
+    """
+
     if angle:
         vessel.setLayerAngle(layerNumber, angle)
     try:
@@ -64,22 +74,22 @@ def windLayer(vessel, layerNumber, angle=None, verbose = False):
     return vessel.getPolarOpeningR(layerNumber, True)
 
 def getPolarOpeningDiffHelical(friction, args):
-    vessel, wendekreisradius, layerindex, verbose = args
+    vessel, targetPolarOpeningR, layerindex, verbose = args
     vessel.setLayerFriction(layerindex, friction[0], True)
     try:
         vessel.runWindingSimulation(layerindex + 1)
-        wk = vessel.getPolarOpeningR(layerindex, True)
+        polarOpeningR = vessel.getPolarOpeningR(layerindex, True)
     except (IOError, ValueError, IOError, ZeroDivisionError):
         raise
         log.info('I have to pass')
 
     if verbose:
-        log.info(f"layer {layerindex}, friction {friction}, po actual {wk}, po target {wendekreisradius}, po diff {wk-wendekreisradius}")
+        log.info(f"layer {layerindex}, friction {friction}, po actual {polarOpeningR}, po target {targetPolarOpeningR}, po diff {polarOpeningR-targetPolarOpeningR}")
     # log.info('this helical layer shoud end at', wendekreisradius[layerindex], 'mm but is at', wk, 'mm so there is a
     # deviation of', wendekreisradius[layerindex]-wk, 'mm') if abs(wendekreisradius[layerindex]-wk) < 2.:
     # arr_fric.append(abs(friction)) arr_wk.append(wk)
 
-    return abs(wk - wendekreisradius)
+    return abs(polarOpeningR - targetPolarOpeningR)
 
 def getPolarOpeningDiffHelicalUsingLogFriction(friction, args):
         
