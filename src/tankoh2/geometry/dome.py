@@ -319,7 +319,7 @@ class DomeConical(AbstractDome):
             sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 4, 1, self._rPolarOpening))
             sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 2, 1, 3, self._yApexRot))
 
-        #App.getDocument('title').saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes")
+        FreeCAD.getDocument('title').saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/tank")
 
         geometry = sketch.getPropertyByName('Geometry')
 
@@ -382,7 +382,7 @@ class DomeConical(AbstractDome):
 
         return points
 
-    def getVolume(self):
+    def getCylLength(self):
 
         geometry = DomeConical.getGeometry(self)
 
@@ -402,8 +402,7 @@ class DomeConical(AbstractDome):
 
         volumeConicalAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0] + quad(rDome2Fun, 0 , self._lDome2)[0])
 
-        volumeCyl = self._volume * 1e9 - volumeConicalAndDomes
-        lCyl = volumeCyl / (np.pi * self._rCyl ** 2)
+        lCyl = (self._volume * 1e9 - volumeConicalAndDomes) / (np.pi * self._rCyl ** 2)
 
         return lCyl
 
@@ -674,10 +673,9 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2
-    # dc1 = DomeConical(20, 3000, 50, 0.5, 0.5, 0.5, 0.5, 0.5, 0, 0)
-    # dc1.plotContour(True, 'dome1', linestyle='-')
-    # dc1.getContourLength()
-    # dc1.getVolume()
+    dc1 = DomeConical(1500, 50, 500, 1000, 1000, 500, 0, 0, 20, 500)
+    dc1.plotContour(True, 'dome1', linestyle='-')
+    print(dc1.getCylLength())
 
     #dc2 = DomeConical(1000, 2000, 2500, 500, 100, 500, 0, 0)
     #dc2.plotContour(linestyle=':')

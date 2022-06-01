@@ -302,8 +302,8 @@ conicalTankDesign = OrderedDict([
     ('gamma', 0.5),
     ('delta1', 0.5),
     ('delta2', 0.5),
-    ('xPosApex', 100),  # mm
-    ('yPosApex', 0.5),  # mm
+    ('xPosApex', 0),  # mm
+    ('yPosApex', 0),  # mm
     ('domeType', 'conical'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),

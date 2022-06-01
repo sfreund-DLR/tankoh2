@@ -131,10 +131,6 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                 raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
             if not designArgs['dcyl']:
                 raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
-            if not designArgs['xPosApex']:
-                raise Tankoh2Error('domeType == "conical" but "xPosApex" is not defined')
-            if not designArgs['yPosApex']:
-                raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
 
             rCyl = designArgs['dcyl'] / 2
             rSmall = rCyl - designArgs['alpha'] * rCyl
