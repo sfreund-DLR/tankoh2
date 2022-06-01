@@ -35,14 +35,14 @@ def createDesign(**kwargs):
     domeType = designArgs['domeType'].lower()
     domeX, domeR = designArgs['domeContour']
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
-    dcly = designArgs['dcly']  # mm
+    dcyl = designArgs['dcyl']  # mm
     if 'lcyl' not in designArgs:
-        designArgs['lcyl'] = designArgs['lcylByR'] * dcly/2
+        designArgs['lcyl'] = designArgs['lcylByR'] * dcyl/2
     lcylinder = designArgs['lcyl']  # mm
     if domeX is not None and domeR is not None:
         dome = DomeGeneric(domeX, domeR)
     else:
-        dome = getDome(dcly/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
+        dome = getDome(dcyl/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcyl / 2)
     length = lcylinder + 2 * dome.domeLength
 
     # Pressure Args
@@ -63,8 +63,8 @@ def createDesign(**kwargs):
     # run calculate wall thickness
     # #############################################################################
     volume, area, linerLength = liner.volume / 1000 /1000, liner.area/100/100/100, liner.length
-    wallThickness = getMaxWallThickness(designPressure, burstPressure, material, dcly)
-    #wallThickness = getWallThickness(material, burstPressure, dcly / 1000) * 1000  # [mm]
+    wallThickness = getMaxWallThickness(designPressure, burstPressure, material, dcyl)
+    #wallThickness = getWallThickness(material, burstPressure, dcyl / 1000) * 1000  # [mm]
     wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
     massMetal = material['roh'] * wallVol / 1000  # [kg]
 
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         params['domeType'] = 'ellipse'
         params['polarOpeningRadius'] = 0
         params['domeLengthByR'] = 1
-        params['dcly'] = 2*r
+        params['dcyl'] = 2*r
         params['lcyl'] = h
         params['safetyFactor'] = 2.25
         params['pressure'] = .2

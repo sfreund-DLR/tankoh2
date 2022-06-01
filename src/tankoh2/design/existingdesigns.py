@@ -22,7 +22,7 @@ allArgs = pd.DataFrame(
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
         # Geometry_Cylinder
-        ['dcly', 'Geometry_Cylinder', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
+        ['dcyl', 'Geometry_Cylinder', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
         ['lcyl', 'Geometry_Cylinder', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
         ['lcylByR', 'Geometry_Cylinder', '', 2.5, float, 'only if lcyl is not given [-]', ''],
         # Geometry_Dome
@@ -108,7 +108,7 @@ hymodDesign = OrderedDict([
     ('burstPressure', 77.85),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dcly', 300.)
+    ('dcyl', 300.)
 ])
 
 
@@ -119,7 +119,7 @@ NGTBITDesign = OrderedDict([
     ('valveReleaseFactor', 1.),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dcly', 422.),
+    ('dcyl', 422.),
     ('lcyl', 500.),
     # design philosophy
     ('safetyFactor', 2.0),
@@ -152,7 +152,7 @@ NGTBITDesign_old = OrderedDict([
     # Geometry
     ('nodeNumber', 1000),
     ('polarOpeningRadius', 23),
-    ('dcly', 400.),
+    ('dcyl', 400.),
     ('lcyl', 500.),
 
     # design philosophy
@@ -176,7 +176,7 @@ NGTBITDesign_small = OrderedDict([
     ('pressure', 10),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dcly', 400.),
+    ('dcyl', 400.),
     ('lcyl', 290.),
     # design philosophy
     ('safetyFactor', 2.0),
@@ -197,7 +197,7 @@ NGTBITDesign_small = OrderedDict([
 vphDesign1 = OrderedDict([
     ('tankname', 'vph_design1_iff_sf2.25'),
     ('lcyl', 3218.8),
-    ('dcly', 1200.*2),
+    ('dcyl', 1200.*2),
     ('safetyFactor', 2.25),
     ('pressure', .2),  # pressure in MPa (bar / 10.)
     ('polarOpeningRadius', 120),
@@ -223,7 +223,7 @@ kautextDesign = OrderedDict([
                              #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
                              #('domeContour', (None, None)),  # (x,r)
                              ('polarOpeningRadius', 4.572604469),  # mm
-                             ('dcly', 260.),  # mm
+                             ('dcyl', 260.),  # mm
                              ('lcyl', 588.), #mm
                              #('lcylByR', 2.5),
 
@@ -248,7 +248,7 @@ kautextDesign = OrderedDict([
 ttDesignLh2 = OrderedDict([
     ('tankname', 'tt_lh2'),
     ('polarOpeningRadius', 40),  # mm
-    ('dcly', 223.862*2),  # mm
+    ('dcyl', 223.862*2),  # mm
     ('lcyl', 559.6572), #mm
     ('safetyFactor', 1.55),
     ('pressure', 0.25),  # pressure in MPa (bar / 10.)
@@ -260,7 +260,7 @@ ttDesignLh2 = OrderedDict([
 ttDesignCh2 = ttDesignLh2.copy()
 ttDesignCh2.update([
     ('tankname', 'tt_ch2'),
-    ('dcly', 269.66362*2),  # mm
+    ('dcyl', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
     ('maxlayers', 200),
@@ -270,7 +270,7 @@ atheat = OrderedDict([
     # Medium: Helium
     ('tankname', 'atheat_He'),
     ('polarOpeningRadius', 15),  # mm
-    ('dcly', 438 - 10),  # mm d_a - 2*t_estimate
+    ('dcyl', 438 - 10),  # mm d_a - 2*t_estimate
     ('lcyl', 21.156),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 35),  # pressure in MPa (bar / 10.)
@@ -282,7 +282,7 @@ atheat = OrderedDict([
 tk_cgh2 = OrderedDict([
     ('tankname', 'tkms_cgh2'),
     ('polarOpeningRadius', 50),  # mm
-    ('dcly', 590),  # mm d_a - 2*t_estimate
+    ('dcyl', 590),  # mm d_a - 2*t_estimate
     ('lcyl', 4500),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 70),  # pressure in MPa (bar / 10.)
@@ -295,7 +295,7 @@ tk_cgh2 = OrderedDict([
 conicalDesign = OrderedDict([
     ('tankname', 'conical_tank'),
     ('lTotal', 5000),  # mm
-    ('dCyl', 2000),  # mm
+    ('dcyl', 2000),  # mm
     ('polarOpeningRadius', 40),  # mm
     ('alpha', 0.5),
     ('beta', 0.5),
@@ -305,6 +305,7 @@ conicalDesign = OrderedDict([
     ('xPosApex', 100),  # mm
     ('yPosApex', 0.5),  # mm
     ('domeType', 'conical'),
+    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
 ])

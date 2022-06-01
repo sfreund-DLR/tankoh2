@@ -108,7 +108,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             if not designArgs[f'{domeName}LengthByR']:
                 raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
 
-            r = designArgs['dcly'] / 2
+            r = designArgs['dcyl'] / 2
             de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
             designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
 
@@ -136,7 +136,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             if not designArgs['yPosApex']:
                 raise Tankoh2Error('domeType == "conical" but "yPosApex" is not defined')
 
-            rCyl = designArgs['dCyl'] / 2
+            rCyl = designArgs['dcyl'] / 2
             rSmall = rCyl - designArgs['alpha'] * rCyl
             lDome1 = designArgs['delta1'] * rSmall
             lDome2 = designArgs['delta2'] * rCyl
@@ -170,11 +170,11 @@ def getBurstPressure(designArgs, length):
     - :math:`p_{hyd}` hydrostatic pressure according to CS 25.963 (d)
     - :math:`f_{ult}` ultimate load factor (safetyFactor in designArgs)
     """
-    dcly = designArgs['dcly']
+    dcyl = designArgs['dcyl']
     safetyFactor = designArgs['safetyFactor']
     pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
     valveReleaseFactor = designArgs['valveReleaseFactor']
     useHydrostaticPressure = designArgs['useHydrostaticPressure']
     tankLocation = designArgs['tankLocation']
-    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
+    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcyl) if useHydrostaticPressure else 0.
     return (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor
