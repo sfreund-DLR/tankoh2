@@ -1,9 +1,9 @@
 """Defines liner based on a cylindrical section and domes"""
 
 import numpy as np
-import scipy
 
 from tankoh2.service.plot.generic import plotContour
+from tankoh2.geometry.dome import flipContour
 
 
 class Liner():
@@ -67,8 +67,7 @@ class Liner():
         pointsDome = self.dome.getContour(nodeNumber)
 
         # switch dome points for left side visualization
-        pointsDome[:,:] = pointsDome[:, ::-1] # r
-        pointsDome[0, :] = self.dome.domeLength - pointsDome[0, :] # x
+        pointsDome = flipContour(*pointsDome)
         pointsLiner = np.array([np.linspace(0., self.lcyl/linerLenFac, nodeNumber, False) + self.dome.domeLength,
                                 [self.rCyl]*nodeNumber])[:,1:]
         points = np.append(pointsDome, pointsLiner, axis=1)

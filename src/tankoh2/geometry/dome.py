@@ -51,7 +51,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
     if domeType == 'conical':
-        dome = DomeConical(rConeSmall, rConeLarge, lCone, lDomeHalfAxis, rPolarOpening, lRadius, xApex, yApex)
+        dome = DomeConical(rConeSmall, rConeLarge, lCone, lDomeHalfAxis, polarOpening, lRadius, xApex, yApex)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -61,6 +61,12 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
         dome = DomeGeneric(x,r)
 
     return dome
+
+
+
+def flipContour(x,r):
+    """moves the given contour from left to right side and vice versa"""
+    return np.array([np.min(x) + np.max(x) - x[::-1], r[::-1]])
 
 class AbstractDome(metaclass=ABCMeta):
     """Abstract class defining domes"""

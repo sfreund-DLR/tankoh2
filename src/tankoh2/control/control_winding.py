@@ -9,7 +9,7 @@ from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
-from tankoh2.design.winding.contour import getLiner, getDome, saveLiner
+from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
@@ -99,8 +99,7 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = getLiner(dome, lcylinder, dome2=dome2, nodeNumber=nodeNumber)
-    saveLiner(liner, linerFilename, 'liner_'+tankname)
+    liner = getLiner(dome, lcylinder, linerFilename, 'liner_'+tankname, dome2=dome2, nodeNumber=nodeNumber)
 
     # ###########################################
     # Create material
@@ -145,14 +144,14 @@ def createDesign(**kwargs):
     vessel.saveToFile(vesselFilename)  # save vessel
     copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, polarOpeningRadius,
-                           puckProperties, burstPressure, runDir,
+                           puckProperties, burstPressure, dome2 is None, runDir,
                            composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd)
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
-    domeTankoh = getDomeTankoh(polarOpeningRadius, dcly / 2, designArgs['domeType'].lower(), dome.domeLength)
-    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcly / 2,
+    domeTankoh = getDomeTankoh(dcly / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(dcly / 2, polarOpeningRadius,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
@@ -199,6 +198,7 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 1:
+        #params = parameters.defaultDesign.copy()
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
