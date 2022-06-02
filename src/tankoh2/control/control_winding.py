@@ -205,7 +205,7 @@ if __name__ == '__main__':
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignLh2
-        params = parameters.conicalDesign
+        params = parameters.conicalTankDesign
         createDesign(**params.copy())
     elif 0:
         createDesign(pressure=5)

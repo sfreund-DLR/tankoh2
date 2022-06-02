@@ -143,6 +143,3 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         liner.loadFromFile(linerFilename)
         
     return liner
-
-    
-    
