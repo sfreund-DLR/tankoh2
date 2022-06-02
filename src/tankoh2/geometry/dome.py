@@ -253,6 +253,11 @@ class DomeConical(AbstractDome):
     def lDomeHalfAxis(self):
         return self._lDomeHalfAxis
 
+    @property
+    def volume(self):
+        """calc dome volume numerically by slices of circular conical frustums"""
+        return self.getVolume(self.getContour())
+
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
         return DomeConical(self._rCyl + thickness, self.rSmall + thickness, self.lDomeHalfAxis + thickness, self.rPolarOpening)
@@ -400,9 +405,9 @@ class DomeConical(AbstractDome):
         def rDome2Fun(xDome2):
             return np.sqrt((1 - ((xDome2 ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
 
-        volumeConicalAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0] + quad(rDome2Fun, 0 , self._lDome2)[0])
+        volumeConeAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], geometry[2].EndPoint[0])[0] + quad(rDome2Fun, 0 , self._lDome2)[0])
 
-        lCyl = (self._volume * 1e9 - volumeConicalAndDomes) / (np.pi * self._rCyl ** 2)
+        lCyl = (self._volume * 1e9 - volumeConeAndDomes) / (np.pi * self._rCyl ** 2)
 
         return lCyl
 
@@ -673,11 +678,8 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2
-    dc1 = DomeConical(1500, 50, 500, 1000, 1000, 500, 0, 0, 20, 500)
+    dc1 = DomeConical(1250.0, 100, 312.5, 625.0, 250.0, 250.0, 0, 0, 25, 625.0)
     dc1.plotContour(True, 'dome1', linestyle='-')
     print(dc1.getCylLength())
-
-    #dc2 = DomeConical(1000, 2000, 2500, 500, 100, 500, 0, 0)
-    #dc2.plotContour(linestyle=':')
 
     pass

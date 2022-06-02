@@ -294,7 +294,7 @@ tk_cgh2 = OrderedDict([
 
 conicalTankDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('volume', 25),  # mm
+    ('volume', 25),  # m^3
     ('dcyl', 2500),  # mm
     ('polarOpeningRadius', 100),  # mm
     ('alpha', 0.5),

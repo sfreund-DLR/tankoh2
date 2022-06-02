@@ -102,6 +102,8 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     for key in removeKeys:
         designArgs.pop(key, None)
 
+
+
     # for elliptical domes, create the contour since µWind does not support is natively
     for domeName in ['dome', 'dome2']:
         if designArgs[f'{domeName}Type'] == 'ellipse':
@@ -139,7 +141,10 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             lRad = designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl']
             lCone = designArgs['beta'] * designArgs['dcyl'] - lRad
 
+            print(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'], designArgs['yPosApex'], designArgs['volume'], lDome2)
+
             dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], lDome1, rSmall, lCone, lRad, designArgs['xPosApex'], designArgs['yPosApex'], designArgs['volume'], lDome2)
+            # designArgs[]
             designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
 
     if 'verbose' in designArgs and designArgs['verbose']:
