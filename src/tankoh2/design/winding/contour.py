@@ -130,7 +130,13 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
     
-    if linerFilename:
+    polarOpeningRadius = dome.polarOpening
+    for fitting in [liner.getFitting(True), liner.getFitting(False)]:
+        fitting.r0 = polarOpeningRadius / 4
+        fitting.r1 = polarOpeningRadius
+        fitting.rD = 2 * polarOpeningRadius
+
+    if linerFilename and linerName:
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
         copyAsJson(linerFilename, 'liner')      
