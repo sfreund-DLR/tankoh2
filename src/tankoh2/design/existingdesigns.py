@@ -96,9 +96,10 @@ defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
 defaultUnsymmetricDesign = defaultDesign.copy()
 defaultUnsymmetricDesign.update([
-    ('dome2Type', 'circle'), #defaultUnsymmetricDesign['domeType']),
+    ('dome2Type', 'ellipse'), #defaultUnsymmetricDesign['domeType']),
     ('dome2Contour', defaultUnsymmetricDesign['dome2Contour']),
-    ('dome2LengthByR', defaultUnsymmetricDesign['dome2LengthByR']),
+    ('dome2LengthByR', 1. #defaultUnsymmetricDesign['dome2LengthByR']
+     ),
     ])
 
 # hymod design

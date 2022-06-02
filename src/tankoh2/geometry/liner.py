@@ -1,9 +1,9 @@
 """Defines liner based on a cylindrical section and domes"""
 
 import numpy as np
-import scipy
 
 from tankoh2.service.plot.generic import plotContour
+from tankoh2.geometry.dome import flipContour
 
 
 class Liner():
@@ -12,9 +12,6 @@ class Liner():
     def __init__(self, dome, lcyl, dome2 = None):
         self.dome = dome
         self.lcyl = lcyl
-        if dome2:
-            # turn dome 2 to fit geometry
-            pass
         self.dome2 = dome2
 
     @property
@@ -29,7 +26,7 @@ class Liner():
     @property
     def volume(self):
         """calc volume of the liner"""
-        domeVolume = (self.dome.volume + self.dome2.volume) if self.dome2 else 2 * self.dome.volume
+        domeVolume = self.dome.volume + (self.dome2.volume if self.dome2 else self.dome.volume)
         return self._cylVolume + domeVolume
 
     def getLinerResizedByThickness(self, thickness):
@@ -50,29 +47,52 @@ class Liner():
     @property
     def length(self):
         """Returns the length of the dome, also considering the polar opening"""
-        domeLength = (self.dome.domeLength + self.dome2.domeLength) if self.dome2 else 2 * self.dome.domeLength
+        domeLength = self.dome.domeLength + (self.dome2.domeLength if self.dome2 else self.dome.domeLength)
         return self.lcyl + domeLength
 
     @property
     def area(self):
         """calc dome area numerically by slices of circular conical frustums"""
-        domeArea = (self.dome.area + self.dome2.area) if self.dome2 else 2 * self.dome.area
+        domeArea = self.dome.area + (self.dome2.area if self.dome2 else self.dome.area)
         return 2 *np.pi*self.rCyl*self.lcyl + domeArea
 
-    def getContour(self):
+    def getContour(self, nodeNumber = 250):
         """Return the countour of the liner
 
+        :param nodeNumber: number of nodes per section (dome, cylindrical part, dome2)
         :return: vectors x,r: starting at symmetry plane: r decreasing, x is increasing
         """
-        pointsDome = self.dome.getContour(20)
-        stepping = scipy.linalg.norm(pointsDome[:,0] - pointsDome[:,1], axis=0)
-        linerPointCount = int(self.lcyl / 2 // stepping)
-        pointsDome[0,:] += (pointsDome[0,0] + self.lcyl/2)  # move dome start to half liner length
-        pointsLiner = [np.linspace(0., self.lcyl/2, linerPointCount, False), [self.rCyl]*linerPointCount]
-        points = np.append(pointsLiner, pointsDome, axis=1)
+        symmetricLiner = self.dome2 is None
+        linerLenFac = 2 if symmetricLiner else 1 # only use half cylindrical length if liner is symmetric
+        pointsDome = self.dome.getContour(nodeNumber)
+
+        # switch dome points for left side visualization
+        pointsDome = flipContour(*pointsDome)
+        pointsLiner = np.array([np.linspace(0., self.lcyl/linerLenFac, nodeNumber, False) + self.dome.domeLength,
+                                [self.rCyl]*nodeNumber])[:,1:]
+        points = np.append(pointsDome, pointsLiner, axis=1)
+        if not symmetricLiner:
+            pointsDome2 = self.dome2.getContour(nodeNumber)
+            # move dome2 start to dome+liner length
+            pointsDome2[0,:] += (pointsDome2[0,0] + self.lcyl + self.dome.domeLength)
+            points = np.append(points, pointsDome2, axis=1)
         return points
 
-    def plotContour(self):
+    def plotContour(self, nodeNumber):
         """creates a plot of the outer liner contour"""
-        points = self.getContour()
+        points = self.getContour(nodeNumber)
         plotContour(True, '', points[0,:], points[1,:])
+
+
+if __name__ == '__main__':
+    from tankoh2.geometry.dome import DomeEllipsoid
+    dome = DomeEllipsoid(100, 50, 10)
+    dome2 = DomeEllipsoid(100, 100, 10)
+
+
+
+    liner = Liner(dome, 20, dome2)
+    liner.plotContour(100)
+
+
+

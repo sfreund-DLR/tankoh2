@@ -10,7 +10,7 @@ from tankoh2.design.winding.solver import getMaxPuckByShift, getPuck, getCritica
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getAngleAndPolarOpeningDiffByAngle, \
     getNegAngleAndPolarOpeningDiffByAngle
 from tankoh2.design.winding.windingutils import getLayerThicknesses
-from tankoh2.geometry.dome import AbstractDome
+from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses
 from tankoh2.service.utilities import getTimeString
@@ -85,6 +85,7 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
               f'hoop end contour coord {newDesignIndex}')
     return shift, funcVal, loopIt, newDesignIndex
 
+
 def _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoopLayerEnd):
     rMax = mandrel.getRArray()[0]
     dropHoopIndexStart = int(np.argmax((-mandrel.getRArray()+rMax)>rMax*1e-4) * 0.7)
@@ -95,8 +96,9 @@ def _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoop
     dropHelicalIndicies = range(0, hoopOrHelicalIndex)
     return hoopOrHelicalIndex, maxHoopShift, dropHoopIndicies, dropHelicalIndicies
 
-def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, runDir,
-                 composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd):
+
+def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, symmetricContour,
+                 runDir, composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd):
     """Perform design optimization layer by layer
 
     :param vessel: vessel instance of mywind
@@ -104,6 +106,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     :param polarOpeningRadius: min polar opening where fitting is attached [mm]
     :param puckProperties: puckProperties instance of mywind
     :param burstPressure: burst pressure [MPa]
+    :param symmetricContour: Flag if the contour is symmetric
     :param runDir: directory where to store results
     :param composite: composite instance of mywind
     :param compositeArgs: properties defining the composite:
@@ -116,10 +119,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
 
     Strategy:
 
-    #. Start with hoop layer
-    #. Second layer:
+    #. Start with helical layer:
         #. Maximize layer angle that still attaches to the fitting
         #. add layer with this angle
+    #. Add hoop layer
     #. Iteratively perform the following
     #. Get puck fibre failures
     #. Check if puck reserve factors are satisfied - if yes end iteration
@@ -151,14 +154,18 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     liner = vessel.getLiner()
     dome = liner.getDome1()
 
-    radiusDropThreshold = windLayer(vessel, layerNumber, maxHelicalAngle)
-    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
-    dropRadiusIndex = np.argmin(np.abs(mandrel.getRArray() - radiusDropThreshold))
-    elementCount = mandrel.getRArray().shape[0]-1
+    x,r = liner.getMandrel1().getXArray(), liner.getMandrel1().getRArray()
+    x,r = flipContour(x,r)
+    if not symmetricContour:
+        x = np.append(x, liner.getMandrel2().getXArray() + np.max(x))
+        r = np.append(r, liner.getMandrel2().getRArray())
+    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r)
+    elementCount = len(x)-1
+
     log.debug('Find minimal possible angle')
     minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), False,
                                    targetFunction=getAngleAndPolarOpeningDiffByAngle)
-    plotContour(False,  os.path.join(runDir, f'contour.png'), mandrel.getXArray(), mandrel.getRArray())
+    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
 
     indiciesAndShifts = _getHoopAndHelicalIndicies(mandrel, liner, dome, elementCount, relRadiusHoopLayerEnd)
     hoopOrHelicalIndex, maxHoopShift, dropHoopIndicies, dropHelicalIndicies = indiciesAndShifts

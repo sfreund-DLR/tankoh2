@@ -43,7 +43,10 @@ def createDesign(**kwargs):
         dome = DomeGeneric(domeX, domeR)
     else:
         dome = getDome(dcyl/2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcyl / 2)
-    length = lcylinder + 2 * dome.domeLength
+    dome2 = None if designArgs['dome2Type'] is None else getDome(polarOpeningRadius, dcyl / 2,
+                                                                designArgs['dome2Type'].lower(),
+                                                                dome.domeLength)
+    length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
 
     # Pressure Args
     if 'burstPressure' not in designArgs:
@@ -56,7 +59,7 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
-    liner = Liner(dome, lcylinder)
+    liner = Liner(dome, lcylinder, dome2)
 
 
     # #############################################################################

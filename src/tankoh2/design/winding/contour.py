@@ -55,8 +55,7 @@ def domeContourLength(dome):
     contourLength = np.sum(np.linalg.norm(contourDiffs, axis=1))
     return contourLength
 
-def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None, lDomeHalfAxis = None,
-            rSmall = None, lCone = None, lRad = None, xApex = None, yApex = None):
+def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     """creates a µWind dome
 
     :param cylinderRadius: radius of the cylinder
@@ -96,7 +95,6 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None, lDome
         if not np.allclose(r[0], cylinderRadius):
             raise Tankoh2Error('cylinderRadius and r-vector do not fit')
         if not np.allclose(r[-1], polarOpening):
-            print(r[-1], polarOpening)
             raise Tankoh2Error('polarOpening and r-vector do not fit')
         if len(r) != len(x):
             raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
