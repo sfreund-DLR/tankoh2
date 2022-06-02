@@ -49,6 +49,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
 
 
 def plotThicknesses(show, filename, thicknesses):
+    thicknesses = thicknesses.iloc[::-1,:].reset_index(drop=True)
     fig, axs = plt.subplots(1, 2, figsize=(17, 5))
     plotDataFrame(show, None, thicknesses, axes=axs[0], title='Layer thicknesses', yLabel='thickness [mm]',
                   xLabel='contour coordinate')
