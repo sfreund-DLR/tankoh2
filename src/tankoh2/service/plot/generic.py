@@ -4,7 +4,7 @@ from matplotlib import pylab as plt
 
 
 def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors=None, title=None,
-                  yLabel=None, xLabel='Contour coordinate', plotKwArgs = None):
+                  yLabel=None, xLabel=None, plotKwArgs = None):
     """plots puck properties
 
     :param show: show the plot created
@@ -20,10 +20,10 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         ax = axes
     if plotKwArgs is None:
         plotKwArgs = {}
-    dataframe.plot(ax=ax, **plotKwArgs)
+    dataframe.plot(ax=ax, legend=False, **plotKwArgs)
     legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'best'}
     ax.legend(**legendKwargs)
-    ax.set(xlabel=xLabel,
+    ax.set(xlabel='' if xLabel is None else xLabel,
            ylabel='' if yLabel is None else yLabel,
            title='' if title is None else title)
 
@@ -42,12 +42,33 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         plt.close(fig)
 
 
-def plotContour(show, filename, x, r):
-    fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-    df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
-    plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r')
+def plotContour(show, filename, x, r, ax = None, plotContourCoordinates = True, **mplKwargs):
+    """Plots the contour given by x and r coordinates
+
+    :param show: Flag if the plot shall be shown
+    :param filename: filename if the plot shall be saved
+    :param x: vector with x-coordinates
+    :param r: vector with r-coordinates
+    :param ax: matplotlib axes instance. If given, this instance will be used but only x by r plots are
+        generated. If not given, a axes will be created
+    :param plotContourCoordinates: flag if x and r should be plotted over the contour coordintes
+        (like stress, strain, puck values)
+    :param mplKwargs: arguments to matplotlib plots
+        (see https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.plot.html)
+    """
+    if ax:
+        plotContourCoordinates = False
+    else:
+        plotCount = 2 if plotContourCoordinates else 1
+        fig, axs = plt.subplots(1, plotCount, figsize=(17, 5))
+    if plotContourCoordinates:
+        df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
+        plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r', xLabel='Contour Coordinate',
+                      plotKwArgs= mplKwargs)
+    useAx = axs[-1] if ax is None else ax
     df = pd.DataFrame(np.array([r]).T, columns=['r'], index=pd.Index(x))
-    plotDataFrame(show, None, df, axes=axs[1], title='Contour', yLabel='r', xLabel='x')
+    plotDataFrame(show, None, df, axes=useAx, title='Contour', yLabel='r', xLabel='x', plotKwArgs= mplKwargs)
+    useAx.set_aspect('equal', adjustable='box')
 
     plt.axis('scaled')
 
@@ -55,4 +76,5 @@ def plotContour(show, filename, x, r):
         plt.savefig(filename)
     if show:
         plt.show()
-    plt.close(fig)
+    if not ax:
+        plt.close(fig)

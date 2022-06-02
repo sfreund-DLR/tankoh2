@@ -131,6 +131,14 @@ class AbstractDome(metaclass=ABCMeta):
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
 
+    def plotContour(self, nodeNumber = 100, ax = None, **mplKwargs):
+        """creates a plot of the outer liner contour. For more details see tankoh2..service.plot.generic"""
+        points = self.getContour(nodeNumber)
+        if ax:
+            plotContour(False, '', points[0,:], points[1,:], ax=ax, plotContourCoordinates=False, **mplKwargs)
+        else:
+            plotContour(True, '', points[0,:], points[1,:], **mplKwargs)
+
 class DomeGeneric(AbstractDome):
 
     def __init__(self, x, r):
@@ -572,11 +580,6 @@ class DomeEllipsoid(AbstractDome):
             self._contourCache[nodeNumber] = points
         return self._contourCache[nodeNumber].copy()
 
-    def plotContour(self):
-        """creates a plot of the outer liner contour"""
-        points = self.getContour(20)
-        plotContour(True, '', points[0,:], points[1,:])
-
 class DomeSphere(DomeEllipsoid):
     """Defines a spherical dome"""
 
@@ -683,9 +686,25 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
     from tankoh2.service.utilities import indent
 
-    # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2
-    dc1 = DomeConical(1250.0, 100, 312.5, 625.0, 250.0, 250.0, 0, 0, 25, 625.0)
-    dc1.plotContour(True, 'dome1', linestyle='-')
-    print(dc1.getCylLength())
+    if 0:
+        # rCyl, rPolarOpening, lDomeHalfAxis, rSmall, lCone, lRad, xApex, yApex, volume, lDome2
+        dc1 = DomeConical(1250.0, 100, 312.5, 625.0, 250.0, 250.0, 0, 0, 25, 625.0)
+        dc1.plotContour(True, 'dome1', linestyle='-')
+        print(dc1.getCylLength())
+    else:
+        fig, axs = plt.subplots(1, 2, figsize=(17, 5))
+        r = 1250
+        deltas = np.linspace(0.25,1,4,True)
+        #https://matplotlib.org/stable/gallery/lines_bars_and_markers/linestyles.html
+        linestyles = ["solid", "dashdot", "dashed", "dotted"]
+        for delta, linestyle in zip(deltas, linestyles):
+            dome = DomeEllipsoid(r, r*delta, r/10)
+            dome.plotContour(ax = axs[0], linestyle = linestyle, color='black', grid=True)
 
-    pass
+        rFactors = np.linspace(0.8,1.2,3,True)
+        for rFactor, linestyle in zip(rFactors, linestyles):
+            dome = DomeEllipsoid(rFactor*r, r*0.5, r/10)
+            dome.plotContour(ax = axs[1], linestyle = linestyle, color='black')
+
+
+        plt.show()
