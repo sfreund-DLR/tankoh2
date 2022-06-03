@@ -47,17 +47,8 @@ def createDesign(**kwargs):
     # Geometry - generic
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
     dcyl = designArgs['dcyl']  # mm
-    if 'lcyl' not in designArgs:
-        designArgs['lcyl'] = designArgs['lcylByR'] * dcyl/2
     lcylinder = designArgs['lcyl']  # mm
-
-    # Geometry - domes
-    dome = getDome(dcyl / 2., polarOpeningRadius, designArgs['domeType'], *designArgs['domeContour'])
-    dome2 = None if designArgs['dome2Type'] is None else getDome(dcyl / 2., polarOpeningRadius,
-                                                                 designArgs['dome2Type'],
-                                                                 *designArgs['dome2Contour'])
-
-    length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
+    length = designArgs['tankLength']
 
     # Design Args
     pressure = None
@@ -99,6 +90,12 @@ def createDesign(**kwargs):
     # #########################################################################################
     # Create Liner
     # #########################################################################################
+    # Geometry - domes
+    dome = getDome(dcyl / 2., polarOpeningRadius, designArgs['domeType'], *designArgs['domeContour'])
+    dome2 = None if designArgs['dome2Type'] is None else getDome(dcyl / 2., polarOpeningRadius,
+                                                                 designArgs['dome2Type'],
+                                                                 *designArgs['dome2Contour'])
+
     liner = getLiner(dome, lcylinder, linerFilename, 'liner_'+tankname, dome2=dome2, nodeNumber=nodeNumber)
 
     # ###########################################
