@@ -159,7 +159,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     if not symmetricContour:
         x = np.append(x, liner.getMandrel2().getXArray() + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray())
-    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r)
+    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r, 'Contour', '')
     elementCount = len(x)-1
 
     log.debug('Find minimal possible angle')
