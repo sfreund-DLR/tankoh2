@@ -26,7 +26,6 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=
     :param verbose: flag if more output should be given
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
-    from tankoh2.design.winding.designopt import maxHelicalAngle
     tol = 1e-2
     popt = minimize_scalar(targetFunction, method='bounded',
                            bounds=angleBounds,

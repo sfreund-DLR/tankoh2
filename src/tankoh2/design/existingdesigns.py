@@ -94,6 +94,16 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
+# design to make plots where the layers are visible in µWind
+plotDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
+plotDesign.update([
+    ('dcyl', plotDesign['dcyl']/1.5),
+    ('lcyl', plotDesign['lcyl']/2),
+    ('helixLayerThickenss', plotDesign['helixLayerThickenss']*2),
+    ('rovingWidth', plotDesign['rovingWidth']/1.5),
+    ('burstPressure', 42.),
+    ])
+
 defaultUnsymmetricDesign = defaultDesign.copy()
 defaultUnsymmetricDesign.update([
     ('dome2Type', 'ellipse'), #defaultUnsymmetricDesign['domeType']),

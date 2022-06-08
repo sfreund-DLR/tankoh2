@@ -8,8 +8,7 @@ from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
-from tankoh2.geometry.dome import DomeEllipsoid
-from tankoh2.geometry.dome import DomeConical
+from tankoh2.geometry.dome import DomeEllipsoid, DomeConical, getDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
@@ -77,18 +76,18 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                         ('tankLocation', 'burstPressure'),
                         ])
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
-    for arg in removeIfIncluded[:,1]:
-        if arg in designArgs:
-            designArgs.pop(arg)
+    for arg, supersedeArg in removeIfIncluded:
+        if arg in inputKwArgs and supersedeArg not in inputKwArgs:
+            designArgs.pop(supersedeArg)
     designArgs.update(inputKwArgs)
-
-    if designArgs['domeType'] != 'ellipse':
-        designArgs.pop('domeLengthByR')
 
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
             designArgs.pop(removeIt)
+
+    if designArgs['domeType'] != 'ellipse':
+        designArgs.pop('domeLengthByR')
 
     # remove frp-only arguments
     if frpOrMetal == 'metal':
@@ -103,49 +102,44 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs.pop(key, None)
 
 
+    for domeName in ['dome2', 'dome']:
+        if f'{domeName}Type' not in designArgs or designArgs[f'{domeName}Type'] is None:
+            # dome not given (especially for dome2)
+            designArgs[f'{domeName}'] = None
+            continue
 
-    # for elliptical domes, create the contour since µWind does not support is natively
-    for domeName in ['dome', 'dome2']:
+        domeType = designArgs[f'{domeName}Type']
+        r = designArgs['dcyl'] / 2
         if designArgs[f'{domeName}Type'] == 'ellipse':
             if not designArgs[f'{domeName}LengthByR']:
-                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
-
-            r = designArgs['dcyl'] / 2
-            de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
-            designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
-
-        if domeName == 'dome2':
-            break # no conical structures for second dome
-
-        # for conical domes, create the contour since µWind does not support is natively
+                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "{domeName}LengthByR" is not defined')
         if designArgs[f'{domeName}Type'] == 'conical':
-            if not designArgs['alpha']:
-                raise Tankoh2Error('domeType == "conical" but "alpha" is not defined')
-            if not designArgs['beta']:
-                raise Tankoh2Error('domeType == "conical" but "beta" is not defined')
-            if not designArgs['gamma']:
-                raise Tankoh2Error('domeType == "conical" but "gamma" is not defined')
-            if not designArgs['delta1']:
-                raise Tankoh2Error('domeType == "conical" but "delta1" is not defined')
-            if not designArgs['delta2']:
-                raise Tankoh2Error('domeType == "conical" but "delta2" is not defined')
+            params = ['alpha','beta' ,'gamma' ,'delta1' ,'delta2']
+            for param in params:
+                if not designArgs[param]:
+                    raise Tankoh2Error(f'domeType == "conical" but "{param}" is not defined')
             if not designArgs['volume']:
                 raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
 
-            rCyl = designArgs['dcyl'] / 2
-            rSmall = rCyl - designArgs['alpha'] * rCyl
-            lDome2 = designArgs['delta2'] * rCyl
-            lRad = designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl']
-            lCone = designArgs['beta'] * designArgs['dcyl'] - lRad
+        dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
+                       designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                       # TODO: include params for conical domes
+                       )
+        designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
+        designArgs[f'{domeName}'] = dome
 
-            dc = DomeConical(rCyl, designArgs['polarOpeningRadius'], designArgs['delta1'], rSmall, lCone, lRad, designArgs['xPosApex'], designArgs['yPosApex'], designArgs['volume'], lDome2, 'tank')
-            designArgs['lcyl'] = dc.getCylLength()
-            designArgs['domeContour'] = dc.getContour(designArgs['nodeNumber'])
+
+    if 'lcyl' not in designArgs:
+        designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+    dome, dome2 = designArgs['dome'], designArgs['dome2']
+    designArgs['tankLength'] = designArgs['lcyl'] + dome.domeLength + \
+                               (dome.domeLength if dome2 is None else dome2.domeLength)
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
     designArgs.pop('help',None)
     return designArgs
+
 
 def getBurstPressure(designArgs, length):
     """Calculate burst pressure

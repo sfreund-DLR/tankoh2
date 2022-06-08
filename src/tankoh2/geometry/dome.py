@@ -21,6 +21,28 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
+validDomeTypes = ['isotensoid', 'circle',  # also CAPITAL letters are allowed
+                  'ellipse', 'conical', # allowed by own implementation in tankoh2.geometry.contour
+                  1, 2,  # types from µWind
+                  ]
+
+def getDomeType(domeType):
+    """returns the usable dome tpye
+
+    :param domeType: dome type - one of validDomeTypes
+    :return:
+    """
+    if domeType is None:
+        domeType = 'isotensoid'
+    elif isinstance(domeType, str):
+        domeType = domeType.lower()
+    elif isinstance(domeType, int) and domeType in validDomeTypes:
+        domeType = {1:'isotensoid', 2:'circle'}[domeType]
+    else:
+        raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: {validDomeTypes}')
+    return domeType
+
+
 def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, delta1 = None, rSmall = None, lCone = None, lRad = None, xApex = None, yApex = None, lCyl = None, lDome2 = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
@@ -34,23 +56,19 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     :param lRadius: length of radius between conical and cylindrical section
     :param xApex: difference of the radius from conical to convex shape
     """
-    validDomeTypes = ['isotensoid', 'circle',
-                      'ellipse', 'conical', # allowed by own implementation in tankoh2.geometry.contour
-                      1, 2,  # types from µWind
-                      ]
-
-    if domeType is None:
-        domeType = 'isotensoid'
-    elif isinstance(domeType, str):
-        domeType = domeType.lower()
-    elif isinstance(domeType, int) and domeType in validDomeTypes:
-        domeType = {1:'isotensoid', 2:'circle'}[domeType]
-    else:
-        raise Tankoh2Error(f'wrong dome type "{domeType}". Valid dome types: {validDomeTypes}')
+    domeType = getDomeType(domeType)
     # build  dome
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
     if domeType == 'conical':
+
+        rCyl = designArgs['dcyl'] / 2
+        rSmall = rCyl - designArgs['alpha'] * rCyl
+        lDome1 = designArgs['delta1'] * rSmall
+        lDome2 = designArgs['delta2'] * rCyl
+        lRad = designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl']
+        lCone = designArgs['beta'] * designArgs['dcyl'] - lRad
+
         dome = DomeConical(cylinderRadius, polarOpening, delta1, rSmall, lCone, lRad, xApex, yApex, lCyl, lDome2, '')
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
@@ -128,16 +146,13 @@ class AbstractDome(metaclass=ABCMeta):
         :return: vectors x,r: r starts at cylinder radius decreasing, x is increasing
         """
 
-    def plotContour(self, nodeNumber = 500, ax = None, **mplKwargs):
+    def plotContour(self, nodeNumber = 100, ax = None, **mplKwargs):
         """creates a plot of the outer liner contour. For more details see tankoh2..service.plot.generic"""
-        if 0:
-            points = self.getContour(nodeNumber)
-        else:
-            points = self.getContourTank()
+        points = self.getContour(nodeNumber)
         if ax:
-            plotContour(False, '', points[0,:], points[1,:], plottitle, parameter, ax=ax, plotContourCoordinates=False, **mplKwargs)
+            plotContour(False, '', points[0,:], points[1,:], ax=ax, plotContourCoordinates=False, **mplKwargs)
         else:
-            plotContour(True, '', points[0,:], points[1,:], plottitle, parameter, **mplKwargs)
+            plotContour(True, '', points[0,:], points[1,:], **mplKwargs)
 
 class DomeGeneric(AbstractDome):
 
