@@ -246,7 +246,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     for layerNumber in range(layerNumber + 1, maxLayers):
         printLayer(layerNumber, verbose)
-        puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure, None, True)
+        puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
+                                           puckOnly=True, symmetricContour=symmetricContour)
         puck = puckFF if useFibreFailure else puckIFF
         elemIdxmax, layermax = getCriticalElementIdx(puck)
 
@@ -307,7 +308,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
 
 
     vessel.finishWinding()
-    results = getLinearResults(vessel, puckProperties, burstPressure)
+    results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     if show or save:
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
                           *results)
