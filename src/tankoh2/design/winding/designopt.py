@@ -6,8 +6,7 @@ from tankoh2 import log
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.winding.material import getComposite
 from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.design.winding.solver import getMaxPuckByShift, getPuck, getCriticalElementIdx, \
-    getLinearResults
+from tankoh2.design.winding.solver import getMaxPuckByShift, getCriticalElementIdx, getLinearResults
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getAngleAndPolarOpeningDiffByAngle, \
     getNegAngleAndPolarOpeningDiffByAngle
 from tankoh2.design.winding.windingutils import getLayerThicknesses
@@ -46,7 +45,7 @@ def checkThickness(vessel, angle, bounds):
 
 
 def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                    polarOpeningRadius, useIndices, useFibreFailure, verbose):
+                    polarOpeningRadius, useIndices, useFibreFailure, verbose, symmetricContour):
     if verbose:
         log.info('Optimize helical layer')
     # get location of critical element
@@ -56,11 +55,11 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
     # minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), False,
     #                                targetFunction=getAngleAndPolarOpeningDiffByAngle)
     bounds = [minAngle, maxHelicalAngle]
-    log.info(f'bounds {bounds}')
 
     for tryIterations in range(20):
         angle, funcVal, loopIt = minimizeUtilization(vessel, layerNumber, bounds, useIndices, useFibreFailure,
-                                                     puckProperties, burstPressure, verbose=verbose)
+                                                     puckProperties, burstPressure, verbose=verbose,
+                                                     symmetricContour=symmetricContour)
         layerOk, bounds = checkThickness(vessel, angle, bounds)
         if layerOk:
             break
@@ -75,7 +74,7 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
 
 
 def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                 useIndices, useFibreFailure, maxHoopShift, verbose):
+                 useIndices, useFibreFailure, maxHoopShift, verbose, symmetricContour):
     """
 
     :param vessel: 
@@ -85,7 +84,8 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     :param useIndices: element indicies that should be used for strength evaluation
     :param useFibreFailure: 
     :param maxHoopShift: 
-    :param verbose: 
+    :param verbose:
+    :param symmetricContour: Flag if the contour is symmetric
     :return: 
     """
     if verbose:
@@ -93,7 +93,8 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     bounds = [0, maxHoopShift]
     shift, funcVal, loopIt = minimizeUtilization(vessel, layerNumber, bounds, useIndices, useFibreFailure,
                                                  puckProperties, burstPressure,
-                                                 targetFunction=getMaxPuckByShift, verbose=verbose)
+                                                 targetFunction=getMaxPuckByShift, verbose=verbose,
+                                                 symmetricContour=symmetricContour)
 
     mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
     r, l = mandrel.getRArray(), mandrel.getLArray()
@@ -142,8 +143,9 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
             # shift existing indices and include by mandrel 1 indices
             useHoopIndices += elementCount
             useHelicalIndices += elementCount
-            hoopIndices = flipXContour(hoopIndices)
-            helicalIndices = flipXContour(helicalIndices)
+            # twist indices
+            hoopIndices = elementCount - hoopIndices[::-1]
+            helicalIndices = elementCount - helicalIndices[::-1]
 
         useHoopIndices = np.append(hoopIndices, useHoopIndices)
         useHelicalIndices = np.append(helicalIndices, useHelicalIndices)
@@ -235,7 +237,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     # add hoop layer
     printLayer(layerNumber, verbose, '- initial hoop layer')
     resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                           useHoopIndices, useFibreFailure, maxHoopShift, verbose)
+                           useHoopIndices, useFibreFailure, maxHoopShift, verbose, symmetricContour)
     shift, funcVal, loopIt, newDesignIndex = resHoop
     windHoopLayer(vessel, layerNumber, shift)
     anglesShifts.append((90, shift))
@@ -273,9 +275,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
             optHoopRegion = elemIdxmax < cylinderEndIndex
         if optHoopRegion:
             resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                                   useHoopIndices, useFibreFailure, maxHoopShift, verbose)
+                                   useHoopIndices, useFibreFailure, maxHoopShift, verbose, symmetricContour)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                         polarOpeningRadius, useHoopIndices, useFibreFailure, verbose)
+                                         polarOpeningRadius, useHoopIndices, useFibreFailure, verbose,
+                                         symmetricContour)
             if resHoop[1] < resHelical[1] * hoopOrHelicalFac: #  puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift, funcVal, loopIt, newDesignIndex = resHoop
@@ -288,7 +291,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         else:
             angle, funcVal, loopIt, newDesignIndex = optimizeHelical(
                 vessel, layerNumber, puckProperties, burstPressure, polarOpeningRadius, useHelicalIndices,
-                useFibreFailure, verbose)
+                useFibreFailure, verbose, symmetricContour)
 
             anglesShifts.append((angle,0))
         iterations += loopIt

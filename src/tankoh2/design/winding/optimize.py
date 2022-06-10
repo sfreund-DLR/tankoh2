@@ -46,12 +46,14 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=
     return angle, funVal, iterations
 
 def minimizeUtilization(vessel, layerNumber, bounds, useIndices, useFibreFailure, puckProperties,
-                        burstPressure, targetFunction = getMaxPuckByAngle, verbose=False):
+                        burstPressure, targetFunction = getMaxPuckByAngle, verbose=False,
+                        symmetricContour=True):
     """Minimizes puck fibre failure criterion in a certain region of angles
 
     """
     tol = 1e-2
-    args = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, verbose]
+    args = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, verbose,
+            symmetricContour]
     if 0:
         popt = minimize_scalar(targetFunction, method='bounded',
                                bounds=bounds,  # bounds of the angle

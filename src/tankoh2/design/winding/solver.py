@@ -19,7 +19,7 @@ def getCriticalElementIdx(puck):
 
 def getMaxPuckByAngle(angle, args):
     """Returns the maximum puck fibre failure index after setting and winding the given angle"""
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose = args
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
     if angle is not None:
@@ -38,7 +38,7 @@ def getMaxPuckByShift(shift, args):
     """Returns the maximum puck fibre failure index after setting and winding the given hoop layer shift"""
     if hasattr(shift, '__iter__'):
         shift = shift[0]
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose = args
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
     vessel.setHoopLayerShift(layerNumber, shift, True)
     actualPolarOpening = windLayer(vessel, layerNumber, verbose=verbose)
     if actualPolarOpening is np.inf:
@@ -52,15 +52,16 @@ def getMaxPuckByShift(shift, args):
 
 def _getMaxPuck(args):
     """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, verbose = args
+    vessel, _, puckProperties, burstPressure, useIndices, useFibreFailure, _, symmetricContour = args
     index = 0 if useFibreFailure else 1
     maxPerElement = getLinearResults(
-        vessel, puckProperties, burstPressure, useIndices, True)[index].max(axis=1)
+        vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index].max(axis=1)
     maxIndex = maxPerElement.idxmax()
     maxPuck = maxPerElement.max()
     return maxPuck, maxIndex
 
-def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False):
+def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False,
+                     symmetricContour=True):
     """Calculates puck results and returns them as dataframe
 
     :param vessel: µWind vessel instance
@@ -71,10 +72,15 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     """
     puck = pychain.failure.PuckFailureCriteria2D()
     puck.setPuckProperties(puckProperties)
-    shellModel = _getLinearResults(vessel, burstPressure)
+    shellModel, shellModel2 = _getShellModels(vessel, burstPressure, symmetricContour)
 
     # get stresses in the fiber COS (elemNr, layerNr)
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
+    if not symmetricContour:
+        stressesMandrel2 = shellModel.calculateLayerStressesBottom()
+        S11 = np.append(S11[::-1], stressesMandrel2[0], axis=0)
+        S22 = np.append(S22[::-1], stressesMandrel2[0], axis=0)
+        S12 = np.append(S12[::-1], stressesMandrel2[0], axis=0)
     numberOfElements, numberOfLayers = S11.shape
     stresses = np.zeros((numberOfElements,numberOfLayers, 6))
     stresses[:, :, 0] = S11
@@ -113,20 +119,25 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     epsAxialTop = shellModel.getEpsAxialTop(0)
     epsCircBot = shellModel.getEpsCircBottom(0)
     epsCircTop = shellModel.getEpsCircTop(0)
+    if not symmetricContour:
+        epsAxialBot = np.append(epsAxialBot[::-1], shellModel.getEpsAxialBottom(0))
+        epsAxialTop = np.append(epsAxialTop[::-1], shellModel.getEpsAxialTop(0))
+        epsCircBot = np.append(epsCircBot[::-1], shellModel.getEpsCircBottom(0))
+        epsCircTop = np.append(epsCircTop[::-1], shellModel.getEpsCircTop(0))
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
 
 
-def _getLinearResults(vessel, burstPressure):
+def _getShellModels(vessel, burstPressure, symmetricContour):
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
-    try:
-        shellModel = converter.buildAxShellModell(vessel, burstPressure)  # pressure in MPa (bar / 10.)
-    except: # catch Boost.Python.ArgumentError
-        # v >= 0.95
-        shellModel = converter.buildAxShellModell(vessel, burstPressure, True)  # pressure in MPa (bar / 10.)
+    shellModel = converter.buildAxShellModell(vessel, burstPressure, True)  # pressure in MPa (bar / 10.)
+    shellModel2 = None if symmetricContour else converter.buildAxShellModell(vessel, burstPressure, False)
 
     # run linear solver
     linerSolver = pychain.mycrofem.LinearSolver(shellModel)
     linerSolver.run(True)
-    return shellModel
+    if not symmetricContour:
+        linerSolver = pychain.mycrofem.LinearSolver(shellModel2)
+        linerSolver.run(True)
+    return shellModel, shellModel2
 

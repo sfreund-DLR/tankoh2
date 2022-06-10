@@ -97,7 +97,6 @@ def createDesign(**kwargs):
                                                                  *designArgs['dome2Contour'])
 
     liner = getLiner(dome, lcylinder, linerFilename, 'liner_'+tankname, dome2=dome2, nodeNumber=nodeNumber)
-
     # ###########################################
     # Create material
     # ###########################################

@@ -13,7 +13,7 @@ if __name__ == '__main__':
     import tankoh2.design.existingdesigns as parameters
 
     params = parameters.defaultDesign.copy()
-    # params = parameters.defaultUnsymmetricDesign.copy()
+    params = parameters.defaultUnsymmetricDesign.copy()
 
     params['nodeNumber'] = 50
     createDesignWinding(**params.copy())
