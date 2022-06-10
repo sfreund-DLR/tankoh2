@@ -120,8 +120,6 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                     raise Tankoh2Error(f'domeType == "conical" but "{param}" is not defined')
             if not designArgs['volume']:
                 raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
-            if not designArgs['dcyl']:
-                raise Tankoh2Error('domeType == "conical" but "dLarge" is not defined')
 
         dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
                        designArgs.get(f'{domeName}LengthByR', 0.) * r,

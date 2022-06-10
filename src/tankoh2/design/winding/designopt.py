@@ -77,16 +77,16 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
                  useIndices, useFibreFailure, maxHoopShift, verbose, symmetricContour):
     """
 
-    :param vessel: 
-    :param layerNumber: 
-    :param puckProperties: 
-    :param burstPressure: 
+    :param vessel:
+    :param layerNumber:
+    :param puckProperties:
+    :param burstPressure:
     :param useIndices: element indicies that should be used for strength evaluation
-    :param useFibreFailure: 
-    :param maxHoopShift: 
+    :param useFibreFailure:
+    :param maxHoopShift:
     :param verbose:
     :param symmetricContour: Flag if the contour is symmetric
-    :return: 
+    :return:
     """
     if verbose:
         log.info('Optimize hoop layer')
@@ -117,7 +117,7 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
         - cylinderEndIndex: index which distinguishes between indicies of
             cylindrical and dome section (mandrel1)
         - maxHoopShift: maximal length of hoop shifts into dome section
-        - useHoopIndices: 
+        - useHoopIndices:
         - useHelicalIndices
     """
     liner = vessel.getLiner()
@@ -214,7 +214,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     if not symmetricContour:
         x = np.append(x, liner.getMandrel2().getXArray()[1:] + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray()[1:])
-    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r)
+    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r, 'Contour', '')
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
     cylinderEndIndex, maxHoopShift, useHoopIndices, useHelicalIndices = indiciesAndShifts
 

@@ -42,7 +42,7 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         plt.close(fig)
 
 
-def plotContour(show, filename, x, r, ax = None, plotContourCoordinates = True, **mplKwargs):
+def plotContour(show, filename, x, r, title, parameter, ax = None, plotContourCoordinates = True, **mplKwargs):
     """Plots the contour given by x and r coordinates
 
     :param show: Flag if the plot shall be shown
@@ -63,11 +63,11 @@ def plotContour(show, filename, x, r, ax = None, plotContourCoordinates = True, 
         fig, axs = plt.subplots(1, plotCount, figsize=(17, 5))
     if plotContourCoordinates:
         df = pd.DataFrame(np.array([x,r]).T, columns=['x','r'])
-        plotDataFrame(show, None, df, axes=axs[0], title='Contour', yLabel='x,r', xLabel='Contour Coordinate',
+        plotDataFrame(show, None, df, axes=axs[0], title=title, yLabel='x,r', xLabel='Contour Coordinate',
                       plotKwArgs= mplKwargs)
     useAx = axs[-1] if ax is None else ax
-    df = pd.DataFrame(np.array([r]).T, columns=['r'], index=pd.Index(x))
-    plotDataFrame(show, None, df, axes=useAx, title='Contour', yLabel='r', xLabel='x', plotKwArgs= mplKwargs)
+    df = pd.DataFrame(np.array([r]).T, columns=[parameter], index=pd.Index(x))
+    plotDataFrame(show, None, df, axes=useAx, title=title, yLabel='r', xLabel='x', plotKwArgs= mplKwargs)
     useAx.set_aspect('equal', adjustable='box')
 
     plt.axis('scaled')
