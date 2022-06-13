@@ -72,9 +72,14 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
 
     return dome
 
+
+def flipXContour(x):
+    return np.min(x) + np.max(x) - x[::-1]
+
+
 def flipContour(x,r):
     """moves the given contour from left to right side and vice versa"""
-    return np.array([np.min(x) + np.max(x) - x[::-1], r[::-1]])
+    return np.array([flipXContour(x), r[::-1]])
 
 class AbstractDome(metaclass=ABCMeta):
     """Abstract class defining domes"""

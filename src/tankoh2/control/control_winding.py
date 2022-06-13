@@ -97,7 +97,6 @@ def createDesign(**kwargs):
                                                                  *designArgs['dome2Contour'])
 
     liner = getLiner(dome, lcylinder, linerFilename, 'liner_'+tankname, dome2=dome2, nodeNumber=nodeNumber)
-
     # ###########################################
     # Create material
     # ###########################################
@@ -126,7 +125,7 @@ def createDesign(**kwargs):
     duration = datetime.now() - startTime
 
     domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
-    dome2Tankoh = None if dome2 is None else getDomeTankoh(polarOpeningRadius, dcyl / 2,
+    dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:

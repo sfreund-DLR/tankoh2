@@ -51,7 +51,7 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
     :param startLength: length on mandrel where the shift should be applied
     :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
     :return: 4-tuple with scalar or vector entires depending on parameter "shift"
-        x-coordinate, radius, length, nearestElementIndicies
+        x-coordinate, radius, length, nearestElementIndices
 
     """
     targetLength = startLength + shift
