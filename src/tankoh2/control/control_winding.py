@@ -197,8 +197,8 @@ def createWindErr(compositeArgs,helixLayerThickenss,vessel):
 
 if __name__ == '__main__':
     if 0:
-        params = parameters.defaultDesign.copy()
-        #params = parameters.defaultUnsymmetricDesign.copy()
+        #params = parameters.defaultDesign.copy()
+        params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignLh2

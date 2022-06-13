@@ -305,17 +305,17 @@ tk_cgh2 = OrderedDict([
 
 conicalTankDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('volume', 50),  # m^3
+    ('volume', 35),  # m^3
     ('dcyl', 3000),  # mm
     ('polarOpeningRadius', 100),  # mm
     ('alpha', 0.5),
     ('beta', 0.8),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),
-    ('delta1', 0.5),
-    ('delta2', 0.8),
+    ('delta1', 0.8),
     ('xPosApex', 0),  # mm
     ('yPosApex', 0),  # mm
     ('domeType', 'conical'),
+    ('dome2Type', 'ellipse'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
