@@ -77,10 +77,24 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     # get stresses in the fiber COS (elemNr, layerNr)
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
     if not symmetricContour:
-        stressesMandrel2 = shellModel.calculateLayerStressesBottom()
+        stressesMandrel2 = shellModel2.calculateLayerStressesBottom()
+        if 1:
+            from tankoh2.service.utilities import indent
+            outarr=[]
+            liner = vessel.getLiner()
+            m1 = liner.getMandrel1()
+            m2 = liner.getMandrel2()
+            outarr += [m1.getXArray() - m2.getXArray(), m1.getRArray() - m2.getRArray()]
+            #print('liner mandrel diff\n', m1.getRArray()-m2.getRArray(), m1.getXArray()-m2.getXArray())
+            m1 = vessel.getOuterMandrel(1, True)
+            m2 = vessel.getOuterMandrel(1, False)
+            outarr += [ m1[:,0]-m2[:,0], m1[:,1]-m2[:,1]]
+            outarr = [['liner X', 'liner R', 'outer X', 'outer R']] + list(np.array(outarr).T)
+            print(indent(outarr))
+            print('stresses relative \n', S11/stressesMandrel2[0])
         S11 = np.append(S11[::-1], stressesMandrel2[0], axis=0)
-        S22 = np.append(S22[::-1], stressesMandrel2[0], axis=0)
-        S12 = np.append(S12[::-1], stressesMandrel2[0], axis=0)
+        S22 = np.append(S22[::-1], stressesMandrel2[1], axis=0)
+        S12 = np.append(S12[::-1], stressesMandrel2[2], axis=0)
     numberOfElements, numberOfLayers = S11.shape
     stresses = np.zeros((numberOfElements,numberOfLayers, 6))
     stresses[:, :, 0] = S11

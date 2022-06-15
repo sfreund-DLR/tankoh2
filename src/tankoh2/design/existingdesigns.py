@@ -110,6 +110,9 @@ defaultUnsymmetricDesign.update([
     ('dome2Contour', defaultUnsymmetricDesign['dome2Contour']),
     ('dome2LengthByR', 1. #defaultUnsymmetricDesign['dome2LengthByR']
      ),
+    ('domeType', 'ellipse'), #defaultUnsymmetricDesign['domeType']),
+    ('domeLengthByR', 1. #defaultUnsymmetricDesign['dome2LengthByR']
+     ),
     ])
 
 # hymod design
