@@ -210,8 +210,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     liner = vessel.getLiner()
 
     x,r = liner.getMandrel1().getXArray(), liner.getMandrel1().getRArray()
-    x,r = flipContour(x,r)
     if not symmetricContour:
+        x,r = flipContour(x,r)
         x = np.append(x, liner.getMandrel2().getXArray()[1:] + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray()[1:])
     plotContour(False,  os.path.join(runDir, f'contour.png'), x, r, 'Contour', '')

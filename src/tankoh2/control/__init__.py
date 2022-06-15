@@ -13,9 +13,10 @@ if __name__ == '__main__':
     import tankoh2.design.existingdesigns as parameters
 
     params = parameters.defaultDesign.copy()
-    params = parameters.defaultUnsymmetricDesign.copy()
+    #params = parameters.defaultUnsymmetricDesign.copy()
 
     params['nodeNumber'] = 50
+    params['burstPressure'] = 5
     createDesignWinding(**params.copy())
     runMetalCalc = False
     if runMetalCalc:
