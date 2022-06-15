@@ -6,47 +6,65 @@ from tankoh2.service.plot.generic import plotDataFrame
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
     fig, axs = plt.subplots(3, 3, figsize=(18,10))
     axs = iter(axs.T.flatten())
+    singleLegend = True
+
+    ax = next(axs)
+    ax.set_title('eps axial')
+    ax.plot(epsAxialBot, label='epsAxialBot')
+    ax.plot(epsAxialTop, label='epsAxialTop')
+    if not singleLegend:
+        ax.legend()
+
+    ax = next(axs)
+    ax.set_title('eps circ')
+    ax.plot(epsCircBot, label='epsCircBot')
+    ax.plot(epsCircTop, label='epsCircTop')
+    if singleLegend:
+        ax.legend(loc='upper left', bbox_to_anchor=(.05, -0.2))
+    else:
+        ax.legend()
+
+    ax = next(axs)
+    ax.remove()
 
     ax = next(axs)
     ax.set_title('S11')
     for layerIndex, stressLayer11 in enumerate(S11.T):
         ax.plot(stressLayer11, label=f'layer {layerIndex}')
+    if not singleLegend:
         ax.legend()
 
     ax = next(axs)
     ax.set_title('S22')
     for layerIndex, stressLayer22 in enumerate(S22.T):
         ax.plot(stressLayer22, label=f'layer {layerIndex}')
+    if not singleLegend:
         ax.legend()
 
     ax = next(axs)
     ax.set_title('S12')
     for layerIndex, stressLayer22 in enumerate(S12.T):
         ax.plot(stressLayer22, label=f'layer {layerIndex}')
+    if singleLegend:
+        ax.legend(loc='upper left', bbox_to_anchor=(1.1, 0.99))
+    else:
+        ax.legend()
+
+
+    ax = next(axs)
+    ax.set_title('puck fibre failure')
+    puckFF.plot(ax=ax, legend=False)
+    if not singleLegend:
         ax.legend()
 
     ax = next(axs)
-    ax.set_title('eps axial')
-    ax.plot(epsAxialBot, label='epsAxialBot')
-    ax.plot(epsAxialTop, label='epsAxialTop')
-    ax.legend()
-
-    ax = next(axs)
-    ax.set_title('eps circ')
-    ax.plot(epsCircBot, label='epsCircBot')
-    ax.plot(epsCircTop, label='epsCircTop')
-    ax.legend()
-
-    ax = next(axs)
-    ax = next(axs)
-    ax.set_title('puck fibre failure')
-    puckFF.plot(ax=ax)
-    ax.legend(loc='lower left')
-
-    ax = next(axs)
     ax.set_title('puck inter fibre failure')
-    puckIFF.plot(ax=ax)
-    ax.legend(loc='lower left')
+    puckIFF.plot(ax=ax, legend=False)
+    if not singleLegend:
+        ax.legend()
+
+    ax = next(axs)
+    ax.remove()
 
     if filename:
         plt.savefig(filename)

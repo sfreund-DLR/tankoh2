@@ -20,9 +20,13 @@ def plotDataFrame(show, filename, dataframe, axes=None, vlines=None, vlineColors
         ax = axes
     if plotKwArgs is None:
         plotKwArgs = {}
+    useLegend = plotKwArgs.get('legend', True)
+    if 'legend' in plotKwArgs:
+        plotKwArgs.pop('legend')
     dataframe.plot(ax=ax, legend=False, **plotKwArgs)
-    legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'best'}
-    ax.legend(**legendKwargs)
+    if useLegend:
+        legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if axes is None else {'loc':'best'}
+        ax.legend(**legendKwargs)
     ax.set(xlabel='' if xLabel is None else xLabel,
            ylabel='' if yLabel is None else yLabel,
            title='' if title is None else title)
@@ -67,6 +71,8 @@ def plotContour(show, filename, x, r, title, parameter, ax = None, plotContourCo
                       plotKwArgs= mplKwargs)
     useAx = axs[-1] if ax is None else ax
     df = pd.DataFrame(np.array([r]).T, columns=[parameter], index=pd.Index(x))
+    mplKwargs = mplKwargs.copy()
+    mplKwargs.update([('legend', False)])
     plotDataFrame(show, None, df, axes=useAx, title=title, yLabel='r', xLabel='x', plotKwArgs= mplKwargs)
     useAx.set_aspect('equal', adjustable='box')
 
