@@ -4,7 +4,7 @@ from tankoh2.service.plot.generic import plotDataFrame
 
 
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
-    fig, axs = plt.subplots(2, 3, figsize=(18,10))
+    fig, axs = plt.subplots(3, 3, figsize=(18,10))
     axs = iter(axs.T.flatten())
 
     ax = next(axs)
@@ -20,6 +20,12 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
         ax.legend()
 
     ax = next(axs)
+    ax.set_title('S12')
+    for layerIndex, stressLayer22 in enumerate(S12.T):
+        ax.plot(stressLayer22, label=f'layer {layerIndex}')
+        ax.legend()
+
+    ax = next(axs)
     ax.set_title('eps axial')
     ax.plot(epsAxialBot, label='epsAxialBot')
     ax.plot(epsAxialTop, label='epsAxialTop')
@@ -31,6 +37,7 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
     ax.plot(epsCircTop, label='epsCircTop')
     ax.legend()
 
+    ax = next(axs)
     ax = next(axs)
     ax.set_title('puck fibre failure')
     puckFF.plot(ax=ax)
