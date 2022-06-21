@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from matplotlib import pylab as plt
+import logging
 
 
 from tankoh2 import log
@@ -25,13 +25,19 @@ def printLayer(layerNumber, verbose = False, postfix = ''):
     log.info((sep if verbose else '') + f'\nLayer {layerNumber} {postfix}' + (sep if verbose else ''))
 
 
-def resetVesselAnglesShifts(anglesShifts, vessel):
+def windAnglesAndShifts(anglesShifts, vessel, compositeArgs):
+    layerNumber = len(anglesShifts)
+    hoopLayerThickness, helixLayerThickenss = compositeArgs[1:3]
+    angles = [a for a, _ in anglesShifts]
+    thicknesses = [helixLayerThickenss if angle < 90 else hoopLayerThickness for angle in angles]
+    composite = getComposite(angles, thicknesses, *compositeArgs[3:])
+    log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
+    vessel.setComposite(composite)
     for layerNumber, (angle, shift) in enumerate(anglesShifts):
-        if abs(angle-90) < 1e-2:
-            windHoopLayer(vessel,layerNumber, shift)
-        else:
-            windLayer(vessel, layerNumber, angle)
-
+        if angle>89:
+            vessel.setHoopLayerShift(layerNumber, shift, True)
+    vessel.finishWinding()
+    return composite
 
 def checkThickness(vessel, angle, bounds, symmetricContour):
     """when angle is close to fitting radius, sometimes the thickness of a layer is corrupt
@@ -159,8 +165,8 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
 
 
 def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, symmetricContour,
-                 runDir, composite, compositeArgs, verbose, verbosePlot,
-                 useFibreFailure, relRadiusHoopLayerEnd):
+                 runDir, compositeArgs, verbose, verbosePlot,
+                 useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts):
     """Perform design optimization layer by layer
 
     :param vessel: vessel instance of mywind
@@ -170,7 +176,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     :param burstPressure: burst pressure [MPa]
     :param symmetricContour: Flag if the contour is symmetric
     :param runDir: directory where to store results
-    :param composite: composite instance of mywind
     :param compositeArgs: properties defining the composite:
         thicknesses, hoopLayerThickness, helixLayerThickenss, material,
         sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
@@ -185,30 +190,30 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     #. Start with helical layer:
         #. Maximize layer angle that still attaches to the fitting
         #. add layer with this angle
-    #. Add hoop layer
+    #. If puck FF is used, add hoop layer
     #. Iteratively perform the following
-    #. Get puck fibre failures
-    #. Check if puck reserve factors are satisfied - if yes end iteration
-    #. Reduce relevant locations to
-        #. 1 element at cylindrical section and
-        #. every element between polar opening radii of 0 and of 70° angle layers
-    #. identify critical element
-    #. if critical element is in cylindrical section
-        #. add hoop layer
-        #. next iteration step
-    #. if most loaded element is in dome area:
-        #. Define Optimization bounds [minAngle, 70°] and puck result bounds
-        #. Minimize puck fibre failue:
-            #. Set angle
-            #. Use analytical linear solver
-            #. return max puck fibre failure
-        #. Apply optimal angle to actual layer
-        #. next iteration step
+        #. Get puck fibre failures
+        #. Check if puck reserve factors are satisfied - if yes end iteration
+        #. Reduce relevant locations to
+            #. 1 element at cylindrical section and
+            #. every element between polar opening radii of 0 and of 70° angle layers
+        #. identify critical element
+        #. if critical element is in cylindrical section
+            #. add hoop layer
+            #. next iteration step
+        #. if most loaded element is in dome area:
+            #. Define Optimization bounds [minAngle, 70°] and puck result bounds
+            #. Minimize puck fibre failue:
+                #. Set angle
+                #. Use analytical linear solver
+                #. return max puck fibre failure
+            #. Apply optimal angle to actual layer
+            #. next iteration step
+    #. postprocessing: plot stresses, strains, puck, thickness
     """
 
     vessel.resetWindingSimulation()
 
-    anglesShifts = []  # list of 2-tuple with angle and shift for each layer
     show = False
     save = True
     layerNumber = 0
@@ -231,20 +236,26 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     #minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), False,
     #                               targetFunction=getAngleAndPolarOpeningDiffByAngle)
     windLayer(vessel, layerNumber, maxHelicalAngle)
-    minAngle = vessel.estimateCylinderAngle(layerNumber, polarOpeningRadius)
 
 
-    # introduce layer up to the fitting. Optimize required angle
-    printLayer(layerNumber, verbose, '- initial helical layer')
-    windLayer(vessel, layerNumber, minAngle)
+    if initialAnglesAndShifts is not None and len(initialAnglesAndShifts) > 0:
+        # wind given angles
+        composite = windAnglesAndShifts(initialAnglesAndShifts, vessel, compositeArgs)
+        anglesShifts = initialAnglesAndShifts
+        layerNumber = len(anglesShifts) - 1
+    else:
+        # introduce layer up to the fitting. Optimize required angle
+        printLayer(layerNumber, verbose, '- initial helical layer')
+        minAngle = vessel.estimateCylinderAngle(layerNumber, polarOpeningRadius)
+        windLayer(vessel, layerNumber, minAngle)
+        anglesShifts = [(minAngle,0)]
+        composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
     #angle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (minAngle, maxHelicalAngle), False,
     #                            targetFunction=getNegAngleAndPolarOpeningDiffByAngle)
-    anglesShifts.append((minAngle,0))
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     for layerNumber in range(layerNumber + 1, maxLayers):
-        printLayer(layerNumber, verbose)
         puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
                                            puckOnly=True, symmetricContour=symmetricContour)
         puck = puckFF if useFibreFailure else puckIFF
@@ -262,10 +273,9 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
             break
 
         # add one layer
-        composite = getComposite([a for a,_ in anglesShifts]+[90], [compositeArgs[2]]*(layerNumber+1), *compositeArgs[1:])
+        printLayer(layerNumber, verbose)
         log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
-        vessel.setComposite(composite)
-        resetVesselAnglesShifts(anglesShifts, vessel)
+        composite = windAnglesAndShifts(anglesShifts + [(90, 0.)], vessel, compositeArgs)
 
         # check zone of highest puck values
         if layerNumber == 1 and useFibreFailure:
@@ -304,7 +314,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     else:
         log.warning('Reached max layers. You need to specify more initial layers')
 
-
     vessel.finishWinding()
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     if show or save:
@@ -315,6 +324,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         thicknesses.columns=columns
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
 
+    if log.level == logging.DEBUG:
+        # vessel.printSimulationStatus()
+        composite.info()
+
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
     frpMass = stats.overallFRPMass  # in [kg]
@@ -324,4 +337,4 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
     area *= 1e-6  # [m**2]
-    return frpMass, volume, area, composite, iterations, *(np.array(anglesShifts).T)
+    return frpMass, volume, area, iterations, *(np.array(anglesShifts).T)
