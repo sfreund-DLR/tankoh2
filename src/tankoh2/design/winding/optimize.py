@@ -7,12 +7,13 @@
 
 from scipy.optimize import minimize_scalar
 from scipy.optimize import differential_evolution
+import numpy as np
 
 from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
     getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.design.winding.solver import getMaxPuckByAngle
+from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckAndIndexByAngle, getMaxPuckAndIndexByShift
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=False,
@@ -45,35 +46,47 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=
     #r = angle / angle2
     return angle, funVal, iterations
 
-def minimizeUtilization(vessel, layerNumber, bounds, useIndices, useFibreFailure, puckProperties,
-                        burstPressure, targetFunction = getMaxPuckByAngle, verbose=False,
-                        symmetricContour=True):
+
+def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
     """Minimizes puck fibre failure criterion in a certain region of angles
+    :param bounds: iterable with 2 items: lower and upper bound
+    :param targetFunction: function to be used as target function
+    :param optArgs: list with these items: vessel, layerNumber, puckProperties, burstPressure, useIndices,
+        useFibreFailure, verbose, symmetricContour
+    :param verbosePlot: flag if the target function values should be calculated for plotting
+    :return:
 
     """
     tol = 1e-2
-    args = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, verbose,
-            symmetricContour]
-    if 0:
+    localOptimization = False
+    if localOptimization:
         popt = minimize_scalar(targetFunction, method='bounded',
                                bounds=bounds,  # bounds of the angle
-                               args=args,
+                               args=optArgs,
                                options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     else:
         popt = differential_evolution(targetFunction,
                                       bounds=(bounds,),
-                                      args=[args],
+                                      args=[optArgs],
                                       atol=tol*10)
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
     if hasattr(x, '__iter__'):
         x = x[0]
+    vessel, layerNumber = optArgs[:2]
     if targetFunction is getMaxPuckByAngle:
         windLayer(vessel, layerNumber, x)
     else:
         windHoopLayer(vessel, layerNumber, x)
-    return x, funVal, iterations
+    if verbosePlot:
+        tfX = np.linspace(*bounds,200)
+        targetFunction = getMaxPuckAndIndexByAngle if targetFunction is getMaxPuckByAngle else getMaxPuckAndIndexByShift
+        tfPlotVals = np.array([targetFunction(angleParam, optArgs) for angleParam in tfX]).T
+        tfPlotVals = np.append([tfX], tfPlotVals, axis=0)
+    else:
+        tfPlotVals = None
+    return x, funVal, iterations, tfPlotVals
 
 
 def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
