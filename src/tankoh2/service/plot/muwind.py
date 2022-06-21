@@ -1,6 +1,45 @@
-from matplotlib import pylab as plt
+"""plot functions for µWind specific values"""
 
-from tankoh2.service.plot.generic import plotDataFrame
+from matplotlib import pylab as plt
+import numpy as np
+import os
+
+
+from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
+
+
+def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, angleOrHoopShift, layerNumber, runDir,
+                          verbosePlot, useFibreFailure, show,
+                          elemIdxmax, hoopIndexEnd, newDesignIndex):
+    """"""
+    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
+    puck.index = puck.index + 0.5
+    yLabel = 'puck fibre failure' if useFibreFailure else 'puck inter fibre failure'
+    fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
+    if verbosePlot:
+        # create target function plot
+        xLabel = 'angle' if anglesShifts[-1][0] < 90 else 'hoop shift'
+        ax = axs[1]
+        ax.plot(tfValues[0], tfValues[1], label=yLabel)
+        # plot optimal angle or shift as vertical line
+        ax.plot([angleOrHoopShift] * 2, [0, 1.1 * np.max(tfValues[1])], linestyle='dashed', color='green')
+        ax.set_ylabel(yLabel)
+        ax.set_xlabel(xLabel)
+        ax2 = ax.twinx()  # plot on secondary axes
+        ax2.set_ylabel('Contour index of highest Puck value')
+        ax2.scatter(tfValues[0], tfValues[2], label='Contour index of highest Puck value', s=1,
+                    color='orange')
+        lines, labels = ax.get_legend_handles_labels()
+        lines2, labels2 = ax2.get_legend_handles_labels()
+        ax2.legend(lines[:1] + lines2, labels[:1] + labels2)
+        ax = axs[0]
+    else:
+        ax = axs  # if only one subplot is used, axs is no iterable
+    plotDataFrame(False, '', puck, ax,
+                  vlines=[elemIdxmax + 0.5, hoopIndexEnd, newDesignIndex],
+                  vlineColors=['red', 'black', 'green'],
+                  yLabel=yLabel, xLabel='Contour index')
+    saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png'), show=show, fig=fig)
 
 
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):
@@ -74,12 +113,12 @@ def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, e
 
 
 def plotThicknesses(show, filename, thicknesses):
-    thicknesses = thicknesses.iloc[::-1,:].reset_index(drop=True)
+    #thicknesses = thicknesses.iloc[::-1,:].reset_index(drop=True)
     fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-    plotDataFrame(show, None, thicknesses, axes=axs[0], title='Layer thicknesses', yLabel='thickness [mm]',
-                  xLabel='contour coordinate')
-    plotDataFrame(show, None, thicknesses, axes=axs[1], title='Cumulated layer thickness', yLabel='thickness [mm]',
-                  xLabel='contour coordinate', plotKwArgs={'stacked':True})
+    plotDataFrame(show, None, thicknesses, ax=axs[0], title='Layer thicknesses', yLabel='thickness [mm]',
+                  xLabel='Contour index')
+    plotDataFrame(show, None, thicknesses, ax=axs[1], title='Cumulated layer thickness', yLabel='thickness [mm]',
+                  xLabel='Contour index', plotKwArgs={'stacked':True})
 
     if filename:
         plt.savefig(filename)
