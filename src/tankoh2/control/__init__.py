@@ -18,6 +18,7 @@ if __name__ == '__main__':
 
     #params['failureMode'] = 'interfibrefailure'
     params['verbosePlot'] = True
+    params['initialAnglesAndShifts'] = [(8,0),(90,2),(16,0)]
 
     #params['nodeNumber'] = 50
     params['burstPressure'] = 5
