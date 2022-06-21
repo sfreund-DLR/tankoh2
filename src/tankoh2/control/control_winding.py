@@ -39,6 +39,7 @@ def createDesign(**kwargs):
     nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
     runDir = designArgs['runDir']
     verbose = designArgs['verbose']
+    verbosePlot = designArgs['verbosePlot']
 
     # Optimization
     layersToWind = designArgs['maxlayers']
@@ -119,11 +120,14 @@ def createDesign(**kwargs):
     copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, polarOpeningRadius,
                            puckProperties, burstPressure, dome2 is None, runDir,
-                           composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd)
+                           composite, compositeArgs, verbose, verbosePlot, useFibreFailure, relRadiusHoopLayerEnd)
 
     frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
+    # #############################################################################
+    # postprocessing
+    # #############################################################################
     domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
     dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
