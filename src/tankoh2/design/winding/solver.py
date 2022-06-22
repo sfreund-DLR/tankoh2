@@ -17,8 +17,10 @@ def getCriticalElementIdx(puck):
     return puck.idxmax()[layermax], layermax
 
 
-def getMaxPuckByAngle(angle, args):
-    """Returns the maximum puck fibre failure index after setting and winding the given angle"""
+def getMaxPuckAndIndexByAngle(angle, args):
+    """Sets the given angle, winding sim, puck analysis
+
+    :return: maximum puck fibre failure"""
     vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
@@ -31,11 +33,29 @@ def getMaxPuckByAngle(angle, args):
     if verbose:
         failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
         log.info(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
-    return maxPuck
+    return maxPuck, maxIndex
+
+
+def getMaxPuckByAngle(angle, args):
+    """Sets the given angle, winding sim, puck analysis
+
+    :return: maximum puck fibre failure"""
+    return getMaxPuckAndIndexByAngle(angle, args)[0]
 
 
 def getMaxPuckByShift(shift, args):
-    """Returns the maximum puck fibre failure index after setting and winding the given hoop layer shift"""
+    """Sets the given hoop shift, winding sim, puck analysis
+
+    :return: maximum puck fibre failure
+    """
+    return getMaxPuckAndIndexByShift(shift, args)[0]
+
+
+def getMaxPuckAndIndexByShift(shift, args):
+    """Sets the given hoop shift, winding sim, puck analysis
+
+    :return: tuple, (maximum puck fibre failure, index of max FF/IFF)
+    """
     if hasattr(shift, '__iter__'):
         shift = shift[0]
     vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
@@ -47,7 +67,7 @@ def getMaxPuckByShift(shift, args):
     if verbose:
         failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
         log.info(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
-    return maxPuck
+    return maxPuck, maxIndex
 
 
 def _getMaxPuck(args):

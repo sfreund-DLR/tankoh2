@@ -16,6 +16,7 @@ allArgs = pd.DataFrame(
         ['tankname', 'General', 'name', 'tank_name', '', 'Name of the tank', ''],
         ['nodeNumber', 'General', 'number', 500, int, 'node number along the contour', ''],
         ['verbose', 'General', '', False, '', 'More console output', 'store_true'],
+        ['verbosePlot', 'General', '', False, '', 'Plot the optimization target function', 'store_true'],
         ['help', 'General', '', '', '', 'show this help message and exit', 'help'],
         # Optimization
         ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
@@ -54,6 +55,8 @@ allArgs = pd.DataFrame(
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
          'Location of the tank according to CS 25.963 (d). Only used if useHydrostaticPressure. '
          'Options: [wing_no_engine, wing_at_engine, fuselage]', ''],
+        ['initialAnglesAndShifts', 'Design', 'angleShift', None, '',
+         'List with tuples defining angles and shifts used before optimization starts', ''],
         # Material
         ['materialName', 'Material', 'name', 'CFRP_HyMod', '',
          'For metal tanks: name of the material defined in tankoh2.design.metal.material. '

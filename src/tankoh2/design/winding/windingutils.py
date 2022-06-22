@@ -66,7 +66,7 @@ def getCoordsShiftFromLength(mandrel, startLength, shift):
     return targetX, targetRadius, targetLength, indicies
 
 
-def getLayerThicknesses(vessel):
+def getLayerThicknesses(vessel, symmetricContour):
     """returns a dataframe with thicknesses of each layer along the whole vessel"""
     thicknesses = []
     columns = ['lay{}_{:04.1f}'.format(i, angle) for i, angle in enumerate(getAnglesFromVessel(vessel))]
@@ -81,7 +81,6 @@ def getLayerThicknesses(vessel):
         thicknesses.append(layerThicknesses)
     thicknesses = pd.DataFrame(thicknesses).T
     thicknesses.columns = columns
-    # thicknesses.plot()
     return thicknesses
 
 

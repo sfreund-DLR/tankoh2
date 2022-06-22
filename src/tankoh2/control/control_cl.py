@@ -90,8 +90,8 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
 
     angles, thicknesses, wendekreisradien, krempenradien, hoopShifts = readLayupData(layupDataFilename)
     log.info(f'{angles[0:layersToWind]}')
-    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness,
-                             helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
+    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], material, sectionAreaFibre,
+                             rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
                              tex, designFilename, tankname)
 
     # create vessel and set liner and composite
