@@ -14,6 +14,7 @@ from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarO
     getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckAndIndexByAngle, getMaxPuckAndIndexByShift
+import tankoh2.settings as settings
 
 
 def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=False,
@@ -68,7 +69,8 @@ def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
         popt = differential_evolution(targetFunction,
                                       bounds=(bounds,),
                                       args=[optArgs],
-                                      atol=tol*10)
+                                      atol=tol*10,
+                                      seed=settings.optimizerSeed)
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
@@ -134,9 +136,9 @@ def optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, laye
                                   strategy='best1bin',
                                   mutation=1.9,
                                   recombination=0.9,
-                                  seed=200,
+                                  seed=settings.optimizerSeed,
                                   tol=tol,
-                                  atol=tol)
+                                  atol=tol,)
     friction = popt.x
     return 10 ** friction, popt.fun, popt.nfev
 
@@ -153,7 +155,7 @@ def optimizeNegativeFrictionGlobal_differential_evolution(vessel, wendekreisradi
                                   strategy='best1bin',
                                   mutation=1.9,
                                   recombination=0.9,
-                                  seed=200,
+                                  seed=settings.optimizerSeed,
                                   tol=tol,
                                   atol=tol)
     friction = popt.x
