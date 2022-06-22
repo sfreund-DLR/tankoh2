@@ -39,6 +39,8 @@ def createDesign(**kwargs):
     nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
     runDir = designArgs['runDir']
     verbose = designArgs['verbose']
+    verbosePlot = designArgs['verbosePlot']
+    initialAnglesAndShifts = designArgs['initialAnglesAndShifts']
 
     # Optimization
     layersToWind = designArgs['maxlayers']
@@ -103,10 +105,10 @@ def createDesign(**kwargs):
     material = getMaterial(materialFilename)
     puckProperties = material.puckProperties
 
-    angles, thicknesses, = [90.] * 2, [helixLayerThickenss] * 2
+    angles, thicknesses, = [90.], [helixLayerThickenss]
     compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
                      sectionAreaFibre, rovingWidth, numberOfRovings, numberOfRovings, tex, designFilename, tankname]
-    composite = getComposite(angles, *compositeArgs)
+    composite = getComposite(angles, thicknesses, *compositeArgs[3:])
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
@@ -117,13 +119,16 @@ def createDesign(**kwargs):
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
     copyAsJson(vesselFilename, 'vessel')
-    results = designLayers(vessel, layersToWind, polarOpeningRadius,
-                           puckProperties, burstPressure, dome2 is None, runDir,
-                           composite, compositeArgs, verbose, useFibreFailure, relRadiusHoopLayerEnd)
+    results = designLayers(vessel, layersToWind, polarOpeningRadius, puckProperties, burstPressure,
+                           dome2 is None, runDir, compositeArgs, verbose, verbosePlot,
+                           useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts)
 
-    frpMass, volume, area, composite, iterations, angles, hoopLayerShifts = results
+    frpMass, volume, area, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
+    # #############################################################################
+    # postprocessing
+    # #############################################################################
     domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
     dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
@@ -136,7 +141,7 @@ def createDesign(**kwargs):
         auxMasses = [getLinerMass(linerTankoh), getInsulationMass(linerTankoh), getFairingMass(linerTankoh)]
     totalMass = np.sum([frpMass]+auxMasses)
     results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
-        composite.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
+        vessel.getNumberOfLayers() + 1, iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -159,39 +164,12 @@ def createDesign(**kwargs):
         results = getLinearResults(vessel, puckProperties, layersToWind - 1, burstPressure)
         plotStressEpsPuck(True, None, *results)
 
-    if verbose:
-        # vessel.printSimulationStatus()
-        composite.info()
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')
 
     return results
 
-
-def createWindErr(compositeArgs,helixLayerThickenss,vessel):
-    """this creates a wind error - will be investigated soon"""
-    from tankoh2.design.winding.winding import windLayer, windHoopLayer
-    angShifts = np.array([
-        (12.72038202799424, 0), (90, 35.94180392812206), (23.124005957067567, 0), (90, 33.46518505785303),
-        (14.297902386637837, 0), (14.32189665594325, 0), (13.667957693130539, 0), (90, 37.94368025883611),
-        (13.50092137527006, 0), (13.02563160830356, 0), (90, 37.713072256057366), (12.029427674482442, 0),
-        (29.059614964583034, 0), (90, 35.72851759988427), (90, 37.11035956801891),
-        (60.2965179108075, 0)
-    ])
-    angles = angShifts[:, 0]
-    compositeArgs[0] = [helixLayerThickenss] * len(angles)
-    vessel.setComposite(getComposite(angles, *compositeArgs))
-
-    if 0:
-        for layerNumber, (angle, shift) in enumerate(angShifts):
-            if shift:
-                windHoopLayer(vessel, layerNumber, shift)
-            else:
-                windLayer(vessel, layerNumber, angle)
-    windLayer(vessel, 14, None, verbose)
-    vessel.saveToFile(os.path.join(runDir, 'vessel_before_error.vessel.json'))
-    windLayer(vessel, 15, 69.2965179108075, verbose)
 
 
 if __name__ == '__main__':

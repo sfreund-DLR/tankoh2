@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 import pandas as pd
-from reliability.PoF import stress_strain_life_parameters_from_data
 
 import tankoh2.design.existingdesigns as allParamSets
 from tankoh2.design.metal.material import alu6061T6

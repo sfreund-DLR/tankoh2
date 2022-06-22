@@ -16,6 +16,7 @@ allArgs = pd.DataFrame(
         ['tankname', 'General', 'name', 'tank_name', '', 'Name of the tank', ''],
         ['nodeNumber', 'General', 'number', 500, int, 'node number along the contour', ''],
         ['verbose', 'General', '', False, '', 'More console output', 'store_true'],
+        ['verbosePlot', 'General', '', False, '', 'Plot the optimization target function', 'store_true'],
         ['help', 'General', '', '', '', 'show this help message and exit', 'help'],
         # Optimization
         ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
