@@ -191,7 +191,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         #. next iteration step
     #. if most loaded element is in dome area:
         #. Define Optimization bounds [minAngle, 70°] and puck result bounds
-        #. Minimize puck fibre failue:
+        #. Minimize puck fibre failure:
             #. Set angle
             #. Use analytical linear solver
             #. return max puck fibre failure

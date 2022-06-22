@@ -132,7 +132,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
-    designArgs['lcyl'] =  (designArgs['volume'] * 1e9 - volume[0] - volume[-1]) / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+    designArgs['lcyl'] = (designArgs['volume'] * 1e9 - volume[0] - volume[-1]) / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+    if designArgs['lcyl'] < 10:
+        print("lCyl is below 10 mm")
 
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2

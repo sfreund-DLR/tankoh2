@@ -315,7 +315,7 @@ conicalTankDesign = OrderedDict([
     ('xPosApex', 0),  # mm
     ('yPosApex', 0),  # mm
     ('domeType', 'conical'),
-    ('dome2Type', 'ellipse'),
+    #('dome2Type', 'ellipse'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
