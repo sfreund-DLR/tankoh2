@@ -25,9 +25,11 @@ import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 
 
-def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcyl, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
-                           numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
+def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical,
+                       optimizeWindingHoop, tankname, dataDir, dcyl, polarOpening, lcylinder, dpoints,
+                       defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth,
+                       numberOfRovingsHelical, numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth,
+                       minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -157,7 +159,7 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
                         
             if optimizeWindingHelical and abs(diff) > 0.:    
                 log.info(f'using optimizeFriction')    
-                #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
+                #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex)
                 #log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
                 #     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')                
                 #po_local = vessel.getPolarOpeningR(layerindex, True)         
@@ -166,13 +168,13 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
                 if diff > 0:
                     log.info(f' current polar opening is too large, frcition musst be negative')
                     log.info(f'using optimizeFrictionGlobal_differential_evolution')
-                    friction, err_wk, iterations = optimizeNegativeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex, verbose=False)
+                    friction, err_wk, iterations = optimizeNegativeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex)
                 
                 if diff < 0:
                     log.info(f' current polar opening is too small, frcition musst be positive')
                     log.info(f'using optimizeFrictionGlobal_differential_evolution')
                     
-                    friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex, verbose=False)
+                    friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex)
                 
                 
                 log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '

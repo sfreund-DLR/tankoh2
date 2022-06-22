@@ -24,7 +24,7 @@ resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', '
 indentFunc = createRstTable if useRstOutput else indent
 
 
-def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
+def saveParametersAndResults(inputKwArgs, results=None):
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
     np.set_printoptions(linewidth=np.inf) # to put arrays in one line
@@ -39,8 +39,7 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
         outputStr += ['\n\nOUTPUTS\n\n',
                       indentFunc(zip(resultNames, resultUnits, ['value']+list(results)))]
-    logFunc = log.info if verbose else log.debug
-    logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
+    log.info('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
     if results is not None:
         outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value']+list(results)])]
@@ -137,6 +136,8 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
+        for handler in log.handlers:
+            handler.setLevel(logging.DEBUG)
     designArgs.pop('help',None)
     return designArgs
 

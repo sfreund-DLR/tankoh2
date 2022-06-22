@@ -17,7 +17,7 @@ from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckAndIndexB
 import tankoh2.settings as settings
 
 
-def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=False,
+def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
                   targetFunction=getPolarOpeningDiffByAngle):
     """optimizes the angle of the actual layer to realize the desired polar opening
 
@@ -25,13 +25,12 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=
     :param targetPolarOpening: polar opening radius that should be realized
     :param layerNumber: number of the actual layer
     :param angleBounds: bounds of the angles used (min angle, max angle)
-    :param verbose: flag if more output should be given
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
     tol = 1e-2
     popt = minimize_scalar(targetFunction, method='bounded',
                            bounds=angleBounds,
-                           args=[vessel, layerNumber, targetPolarOpening, verbose],
+                           args=[vessel, layerNumber, targetPolarOpening],
                            options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
@@ -40,7 +39,7 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, verbose=
         # desired polar opening not met. This happens, when polar opening is near fitting.
         # There is a discontinuity at this point. Switch target function to search from the fitting side.
         angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
-                                                  verbose, getNegAngleAndPolarOpeningDiffByAngle)
+                                                  getNegAngleAndPolarOpeningDiffByAngle)
     else:
         windLayer(vessel, layerNumber, angle)
     #angle2 = vessel.estimateCylinderAngle(layerNumber, targetPolarOpening)
@@ -53,7 +52,7 @@ def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
     :param bounds: iterable with 2 items: lower and upper bound
     :param targetFunction: function to be used as target function
     :param optArgs: list with these items: vessel, layerNumber, puckProperties, burstPressure, useIndices,
-        useFibreFailure, verbose, symmetricContour
+        useFibreFailure, symmetricContour
     :param verbosePlot: flag if the target function values should be calculated for plotting
     :return:
 
@@ -91,7 +90,7 @@ def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
     return x, funVal, iterations, tfPlotVals
 
 
-def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
+def optimizeFriction(vessel, wendekreisradius, layerindex):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))
     #
     # popt  = minimize(getPolarOpeningDiff, x0 = (1.), method = 'BFGS', args=[vessel, wendekreisradius],
@@ -99,37 +98,37 @@ def optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False):
     tol = 1e-7
     popt = minimize_scalar(getPolarOpeningDiffHelical, method='bounded',
                            bounds=[0., 1e-5],
-                           args=[vessel, wendekreisradius, layerindex, verbose],
+                           args=[vessel, wendekreisradius, layerindex],
                            options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     friction = popt.x
     return friction, popt.fun, popt.nfev
 
 
-def optimizeHoopShift(vessel, krempenradius, layerindex, verbose=False):
+def optimizeHoopShift(vessel, krempenradius, layerindex):
     popt = minimize_scalar(getPolarOpeningDiffHoop, method='brent',
                            options={'xtol': 1e-2},
-                           args=[vessel, krempenradius, layerindex, verbose])
+                           args=[vessel, krempenradius, layerindex])
     shift = popt.x
     return shift, popt.fun, popt.nit
 
 
-def optimizeHoopShiftForPolarOpeningX(vessel, polarOpeningX, layerindex, verbose=False):
+def optimizeHoopShiftForPolarOpeningX(vessel, polarOpeningX, layerindex):
     popt = minimize_scalar(getPolarOpeningXDiffHoop, method='brent',
                            options={'xtol': 1e-2},
-                           args=[vessel, polarOpeningX, layerindex, verbose])
+                           args=[vessel, polarOpeningX, layerindex])
     shift = popt.x
     return shift, popt.fun, popt.nit
 
 
 # write new optimasation with scipy.optimize.differential_evolution
 
-def optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False):
+def optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex):
     """
     optimize friction value for given polarOpening
     using global optimizer scipy.optimize.differential_evolution
     """
     tol = 1e-15
-    args = (vessel, wendekreisradius, layerindex, verbose)
+    args = (vessel, wendekreisradius, layerindex)
     popt = differential_evolution(getPolarOpeningDiffHelicalUsingLogFriction,
                                   bounds=[(-10, -4)],
                                   args=[args],
@@ -142,13 +141,13 @@ def optimizeFrictionGlobal_differential_evolution(vessel, wendekreisradius, laye
     friction = popt.x
     return 10 ** friction, popt.fun, popt.nfev
 
-def optimizeNegativeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex, verbose=False):
+def optimizeNegativeFrictionGlobal_differential_evolution(vessel, wendekreisradius, layerindex):
     """
     optimize friction value for given polarOpening
     using global optimizer scipy.optimize.differential_evolution
     """
     tol = 1e-15
-    args = (vessel, wendekreisradius, layerindex, verbose)
+    args = (vessel, wendekreisradius, layerindex)
     popt = differential_evolution(getPolarOpeningDiffHelicalUsingNegativeLogFriction,
                                   bounds=[(-10, -3.6)],
                                   args=[args],

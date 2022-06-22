@@ -38,7 +38,6 @@ def createDesign(**kwargs):
     tankname = designArgs['tankname']
     nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
     runDir = designArgs['runDir']
-    verbose = designArgs['verbose']
     verbosePlot = designArgs['verbosePlot']
     initialAnglesAndShifts = designArgs.get('initialAnglesAndShifts', None)
 
@@ -120,7 +119,7 @@ def createDesign(**kwargs):
     vessel.saveToFile(vesselFilename)  # save vessel
     copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, polarOpeningRadius, puckProperties, burstPressure,
-                           dome2 is None, runDir, compositeArgs, verbose, verbosePlot,
+                           dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts)
 
     frpMass, volume, area, iterations, angles, hoopLayerShifts = results

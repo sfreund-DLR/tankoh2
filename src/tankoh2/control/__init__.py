@@ -20,7 +20,9 @@ if __name__ == '__main__':
     params['verbosePlot'] = True
     #params['initialAnglesAndShifts'] = [(8,0),(90,2),(16,0)]
 
-    #params['nodeNumber'] = 50
+    # params['nodeNumber'] = 50
+    params['verbose'] = True
+
     params['burstPressure'] = 5
     createDesignWinding(**params.copy())
     runMetalCalc = False
