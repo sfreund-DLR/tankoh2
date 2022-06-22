@@ -183,6 +183,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     :param verbosePlot: flag if more plots should be created
     :param useFibreFailure: flag, use fibre failure or inter fibre failure
     :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
+    :param initialAnglesAndShifts: List with tuples defining angles and shifts used before optimization starts
     :return: frpMass, volume, area, composite, iterations, anglesShifts
 
     Strategy:

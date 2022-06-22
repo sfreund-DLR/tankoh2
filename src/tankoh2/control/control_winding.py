@@ -40,7 +40,7 @@ def createDesign(**kwargs):
     runDir = designArgs['runDir']
     verbose = designArgs['verbose']
     verbosePlot = designArgs['verbosePlot']
-    initialAnglesAndShifts = designArgs['initialAnglesAndShifts']
+    initialAnglesAndShifts = designArgs.get('initialAnglesAndShifts', None)
 
     # Optimization
     layersToWind = designArgs['maxlayers']

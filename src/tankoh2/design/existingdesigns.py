@@ -55,6 +55,8 @@ allArgs = pd.DataFrame(
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
          'Location of the tank according to CS 25.963 (d). Only used if useHydrostaticPressure. '
          'Options: [wing_no_engine, wing_at_engine, fuselage]', ''],
+        ['initialAnglesAndShifts', 'Design', 'angleShift', None, '',
+         'List with tuples defining angles and shifts used before optimization starts', ''],
         # Material
         ['materialName', 'Material', 'name', 'CFRP_HyMod', '',
          'For metal tanks: name of the material defined in tankoh2.design.metal.material. '
