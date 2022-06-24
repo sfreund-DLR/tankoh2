@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import optimize
 
-from tankoh2.service.physicalprops import rhoLh2ByP, rhoGh2NonCryo
+from tankoh2.service.physicalprops import rhoLh2ByPSaturation, rhoGh2
 from tankoh2.design.existingdesigns import allArgs
 from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
@@ -54,9 +54,9 @@ def getRequiredVolume(lh2Mass, operationalPressure, maxFill = 0.9, roh=None, lh2
     """
     if roh is None and lh2OrGh2:
         if lh2OrGh2 == 'lh2':
-            roh = rhoLh2ByP(operationalPressure)  # roh at 22K
+            roh = rhoLh2ByPSaturation(operationalPressure)  # roh at 22K
         else:
-            roh = rhoGh2NonCryo(operationalPressure, 273 + 20)[0]
+            roh = rhoGh2(operationalPressure, 273 + 20)[0]
     v = lh2Mass / roh
     v *= 1 / maxFill
     return v
@@ -72,9 +72,9 @@ def getMassByVolume(lh2Volume, operationalPressure, maxFill = 0.9, roh=None, lh2
     """
     if roh is None and lh2OrGh2:
         if lh2OrGh2 == 'lh2':
-            roh = rhoLh2ByP(operationalPressure)  # roh at 22K
+            roh = rhoLh2ByPSaturation(operationalPressure)  # roh at 22K
         else:
-            roh = rhoGh2NonCryo(operationalPressure, 273 + 20)[0]
+            roh = rhoGh2(operationalPressure, 273 + 20)[0]
     m = lh2Volume * roh * maxFill
     return m
 

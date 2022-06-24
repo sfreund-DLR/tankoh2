@@ -1,7 +1,7 @@
 import numpy as np
 
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.service.physicalprops import rhoLh2, g
+from tankoh2.service.physicalprops import rhoLh2Saturation, g
 
 
 def getHydrostaticPressure(tankLocation, length, diameter, baffleDist = None):
@@ -20,7 +20,7 @@ def getHydrostaticPressure(tankLocation, length, diameter, baffleDist = None):
     if baffleDist is not None:
         length = baffleDist
     length, diameter = length / 1000, diameter / 1000  # convert to [m]
-    rho = rhoLh2(21)
+    rho = rhoLh2Saturation(21)
     # 25.963 (d)(1)
     # loadFac: forward, inboard/outboard, downward
     loadFac = np.array([9., 3., 6] if tankLocation == 'fuselage' else [4.5, 1.5, 6])
