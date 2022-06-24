@@ -1,22 +1,37 @@
 """utility functions"""
 
 import math
-
 import re
-
 import functools
-
 import io
-
 import itertools
 import numpy as np
 import time
-
 import os
-
+from os.path import exists, join, abspath
 from datetime import datetime
+import getpass
+import sys
+import glob
 
 from tankoh2 import programDir, log
+
+
+def importFreeCad():
+    """searches for the freecad folder and puts it into the system path"""
+    stdInstallPath = f'C:\\Users\\{getpass.getuser()}\\AppData\\Local\\Programs\\'
+    searchPaths = glob.glob(stdInstallPath+'/FreeCAD*')[::-1]
+
+    for searchPath in searchPaths:
+        if exists(join(searchPath, 'bin')) and exists(join(searchPath, 'bin', 'FreeCAD.exe')):
+            freecadLibPaths = [join(searchPath, 'lib'), join(searchPath, 'bin')]
+            log.debug(f'Add freecad to path: {freecadLibPaths}')
+            sys.path.extend(freecadLibPaths)
+            os.environ['PATH'] = ';'.join(freecadLibPaths + [os.environ['PATH']])
+            break
+    else:
+        log.info(f'Could not find FreeCAD (required if conical dome shapes used). '
+                 f'Searched in this folder: {stdInstallPath}')
 
 
 def getTimeString(useMilliSeconds=False):
@@ -26,11 +41,11 @@ def getTimeString(useMilliSeconds=False):
 
 
 def makeAllDirs(directory):
-    absPath = os.path.abspath(directory)
+    absPath = abspath(directory)
     for i in range(0,absPath.count(os.sep))[::-1]:
         #Split path into subpaths beginning from the top of the drive
         subPath = absPath.rsplit(os.sep,i)[0]
-        if not os.path.exists(subPath):
+        if not exists(subPath):
             os.makedirs(subPath)
 
 
@@ -54,8 +69,8 @@ def getRunDir(runDirExtension='', useMilliSeconds=False):
     if runDirExtension and runDirExtension[0] != '_':
         runDirExtension = '_' + runDirExtension
     while True:
-        runDir = os.path.join(programDir, 'tmp', 'tank_' + getTimeString(useMilliSeconds)) + runDirExtension
-        if os.path.exists(runDir):
+        runDir = join(programDir, 'tmp', 'tank_' + getTimeString(useMilliSeconds)) + runDirExtension
+        if exists(runDir):
             log.warning('runDir already exists. Wait 1s and retry with new timestring.')
             time.sleep(1)
         else:

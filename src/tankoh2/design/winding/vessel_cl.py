@@ -98,7 +98,7 @@ def main():
 
     tankname = 'NGT-BIT-2020-09-16'
     dataDir = os.path.join(programDir, 'data')
-    dcly = 400.  # mm
+    dcyl = 400.  # mm
     polarOpening = 20.  # mm
     lcylinder = 500.  # mm
     dpoints = 4  # data points for liner contour
@@ -151,7 +151,7 @@ def main():
 
     # build  dome
     dome = pychain.winding.Dome()
-    dome.buildDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID)
+    dome.buildDome(dcyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID)
     dome.setPoints(Xvec, rVec)
     log.info(f'Build Dome with dome data {dome}')
 

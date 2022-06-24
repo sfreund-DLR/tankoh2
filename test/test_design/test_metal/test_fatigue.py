@@ -10,7 +10,7 @@ from tankoh2.service.exception import Tankoh2Error
 def test_getCyclesToFailure():
     # comparison with excel chart scenario #2 first row
     A1, A2, A3, A4 = alu6061T6['SN_parameters']
-    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2, 1)
+    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2)
     nf = getCyclesToFailure(187.05, 0., A1, A2, A3, A4)
     assert np.allclose(nf, 6.250796E+5, rtol=1e-3)
 
@@ -18,7 +18,7 @@ def test_getCyclesToFailure():
 def test_getCyclesToFailure_Fail1():
     # comparison with excel chart scenario #2 first row
     A1, A2, A3, A4 = alu6061T6['SN_parameters']
-    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2, 1)
+    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2)
     with pytest.raises(Tankoh2Error):
         getCyclesToFailure(100., 187.05, A1, A2, A3, A4)
 
@@ -26,7 +26,7 @@ def test_getCyclesToFailure_Fail1():
 def test_getCyclesToFailure_Fail2():
     # comparison with excel chart scenario #2 first row
     A1, A2, A3, A4 = alu6061T6['SN_parameters']
-    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2, 1)
+    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2)
     with pytest.raises(Tankoh2Error):
         getCyclesToFailure(0., 187.05, A1, A2, A3, A4)
 
@@ -34,7 +34,7 @@ def test_getCyclesToFailure_Fail2():
 def test_stressLifeMinerRule():
     # comparison with excel chart scenario #2
     A1, A2, A3, A4 = alu6061T6['SN_parameters']
-    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2, 1)
+    A1, A4 = correctSnParameters(A1, A2, A4, alu6061T6['Kt_curve'], 1.2)
     nf = getCyclesToFailure([187.05, 187.05], [0., 115.49], A1, A2, A3, A4)
     occurences = np.array([5000, 50000])
     damage = stressLifeMinerRule(occurences, nf)

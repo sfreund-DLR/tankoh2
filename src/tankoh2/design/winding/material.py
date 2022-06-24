@@ -35,12 +35,12 @@ def readLayupData(filename):
     return np.array([angle_degree, singlePlyThickenss, wendekreisradien, krempenradien, hoopShift])
 
 
-def getComposite(angle_degree, singlePlyThickensses, hoopLayerThickness, helixLayerThickenss, material,
+def getComposite(angles, thicknesses, material,
                  sectionAreaFibre, rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop, tex, designFilename=None, designName=None):
     # create composite with layers
     composite = pychain.material.Composite()
 
-    for i, angle, plyThickness in zip(range(len(angle_degree)), angle_degree, singlePlyThickensses):  #
+    for i, angle, plyThickness in zip(range(len(angles)), angles, thicknesses):  #
         composite.appendLayer(angle, plyThickness, material, pychain.material.LAYER_TYPES.BAP)
         fvg = sectionAreaFibre / (rovingWidth * plyThickness)
         layer = composite.getOrthotropLayer(i)
@@ -50,10 +50,10 @@ def getComposite(angle_degree, singlePlyThickensses, hoopLayerThickness, helixLa
         layer.windingProperties.coverage = 1.
         if angle == 90.:
             layer.windingProperties.isHoop = True
-            layer.windingProperties.cylinderThickness = plyThickness#hoopLayerThickness
+            layer.windingProperties.cylinderThickness = plyThickness
             layer.windingProperties.numberOfRovings = numberOfRovingsHoop
         else:
-            layer.windingProperties.cylinderThickness = plyThickness#helixLayerThickenss            
+            layer.windingProperties.cylinderThickness = plyThickness
             layer.windingProperties.numberOfRovings = numberOfRovingsHelical
 
     saveComposite(composite, designFilename, designName)

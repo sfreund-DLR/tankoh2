@@ -8,7 +8,7 @@ from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
-from tankoh2.geometry.dome import DomeEllipsoid
+from tankoh2.geometry.dome import DomeEllipsoid, DomeConical, getDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
@@ -24,7 +24,7 @@ resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', '
 indentFunc = createRstTable if useRstOutput else indent
 
 
-def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
+def saveParametersAndResults(inputKwArgs, results=None):
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
     np.set_printoptions(linewidth=np.inf) # to put arrays in one line
@@ -39,8 +39,7 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
         outputStr += ['\n\nOUTPUTS\n\n',
                       indentFunc(zip(resultNames, resultUnits, ['value']+list(results)))]
-    logFunc = log.info if verbose else log.debug
-    logFunc('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
+    log.info('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
     if results is not None:
         outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value']+list(results)])]
@@ -49,7 +48,6 @@ def saveParametersAndResults(inputKwArgs, results=None, verbose = False):
         f.write(outputStr)
     log.info('Inputs, Outputs:\n'+ outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
-
 
 def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     """Parse keyworded arguments, add missing parameters with defaults and return a new dict.
@@ -77,18 +75,18 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                         ('tankLocation', 'burstPressure'),
                         ])
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
-    for arg in removeIfIncluded[:,1]:
-        if arg in designArgs:
-            designArgs.pop(arg)
+    for arg, supersedeArg in removeIfIncluded:
+        if arg in inputKwArgs and supersedeArg not in inputKwArgs:
+            designArgs.pop(supersedeArg)
     designArgs.update(inputKwArgs)
-
-    if designArgs['domeType'] != 'ellipse':
-        designArgs.pop('domeLengthByR')
 
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
     for removeIt, included in removeIfIncluded:
         if included in designArgs:
             designArgs.pop(removeIt)
+
+    if designArgs['domeType'] != 'ellipse':
+        designArgs.pop('domeLengthByR')
 
     # remove frp-only arguments
     if frpOrMetal == 'metal':
@@ -102,18 +100,44 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     for key in removeKeys:
         designArgs.pop(key, None)
 
-    # for elliptical domes, create the contour since µWind does not support is natively
-    for domeName in ['dome', 'dome2']:
+
+    for domeName in ['dome2', 'dome']:
+        if f'{domeName}Type' not in designArgs or designArgs[f'{domeName}Type'] is None:
+            # dome not given (especially for dome2)
+            designArgs[f'{domeName}'] = None
+            continue
+
+        domeType = designArgs[f'{domeName}Type']
+        r = designArgs['dcyl'] / 2
         if designArgs[f'{domeName}Type'] == 'ellipse':
             if not designArgs[f'{domeName}LengthByR']:
-                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "domeLengthByR" is not defined')
+                raise Tankoh2Error(f'{domeName}Type == "ellipse" but "{domeName}LengthByR" is not defined')
+        if designArgs[f'{domeName}Type'] == 'conical':
+            params = ['alpha','beta' ,'gamma' ,'delta1' ,'delta2']
+            for param in params:
+                if not designArgs[param]:
+                    raise Tankoh2Error(f'domeType == "conical" but "{param}" is not defined')
+            if not designArgs['volume']:
+                raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
 
-            r = designArgs['dcly'] / 2
-            de = DomeEllipsoid(r, designArgs[f'{domeName}LengthByR'] * r, designArgs['polarOpeningRadius'])
-            designArgs[f'{domeName}Contour'] = de.getContour(designArgs['nodeNumber'] // 2)
+        dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
+                       designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                       # TODO: include params for conical domes
+                       )
+        designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
+        designArgs[f'{domeName}'] = dome
+
+
+    if 'lcyl' not in designArgs:
+        designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+    dome, dome2 = designArgs['dome'], designArgs['dome2']
+    designArgs['tankLength'] = designArgs['lcyl'] + dome.domeLength + \
+                               (dome.domeLength if dome2 is None else dome2.domeLength)
 
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
+        for handler in log.handlers:
+            handler.setLevel(logging.DEBUG)
     designArgs.pop('help',None)
     return designArgs
 
@@ -136,11 +160,11 @@ def getBurstPressure(designArgs, length):
     - :math:`p_{hyd}` hydrostatic pressure according to CS 25.963 (d)
     - :math:`f_{ult}` ultimate load factor (safetyFactor in designArgs)
     """
-    dcly = designArgs['dcly']
+    dcyl = designArgs['dcyl']
     safetyFactor = designArgs['safetyFactor']
     pressure = designArgs['pressure']  # pressure in MPa (bar / 10.)
     valveReleaseFactor = designArgs['valveReleaseFactor']
     useHydrostaticPressure = designArgs['useHydrostaticPressure']
     tankLocation = designArgs['tankLocation']
-    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcly) if useHydrostaticPressure else 0.
+    hydrostaticPressure = getHydrostaticPressure(tankLocation, length, dcyl) if useHydrostaticPressure else 0.
     return (pressure + hydrostaticPressure) * safetyFactor * valveReleaseFactor

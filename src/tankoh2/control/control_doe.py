@@ -45,7 +45,7 @@ class TankWinder(AbstractTargetFunction):
         runDir = getRunDir(basePath=os.path.join(self.runDir), useMilliSeconds=True)
         r, lcyl, burstPressure = parameters
 
-        result = createDesign(dcly=r * 2, lcylByR=lcyl, burstPressure=burstPressure,
+        result = createDesign(dcyl=r * 2, lcylByR=lcyl, burstPressure=burstPressure,
                               polarOpeningRadius=r / 10, runDir=runDir,
                               domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
                               useFibreFailure = useFibreFailure)

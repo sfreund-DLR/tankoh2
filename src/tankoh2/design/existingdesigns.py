@@ -16,31 +16,32 @@ allArgs = pd.DataFrame(
         ['tankname', 'General', 'name', 'tank_name', '', 'Name of the tank', ''],
         ['nodeNumber', 'General', 'number', 500, int, 'node number along the contour', ''],
         ['verbose', 'General', '', False, '', 'More console output', 'store_true'],
+        ['verbosePlot', 'General', '', False, '', 'Plot the optimization target function', 'store_true'],
         ['help', 'General', '', '', '', 'show this help message and exit', 'help'],
         # Optimization
         ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
         # Geometry_Cylinder
-        ['dcly', 'Geometry', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
-        ['lcyl', 'Geometry', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
-        ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
+        ['dcyl', 'Geometry_Cylinder', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
+        ['lcyl', 'Geometry_Cylinder', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
+        ['lcylByR', 'Geometry_Cylinder', '', 2.5, float, 'only if lcyl is not given [-]', ''],
         # Geometry_Dome
-        ['domeType', 'Geometry', '', 'isotensoid', '',
+        ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
-        ['domeContour', 'Geometry', '(x,r)', (None,None), '',
+        ['domeContour', 'Geometry_Dome', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
         ['polarOpeningRadius', 'Geometry', 'r_po', 20, float, 'Polar opening radius [mm]', ''],
-        ['domeLengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
+        ['domeLengthByR', 'Geometry_Dome', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         # Geometry_Dome2
-        ['dome2Type', 'Geometry', '', None, '',
+        ['dome2Type', 'Geometry_Dome2', '', None, '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
-        ['dome2Contour', 'Geometry', '(x,r)', (None, None), '',
+        ['dome2Contour', 'Geometry_Dome2', '(x,r)', (None, None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
-        ['dome2LengthByR', 'Geometry', 'l/r_cyl', 0.5, float,
+        ['dome2LengthByR', 'Geometry_Dome2', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         # Design
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
@@ -54,6 +55,8 @@ allArgs = pd.DataFrame(
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
          'Location of the tank according to CS 25.963 (d). Only used if useHydrostaticPressure. '
          'Options: [wing_no_engine, wing_at_engine, fuselage]', ''],
+        ['initialAnglesAndShifts', 'Design', 'angleShift', None, '',
+         'List with tuples defining angles and shifts used before optimization starts', ''],
         # Material
         ['materialName', 'Material', 'name', 'CFRP_HyMod', '',
          'For metal tanks: name of the material defined in tankoh2.design.metal.material. '
@@ -94,11 +97,25 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
+# design to make plots where the layers are visible in µWind
+plotDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
+plotDesign.update([
+    ('dcyl', plotDesign['dcyl']/1.5),
+    ('lcyl', plotDesign['lcyl']/2),
+    ('helixLayerThickenss', plotDesign['helixLayerThickenss']*2),
+    ('rovingWidth', plotDesign['rovingWidth']/1.5),
+    ('burstPressure', 42.),
+    ])
+
 defaultUnsymmetricDesign = defaultDesign.copy()
 defaultUnsymmetricDesign.update([
-    ('dome2Type', 'circle'), #defaultUnsymmetricDesign['domeType']),
+    ('dome2Type', 'ellipse'), #defaultUnsymmetricDesign['domeType']),
     ('dome2Contour', defaultUnsymmetricDesign['dome2Contour']),
-    ('dome2LengthByR', defaultUnsymmetricDesign['dome2LengthByR']),
+    ('dome2LengthByR', 1. #defaultUnsymmetricDesign['dome2LengthByR']
+     ),
+    ('domeType', 'ellipse'), #defaultUnsymmetricDesign['domeType']),
+    ('domeLengthByR', 1. #defaultUnsymmetricDesign['dome2LengthByR']
+     ),
     ])
 
 # hymod design
@@ -108,7 +125,7 @@ hymodDesign = OrderedDict([
     ('burstPressure', 77.85),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dcly', 300.)
+    ('dcyl', 300.)
 ])
 
 
@@ -119,7 +136,7 @@ NGTBITDesign = OrderedDict([
     ('valveReleaseFactor', 1.),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dcly', 422.),
+    ('dcyl', 422.),
     ('lcyl', 500.),
     # design philosophy
     ('safetyFactor', 2.0),
@@ -152,7 +169,7 @@ NGTBITDesign_old = OrderedDict([
     # Geometry
     ('nodeNumber', 1000),
     ('polarOpeningRadius', 23),
-    ('dcly', 400.),
+    ('dcyl', 400.),
     ('lcyl', 500.),
 
     # design philosophy
@@ -176,7 +193,7 @@ NGTBITDesign_small = OrderedDict([
     ('pressure', 10),
     # Geometry
     ('polarOpeningRadius', 23),
-    ('dcly', 400.),
+    ('dcyl', 400.),
     ('lcyl', 290.),
     # design philosophy
     ('safetyFactor', 2.0),
@@ -197,7 +214,7 @@ NGTBITDesign_small = OrderedDict([
 vphDesign1 = OrderedDict([
     ('tankname', 'vph_design1_iff_sf2.25'),
     ('lcyl', 3218.8),
-    ('dcly', 1200.*2),
+    ('dcyl', 1200.*2),
     ('safetyFactor', 2.25),
     ('pressure', .2),  # pressure in MPa (bar / 10.)
     ('polarOpeningRadius', 120),
@@ -223,7 +240,7 @@ kautextDesign = OrderedDict([
                              #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
                              #('domeContour', (None, None)),  # (x,r)
                              ('polarOpeningRadius', 4.572604469),  # mm
-                             ('dcly', 260.),  # mm
+                             ('dcyl', 260.),  # mm
                              ('lcyl', 588.), #mm
                              #('lcylByR', 2.5),
 
@@ -248,7 +265,7 @@ kautextDesign = OrderedDict([
 ttDesignLh2 = OrderedDict([
     ('tankname', 'tt_lh2'),
     ('polarOpeningRadius', 40),  # mm
-    ('dcly', 223.862*2),  # mm
+    ('dcyl', 223.862*2),  # mm
     ('lcyl', 559.6572), #mm
     ('safetyFactor', 1.55),
     ('pressure', 0.25),  # pressure in MPa (bar / 10.)
@@ -260,7 +277,7 @@ ttDesignLh2 = OrderedDict([
 ttDesignCh2 = ttDesignLh2.copy()
 ttDesignCh2.update([
     ('tankname', 'tt_ch2'),
-    ('dcly', 269.66362*2),  # mm
+    ('dcyl', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
     ('pressure', 70.),  # pressure in MPa (bar / 10.)
     ('maxlayers', 200),
@@ -270,7 +287,7 @@ atheat = OrderedDict([
     # Medium: Helium
     ('tankname', 'atheat_He'),
     ('polarOpeningRadius', 15),  # mm
-    ('dcly', 438 - 10),  # mm d_a - 2*t_estimate
+    ('dcyl', 438 - 10),  # mm d_a - 2*t_estimate
     ('lcyl', 21.156),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 35),  # pressure in MPa (bar / 10.)
@@ -282,7 +299,7 @@ atheat = OrderedDict([
 tk_cgh2 = OrderedDict([
     ('tankname', 'tkms_cgh2'),
     ('polarOpeningRadius', 50),  # mm
-    ('dcly', 590),  # mm d_a - 2*t_estimate
+    ('dcyl', 590),  # mm d_a - 2*t_estimate
     ('lcyl', 4500),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 70),  # pressure in MPa (bar / 10.)
@@ -292,6 +309,23 @@ tk_cgh2 = OrderedDict([
     ('verbose', False),
 ])
 
+conicalTankDesign = OrderedDict([
+    ('tankname', 'conical_tank'),
+    ('volume', 50),  # m^3
+    ('dcyl', 3000),  # mm
+    ('polarOpeningRadius', 100),  # mm
+    ('alpha', 0.5),
+    ('beta', 0.8),  # (lCone + lRad) / dCyl
+    ('gamma', 0.5),
+    ('delta1', 0.5),
+    ('delta2', 0.8),
+    ('xPosApex', 0),  # mm
+    ('yPosApex', 0),  # mm
+    ('domeType', 'conical'),
+    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
+])
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

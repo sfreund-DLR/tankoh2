@@ -55,8 +55,7 @@ def domeContourLength(dome):
     contourLength = np.sum(np.linalg.norm(contourDiffs, axis=1))
     return contourLength
 
-def getDome(cylinderRadius, polarOpening, domeType=None,
-            x=None, r=None):
+def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     """creates a µWind dome
 
     :param cylinderRadius: radius of the cylinder
@@ -67,6 +66,7 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
     """
     validDomeTypes = ['isotensoid', 'circle',
                       'ellipse', # allowed by own implementation in tankoh2.geometry.contour
+                      'conical',
                       ]
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
@@ -87,7 +87,8 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
     try:
         dome.buildDome(cylinderRadius, polarOpening, domeType)
     except IndexError as e:
-        log.error(f'Got an error with these parameters: {(cylinderRadius, polarOpening, domeType)}')
+        log.error(f'Got an error creating the dome with these parameters: '
+                  f'{(cylinderRadius, polarOpening, domeType)}')
         raise
 
     if x is not None and r is not None:
@@ -95,6 +96,8 @@ def getDome(cylinderRadius, polarOpening, domeType=None,
             raise Tankoh2Error('cylinderRadius and r-vector do not fit')
         if not np.allclose(r[-1], polarOpening):
             raise Tankoh2Error('polarOpening and r-vector do not fit')
+        if len(r) != len(x):
+            raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
         dome.setPoints(x, r)
     return dome
 
@@ -121,19 +124,22 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     deltaLengthSpline = contourLength / nodeNumber  # just use half side
 
     if dome2 is not None:
-        log.info("Creat unsymmetric vessel")
+        log.info("Create unsymmetric vessel")
         liner.buildFromDomes(dome, dome2, length, deltaLengthSpline)
     else:
         log.info("Create symmetric vessel")
         liner.buildFromDome(dome, length, deltaLengthSpline)
     
-    if linerFilename:
+    polarOpeningRadius = dome.polarOpening
+    for fitting in [liner.getFitting(True), liner.getFitting(False)]:
+        fitting.r0 = polarOpeningRadius / 4
+        fitting.r1 = polarOpeningRadius
+        fitting.rD = 2 * polarOpeningRadius
+
+    if linerFilename and linerName:
         liner.saveToFile(linerFilename)
         updateName(linerFilename, linerName, ['liner'])
         copyAsJson(linerFilename, 'liner')      
         liner.loadFromFile(linerFilename)
         
     return liner
-
-    
-    

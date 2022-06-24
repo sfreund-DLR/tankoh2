@@ -25,9 +25,11 @@ import tankoh2.design.existingdesigns
 #import mymodels.myvesselAxSolid as vesselAxSolid    
 
 
-def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
-                           numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
+def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical,
+                       optimizeWindingHoop, tankname, dataDir, dcyl, polarOpening, lcylinder, dpoints,
+                       defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth,
+                       numberOfRovingsHelical, numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth,
+                       minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -68,13 +70,13 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     # #########################################################################################
     x, r = getReducedDomePoints(domeContourFilename,
                                 dpoints, fileNameReducedDomeContour)
-    dome = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+    dome = getDome(dcyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     dome2 = None
     if symmetricTank == False:
         x, r = getReducedDomePoints(dome2ContourFilename,
                                 dpoints, fileNameReducedDome2Contour)
-        dome2 = getDome(dcly / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
+        dome2 = getDome(dcyl / 2., polarOpening, pychain.winding.DOME_TYPES.ISOTENSOID,
                    x, r)
     liner = getLiner(dome, lcylinder, linerFilename, tankname, dome2=dome2)
     #buildFromDome(dome, cylinderLength, deltaSpline)
@@ -90,8 +92,8 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
 
     angles, thicknesses, wendekreisradien, krempenradien, hoopShifts = readLayupData(layupDataFilename)
     log.info(f'{angles[0:layersToWind]}')
-    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], hoopLayerThickness,
-                             helixLayerThickenss, material, sectionAreaFibre, rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
+    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], material, sectionAreaFibre,
+                             rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
                              tex, designFilename, tankname)
 
     # create vessel and set liner and composite
@@ -157,7 +159,7 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
                         
             if optimizeWindingHelical and abs(diff) > 0.:    
                 log.info(f'using optimizeFriction')    
-                #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex, verbose=False)
+                #friction, err_wk, iterations = optimizeFriction(vessel, wendekreisradius, layerindex)
                 #log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
                 #     f'as current polar opening is {vessel.getPolarOpeningR(layerindex, True)}')                
                 #po_local = vessel.getPolarOpeningR(layerindex, True)         
@@ -166,13 +168,13 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
                 if diff > 0:
                     log.info(f' current polar opening is too large, frcition musst be negative')
                     log.info(f'using optimizeFrictionGlobal_differential_evolution')
-                    friction, err_wk, iterations = optimizeNegativeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex, verbose=False)
+                    friction, err_wk, iterations = optimizeNegativeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex)
                 
                 if diff < 0:
                     log.info(f' current polar opening is too small, frcition musst be positive')
                     log.info(f'using optimizeFrictionGlobal_differential_evolution')
                     
-                    friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex, verbose=False)
+                    friction, err_wk, iterations = optimizeFrictionGlobal_differential_evolution(vessel, po_goal, layerindex)
                 
                 
                 log.info(f'{iterations} iterations. Friction is {friction} resulting in a polar opening error of {err_wk} '
@@ -380,7 +382,7 @@ def main():
         
     tankname = 'NGT-BIT-2021-03-04'
     dataDir = os.path.join(programDir, 'data')
-    dcly = 422.  # mm
+    dcyl = 422.  # mm
     polarOpening = 23.  # mm
     lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
@@ -434,7 +436,7 @@ def main():
 
     if AsBuilt: 
         builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcly, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
+                           dataDir, dcyl, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
                            numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
     
     if createDesign:    

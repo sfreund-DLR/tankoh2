@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pickle
 import numpy as np
 import pandas as pd
-from reliability.PoF import stress_strain_life_parameters_from_data
 
 import tankoh2.design.existingdesigns as allParamSets
 from tankoh2.design.metal.material import alu6061T6
@@ -154,11 +153,11 @@ def getLinerContour(designArgs):
     from tankoh2.geometry.liner import Liner
     domeType = designArgs['domeType'].lower()
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
-    dcly = designArgs['dcly']  # mm
+    dcyl = designArgs['dcyl']  # mm
     if 'lcyl' not in designArgs:
-        designArgs['lcyl'] = designArgs['lcylByR'] * dcly / 2
+        designArgs['lcyl'] = designArgs['lcylByR'] * dcyl / 2
     lcylinder = designArgs['lcyl']  # mm
-    dome = getDome(dcly / 2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcly / 2)
+    dome = getDome(dcyl / 2, polarOpeningRadius, domeType, designArgs.get('domeLengthByR', 0.) * dcyl / 2)
     liner = Liner(dome, lcylinder)
     return liner.getContour()
 
