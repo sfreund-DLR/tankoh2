@@ -21,10 +21,11 @@ keywords = ["lh2 tank", "winding"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-numpy = "1.19.1"
+numpy = "1.20.0"
 matplotlib = "*"
 scipy = "*"
 pandas = "*"
+CoolProp = "*"
 
 [tool.poetry.dev-dependencies]
 pytest = "*"
