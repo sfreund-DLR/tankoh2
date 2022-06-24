@@ -4,7 +4,7 @@
 
 [tool.poetry]
 name = "tankoh2"
-version = "2.1.0"
+version = "2.2.0"
 description = "Utilities for software builds, documentation, cluster interaction, calling fem tools, logging, exceptions and simple geometric and mechanical operations."
 license = "MIT"
 authors = ["Sebastian Freund <sebastian.freund@dlr.de>", "Andreas Schuster <andreas.schuster@dlr.de>"]
