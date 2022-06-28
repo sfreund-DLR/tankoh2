@@ -8,7 +8,7 @@ from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
-from tankoh2.geometry.dome import DomeEllipsoid, DomeConical, getDome
+from tankoh2.geometry.dome import DomeEllipsoid, DomeTorispherical, DomeConicalElliptical, DomeConicalTorispherical, getDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
@@ -123,8 +123,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
         dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
                         designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                        designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                        designArgs['xPosApex'], designArgs['yPosApex'])
+                        designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
 
         volume.append(dome.volume)
 
@@ -132,8 +131,23 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs[f'{domeName}'] = dome
 
     designArgs['lcyl'] = (designArgs['volume'] * 1e9 - volume[0] - volume[-1]) / (np.pi * (designArgs['dcyl'] / 2) ** 2)
-    if designArgs['lcyl'] < 10:
-        print("lCyl is below 10 mm")
+
+    if designArgs['lcyl'] < 20:
+
+        designArgs['lcyl'] = 20
+        log.warning('dCyl was adapted in order to fit volume requirement')
+
+        while(designArgs['volume'] * 1e9 - volume[0] - volume[-1] - np.pi * designArgs['dcyl'] / 2 * designArgs['lcyl']) > 0.01 * designArgs['volume']:
+
+            volume[-1] = dome.adaptGeometry(5, designArgs['beta'])[0]
+
+            # lCyl und lCone und rCyl müssen noch upgedated werden
+
+        dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                       designArgs['delta1'], r - designArgs['alpha'] * r,
+                       designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                       designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                       designArgs['xPosApex'], designArgs['yPosApex'])
 
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2

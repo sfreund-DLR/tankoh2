@@ -22,7 +22,8 @@ from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
 validDomeTypes = ['isotensoid', 'circle',  # also CAPITAL letters are allowed
-                  'ellipse', 'conical', # allowed by own implementation in tankoh2.geometry.contour
+                  'ellipse', 'torispherical',
+                  'conicalElliptical', 'conicalTorispherical', # allowed by own implementation in tankoh2.geometry.contour
                   1, 2,  # types from µWind
                   ]
 
@@ -43,7 +44,7 @@ def getDomeType(domeType):
     return domeType
 
 
-def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, delta1 = None, rSmall = None, lRad = None, lCone = None, xApex = None, yApex = None):
+def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None, delta1 = None, rSmall = None, lRad = None, lCone = None):
     """creates a dome analog to tankoh2.design.winding.contour.getDome()
 
     :param cylinderRadius: radius of the cylinder
@@ -54,14 +55,18 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     :param rConeLarge: large radius of conical tank section
     :param lCone: length of conical tank section
     :param lRadius: length of radius between conical and cylindrical section
-    :param xApex: difference of the radius from conical to convex shape
     """
+
     domeType = getDomeType(domeType)
     # build  dome
     if domeType == 'ellipse':
         dome = DomeEllipsoid(cylinderRadius, lDomeHalfAxis, polarOpening)
-    if domeType == 'conical':
-        dome = DomeConical(cylinderRadius, polarOpening, delta1, rSmall, lRad, lCone, xApex, yApex)
+    elif domeType == 'torispherical':
+        dome = DomeTorispherical(cylinderRadius, polarOpening)
+    elif domeType == 'conicalElliptical':
+        dome = DomeConicalElliptical(cylinderRadius, polarOpening, delta1, rSmall, lRad, lCone)
+    elif domeType == 'conicalTorispherical':
+        dome = DomeConicalTorispherical(cylinderRadius, polarOpening, delta1, rSmall, lRad, lCone)
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
@@ -71,7 +76,6 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
         dome = DomeGeneric(x,r)
 
     return dome
-
 
 def flipXContour(x):
     return np.min(x) + np.max(x) - x[::-1]
@@ -199,8 +203,6 @@ class DomeConicalElliptical(AbstractDome):
     :param lCone: length of conical tank section
     :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
     :param lRadius: length of radius between conical and cylindrical section
-    :param xApex: x-position of the apex
-    :param yApex: y-position of the apex
 
     ::
 
@@ -219,7 +221,7 @@ class DomeConicalElliptical(AbstractDome):
         |       rLarge
     """
 
-    # def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2, xApex, yApex):
+    # def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2):
     #
     #     AbstractDome.__init__(self)
     #     self._rSmall = dCyl / 2 - alpha * dCyl / 2
@@ -230,25 +232,19 @@ class DomeConicalElliptical(AbstractDome):
     #     self._lRad = beta * gamma * dCyl
     #     self._lCone = beta * dCyl - self._lRad
     #     self._volume = volume
-    #     self._xApex = xApex
-    #     self._yApex = yApex
 
-    def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone, xApex, yApex):
+    def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
         AbstractDome.__init__(self)
         # if rPolarOpening >= rSmall:
         #     raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
         # if rSmall > rCyl:
         #     raise Tankoh2Error('Small radius should not be larger than cylindrical radius')
-        # if xApex > lCone:
-        #     raise Tankoh2Error('The position of the apex must be within the conical part')
         self._rSmall = rSmall
         self._rCyl = rCyl
         self._lCone = lCone
         self._rPolarOpening = rPolarOpening
         self._delta1 = delta1
         self._lRad = lRad
-        self._xApex = xApex
-        self._yApex = yApex
 
     @property
     def rPolarOpening(self):
@@ -269,7 +265,7 @@ class DomeConicalElliptical(AbstractDome):
 
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
-        return DomeConical(self._rCyl + thickness, self._rPolarOpening, self._delta1, self._rSmall + thickness, self._lRad, self._lCone, self._xApex, self._yApex)
+        return DomeConical(self._rCyl + thickness, self._rPolarOpening, self._delta1, self._rSmall + thickness, self._lRad, self._lCone)
 
     def getGeometry(self):
 
@@ -414,6 +410,19 @@ class DomeConicalElliptical(AbstractDome):
 
         return volume
 
+    def adaptGeometry(self, lengthDiff, beta):
+
+        self._lCone = self._lCone - lengthDiff
+        self._lRad = self._lRad - lengthDiff
+
+        self._rCyl = (self._lCone + self._lRad) / (2 * beta)
+
+        volume = self.getVolume()
+
+        returnValues = []
+        returnValues.append(volume)
+        returnValues.append(self._rCyl)
+
     def getContourTank(self, nodeNumber = 500):
 
         points = DomeConical.getContour(self)
@@ -444,8 +453,6 @@ class DomeConicalTorispherical(AbstractDome):
     :param lCone: length of conical tank section
     :param rPolarOpening: polar opening radius. The polar opening is only accounted for in getContour
     :param lRadius: length of radius between conical and cylindrical section
-    :param xApex: x-position of the apex
-    :param yApex: y-position of the apex
 
     ::
 
@@ -464,36 +471,30 @@ class DomeConicalTorispherical(AbstractDome):
         |       rLarge
     """
 
-    def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2, xApex, yApex):
-
-        AbstractDome.__init__(self)
-        self._rSmall = dCyl / 2 - alpha * dCyl / 2
-        self._rCyl = dCyl / 2
-        self._delta1 = delta1
-        self._lDome2 = delta2 * self._rCyl
-        self._rPolarOpening = rPolarOpening
-        self._lRad = beta * gamma * dCyl
-        self._lCone = beta * dCyl - self._lRad
-        self._volume = volume
-        self._xApex = xApex
-        self._yApex = yApex
-
-    # def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone, xApex, yApex):
+    # def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2):
+    #
     #     AbstractDome.__init__(self)
-    #     # if rPolarOpening >= rSmall:
-    #     #     raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
-    #     # if rSmall > rCyl:
-    #     #     raise Tankoh2Error('Small radius should not be larger than cylindrical radius')
-    #     # if xApex > lCone:
-    #     #     raise Tankoh2Error('The position of the apex must be within the conical part')
-    #     self._rSmall = rSmall
-    #     self._rCyl = rCyl
-    #     self._lCone = lCone
-    #     self._rPolarOpening = rPolarOpening
+    #     self._rSmall = dCyl / 2 - alpha * dCyl / 2
+    #     self._rCyl = dCyl / 2
     #     self._delta1 = delta1
-    #     self._lRad = lRad
-    #     self._xApex = xApex
-    #     self._yApex = yApex
+    #     self._lDome2 = delta2 * self._rCyl
+    #     self._rPolarOpening = rPolarOpening
+    #     self._lRad = beta * gamma * dCyl
+    #     self._lCone = beta * dCyl - self._lRad
+    #     self._volume = volume
+
+    def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
+        AbstractDome.__init__(self)
+        # if rPolarOpening >= rSmall:
+        #     raise Tankoh2Error('Polar opening should not be greater or equal to the dome radius')
+        # if rSmall > rCyl:
+        #     raise Tankoh2Error('Small radius should not be larger than cylindrical radius')
+        self._rSmall = rSmall
+        self._rCyl = rCyl
+        self._lCone = lCone
+        self._rPolarOpening = rPolarOpening
+        self._delta1 = delta1
+        self._lRad = lRad
 
     @property
     def rPolarOpening(self):
@@ -514,7 +515,7 @@ class DomeConicalTorispherical(AbstractDome):
 
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
-        return DomeConical(self._rCyl + thickness, self._rPolarOpening, self._delta1, self._rSmall + thickness, self._lRad, self._lCone, self._xApex, self._yApex)
+        return DomeConical(self._rCyl + thickness, self._rPolarOpening, self._delta1, self._rSmall + thickness, self._lRad, self._lCone)
 
     def getGeometry(self):
 
@@ -524,29 +525,26 @@ class DomeConicalTorispherical(AbstractDome):
 
         sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, self._rCyl / 2, 0), FreeCAD.Vector(0, 0, 1), self._rCyl / 2), 1, 2), False)
         sketch.addGeometry(Part.LineSegment(FreeCAD.Vector(self._lRad, self._rCyl, 0), FreeCAD.Vector((self._lRad + self._lCone), self._rSmall, 0)), False)
-        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(App.Vector(self._lRad + self._lCone, self._rSmall / 2, 0), App.Vector(0, 0, 1), self._rSmall / 2), 0.8, 1.2), False)
-        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(App.Vector(self._lRad + self._lCone, 0, 0), App.Vector(0, 0, 1), 1.5 * self._rSmall / 2), 0.2, 0.4), False)
-
-        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/ursprung")
+        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(self._lRad + self._lCone, self._rSmall / 2, 0), FreeCAD.Vector(0, 0, 1), self._rSmall / 2), 0.8, 1.2), False)
+        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(self._lRad + self._lCone, 0, 0), FreeCAD.Vector(0, 0, 1), 1.5 * self._rSmall / 2), 0.2, 0.4), False)
 
         sketch.addConstraint(Sketcher.Constraint('Tangent', 2, 1, 3, 2))
         sketch.addConstraint(Sketcher.Constraint('Tangent', 1, 2, 2, 2))
         sketch.addConstraint(Sketcher.Constraint('Tangent',0,1,1,1))
 
-        sketch.addConstraint(Sketcher.Constraint('Vertical',0,3,0,2))
-
         sketch.addConstraint(Sketcher.Constraint('Radius', 3, 2 * self._rSmall))
         sketch.addConstraint(Sketcher.Constraint('Radius', 2, 0.1 * 2 * self._rSmall))
-        # sketch.addConstraint(Sketcher.Constraint('DistanceX', 1, 2, 3, 1, 0.1935 * 2 * self._rSmall - 3))
+
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 0, 2, self._rCyl))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 2, 0, 2, self.rCyl - self.rSmall))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', 3, 3, -1, 1, 0))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 3, 1, self._rPolarOpening))
+
+        sketch.addConstraint(Sketcher.Constraint('Vertical', 0, 3, 0, 2))
 
         sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 2, -1, 1, 0))
         sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,0,1,self._lRad))
         sketch.addConstraint(Sketcher.Constraint('DistanceX',-1,1,1,2,self._lRad + self._lCone))
-
-        sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,0,2,self._rCyl))
-        sketch.addConstraint(Sketcher.Constraint('DistanceY', 1, 2, 0, 2, self.rCyl - self.rSmall))
-        sketch.addConstraint(Sketcher.Constraint('DistanceY',3,3,-1,1,0))
-        sketch.addConstraint(Sketcher.Constraint('DistanceY', -1, 1, 3, 1, self._rPolarOpening))
 
         tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/torispherical")
 
@@ -617,6 +615,19 @@ class DomeConicalTorispherical(AbstractDome):
 
         return volume
 
+    def adaptGeometry(self, lengthDiff, beta):
+
+        self._lCone = self._lCone - lengthDiff
+        self._lRad = self._lRad - lengthDiff
+
+        self._rCyl = (self._lCone + self._lRad) / (2 * beta)
+
+        volume = self.getVolume()
+
+        returnValues = []
+        returnValues.append(volume)
+        returnValues.append(self._rCyl)
+
     def getContourTank(self, nodeNumber = 500):
 
         points = DomeConicalTorispherical.getContour(self)
@@ -629,7 +640,6 @@ class DomeConicalTorispherical(AbstractDome):
         rCyl = [self._rCyl for i in range(nodeNumber)]
 
         xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
-
         rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
 
         xTotal = np.concatenate([xDome2, xCyl, x])
@@ -638,6 +648,93 @@ class DomeConicalTorispherical(AbstractDome):
         points = np.array([xTotal, rTotal])
 
         return points
+
+class DomeTorispherical(AbstractDome):
+
+    def __init__(self, rCyl, rPolarOpening):
+        AbstractDome.__init__(self)
+        if rPolarOpening >= rCyl:
+            raise Tankoh2Error('Polar opening should not be greater or equal to the cylindrical radius')
+        self._rPolarOpening = rPolarOpening
+        self._rCyl = rCyl
+
+    @property
+    def rCyl(self):
+        return self._rCyl
+
+    @property
+    def rPolarOpening(self):
+        return self._rPolarOpening
+
+    @property
+    def volume(self):
+        """calc dome volume numerically by slices of circular conical frustums"""
+        return self.getVolume()
+
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        return DomeEllipsoid(self.rCyl + thickness, self.rPolarOpening)
+
+    def getGeometry(self):
+        tank = FreeCAD.newDocument()
+        tank.addObject('Sketcher::SketchObject', 'Sketch')
+        sketch = tank.getObject('Sketch')
+
+        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, 2/3 * self._rCyl, 0),FreeCAD.Vector(0,0,1),2 * 0.1 * self._rCyl), 0.4 ,1.4),False)
+        sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(-1.5 * self._rCyl,0,0),FreeCAD.Vector(0,0,1),2 * self._rCyl), 0.1, 0.5),False)
+
+        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/toris_ursprung")
+
+        sketch.addConstraint(Sketcher.Constraint('Tangent',0,1,1,2))
+
+        sketch.addConstraint(Sketcher.Constraint('Radius', 0, 2 * 0.1 * self._rCyl))
+        sketch.addConstraint(Sketcher.Constraint('Radius', 1, 2 * self._rCyl))
+
+        sketch.addConstraint(Sketcher.Constraint('Vertical',0,2,0,3))
+
+        sketch.addConstraint(Sketcher.Constraint('DistanceX', -1, 1, 0, 2, 0))
+
+        sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,0,2, self._rCyl))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,1, self._rPolarOpening))
+        sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,3, 0))
+
+        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/toris_only")
+
+        geometry = sketch.getPropertyByName('Geometry')
+
+        return geometry
+
+    def getContour(self, nodeNumber = 1000):
+
+        geometry = DomeTorispherical.getGeometry(self)
+
+        xRadius1 = np.linspace(0, geometry[0].StartPoint[0], round(nodeNumber * (geometry[0].StartPoint[0] / geometry[1].StartPoint[0])))
+        rRadius1 = np.sqrt(geometry[0].Radius ** 2 - (xRadius1 - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]
+
+        xRadius2 = np.linspace(geometry[1].EndPoint[0], geometry[1].StartPoint[0], round(nodeNumber * ((geometry[1].StartPoint[0] - geometry[1].EndPoint[0]) / geometry[1].StartPoint[0])))
+        rRadius2 = np.sqrt(geometry[1].Radius ** 2 - (xRadius2 - geometry[1].Center[0]) ** 2) + geometry[1].Center[1]
+
+        x = np.concatenate([xRadius1, xRadius2[1:]])
+        r = np.concatenate([rRadius1, rRadius2[1:]])
+
+        points = np.array([x, r])
+
+        return points
+
+    def getVolume(self):
+
+        geometry = DomeTorispherical.getGeometry(self)
+
+        def rRadius1Fun(xRadius1):
+            return (np.sqrt(geometry[0].Radius ** 2 - (xRadius1 - geometry[0].Center[0]) ** 2) + geometry[0].Center[1]) ** 2
+
+        def rRadius2Fun(xRadius2):
+            return (np.sqrt(geometry[1].Radius ** 2 - (xRadius2 - geometry[1].Center[0]) ** 2) + geometry[1].Center[1]) ** 2
+
+
+        volume = np.pi * (quad(rRadius1Fun, 0, geometry[0].StartPoint[0])[0] + quad(rRadius2Fun, geometry[1].EndPoint[0], geometry[1].StartPoint[0])[0])
+
+        return volume
 
 class DomeEllipsoid(AbstractDome):
     """Calculcate ellipsoid contour
@@ -815,8 +912,8 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     if 0:
-        dc1 = DomeConicalTorispherical(20, 1500, 40, 0.5, 1.7, 0.2, 0.6, 0.7, 0, 0)
-        dc1.plotContour()
+        dt = DomeTorispherical(1000, 50)
+        dt.plotContour()
 
     elif 0:
         fig, axs = plt.subplots(1, 2, figsize=(17, 5))
@@ -835,16 +932,14 @@ if __name__ == '__main__':
 
     else:
         fig, axs = plt.subplots(1, 2, figsize=(17, 5))
-        V = 30 # m^3
-        d = 2500 # mm
-        rPolar = 50 # mm
-        alpha = 0.5
-        beta = 2
-        gamma = 0.5
+        V = 50 # m^3
+        d = 3000 # mm
+        rPolar = 30 # mm
+        alpha = 0.3
+        beta = 1
+        gamma = 0.6
         delta1 = 0.3
         delta2 = 0.7
-        xApex = 0
-        yApex = 0
 
         linestyles = ["solid", "dashdot", "dashed", "dotted"]
 
@@ -852,14 +947,14 @@ if __name__ == '__main__':
         plottitle = 'alpha'
         for parameter, linestyle in zip(parameters, linestyles):
 
-            dome = DomeConicalTorispherical(V, d, rPolar, parameter, beta, gamma, delta1, delta2, xApex, yApex)
+            dome = DomeConicalTorispherical(V, d, rPolar, parameter, beta, gamma, delta1, delta2)
             dome.plotContour(ax=axs[0], linestyle=linestyle, color='black', grid=True)
 
         parameters = np.linspace(0.25, 0.99, 3, True)
         plottitle = 'beta'
         for parameter, linestyle in zip(parameters, linestyles):
 
-            dome = DomeConicalTorispherical(V, d, rPolar, alpha, beta, parameter, delta1, delta2, xApex, yApex)
+            dome = DomeConicalTorispherical(V, d, rPolar, alpha, beta, parameter, delta1, delta2)
             dome.plotContour(ax=axs[1], linestyle=linestyle, color='black', grid=True)
 
     plt.show()
