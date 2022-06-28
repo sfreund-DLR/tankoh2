@@ -29,7 +29,6 @@ def createDesign(**kwargs):
     tankname = designArgs['tankname']
     nodeNumber = designArgs['nodeNumber']  # number of nodes of full model.
     runDir = designArgs['runDir']
-    verbose = designArgs['verbose']
 
     # Geometry
     domeType = designArgs['domeType'].lower()

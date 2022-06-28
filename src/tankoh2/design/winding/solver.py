@@ -21,18 +21,17 @@ def getMaxPuckAndIndexByAngle(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _ = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
     if angle is not None:
         log.debug(f'Layer {layerNumber}, wind angle {angle}')
-        actualPolarOpening = windLayer(vessel, layerNumber, angle, verbose)
+        actualPolarOpening = windLayer(vessel, layerNumber, angle)
         if actualPolarOpening is np.inf:
             return np.inf
     maxPuck, maxIndex = _getMaxPuck(args)
-    if verbose:
-        failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-        log.info(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
+    failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
+    log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
     return maxPuck, maxIndex
 
 
@@ -58,21 +57,20 @@ def getMaxPuckAndIndexByShift(shift, args):
     """
     if hasattr(shift, '__iter__'):
         shift = shift[0]
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, verbose, _ = args
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _ = args
     vessel.setHoopLayerShift(layerNumber, shift, True)
-    actualPolarOpening = windLayer(vessel, layerNumber, verbose=verbose)
+    actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
         return np.inf
     maxPuck, maxIndex = _getMaxPuck(args)
-    if verbose:
-        failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-        log.info(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
+    failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
+    log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
     return maxPuck, maxIndex
 
 
 def _getMaxPuck(args):
     """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, _, puckProperties, burstPressure, useIndices, useFibreFailure, _, symmetricContour = args
+    vessel, _, puckProperties, burstPressure, useIndices, useFibreFailure, symmetricContour = args
     index = 0 if useFibreFailure else 1
     maxPerElement = getLinearResults(
         vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index].max(axis=1)
@@ -97,10 +95,24 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     # get stresses in the fiber COS (elemNr, layerNr)
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
     if not symmetricContour:
-        stressesMandrel2 = shellModel.calculateLayerStressesBottom()
+        stressesMandrel2 = shellModel2.calculateLayerStressesBottom()
+        if 1:
+            from tankoh2.service.utilities import indent
+            outarr=[]
+            liner = vessel.getLiner()
+            m1 = liner.getMandrel1()
+            m2 = liner.getMandrel2()
+            outarr += [m1.getXArray() - m2.getXArray(), m1.getRArray() - m2.getRArray()]
+            #print('liner mandrel diff\n', m1.getRArray()-m2.getRArray(), m1.getXArray()-m2.getXArray())
+            m1 = vessel.getOuterMandrel(1, True)
+            m2 = vessel.getOuterMandrel(1, False)
+            outarr += [ m1[:,0]-m2[:,0], m1[:,1]-m2[:,1]]
+            outarr = [['liner X', 'liner R', 'outer X', 'outer R']] + list(np.array(outarr).T)
+            print(indent(outarr))
+            print('stresses relative \n', S11/stressesMandrel2[0])
         S11 = np.append(S11[::-1], stressesMandrel2[0], axis=0)
-        S22 = np.append(S22[::-1], stressesMandrel2[0], axis=0)
-        S12 = np.append(S12[::-1], stressesMandrel2[0], axis=0)
+        S22 = np.append(S22[::-1], stressesMandrel2[1], axis=0)
+        S12 = np.append(S12[::-1], stressesMandrel2[2], axis=0)
     numberOfElements, numberOfLayers = S11.shape
     stresses = np.zeros((numberOfElements,numberOfLayers, 6))
     stresses[:, :, 0] = S11
