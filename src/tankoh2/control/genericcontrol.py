@@ -139,15 +139,14 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
         while(designArgs['volume'] * 1e9 - volume[0] - volume[-1] - np.pi * designArgs['dcyl'] / 2 * designArgs['lcyl']) > 0.01 * designArgs['volume']:
 
-            volume[-1] = dome.adaptGeometry(5, designArgs['beta'])[0]
-
-            # lCyl und lCone und rCyl müssen noch upgedated werden
+            adaptGeometry = dome.adaptGeometry(5, designArgs['beta'])
+            volume[-1] = adaptGeometry[0]
+            designArgs['dcyl'] = adaptGeometry[-1]
 
         dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
                        designArgs['delta1'], r - designArgs['alpha'] * r,
                        designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                       designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                       designArgs['xPosApex'], designArgs['yPosApex'])
+                       designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
 
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2

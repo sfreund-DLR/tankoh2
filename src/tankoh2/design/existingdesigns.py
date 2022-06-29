@@ -335,5 +335,18 @@ conicalTankDesign = OrderedDict([
     ('nodeNumber', 1000),
 ])
 
+Klöpperboden = OrderedDict([
+    ('tankname', 'torispherical_tank'),
+    ('volume', 35),  # m^3
+    ('dcyl', 2000),  # mm
+    ('polarOpeningRadius', 50),  # mm
+    ('domeType', 'torispherical'),
+    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('verbosePlot', True),
+    ('nodeNumber', 1000),
+])
+
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
