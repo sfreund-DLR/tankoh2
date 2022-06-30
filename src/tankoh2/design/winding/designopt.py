@@ -226,7 +226,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         x,r = flipContour(x,r)
         x = np.append(x, liner.getMandrel2().getXArray()[1:] + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray()[1:])
-    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r, 'Contour',
+    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r,
                 vlines=[hoopIndexEnd], vlineColors=['black'])
 
     log.debug('Find minimal possible angle')

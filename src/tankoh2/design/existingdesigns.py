@@ -319,14 +319,14 @@ tk_cgh2 = OrderedDict([
 
 conicalTankDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('volume', 35),  # m^3
+    ('volume', 50),  # m^3
     ('dcyl', 2000),  # mm
     ('polarOpeningRadius', 50),  # mm
     ('alpha', 0.5),
     ('beta', 1.5),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),
     ('delta1', 0.8),
-    ('domeType', 'torispherical'),
+    ('domeType', 'conicalElliptical'),
     #('dome2Type', 'ellipse'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
@@ -336,8 +336,8 @@ conicalTankDesign = OrderedDict([
 ])
 
 Klöpperboden = OrderedDict([
-    ('tankname', 'torispherical_tank'),
-    ('volume', 35),  # m^3
+    ('tankname', 'test'),
+    ('volume', 10),  # m^3
     ('dcyl', 2000),  # mm
     ('polarOpeningRadius', 50),  # mm
     ('domeType', 'torispherical'),
@@ -345,7 +345,7 @@ Klöpperboden = OrderedDict([
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
     ('verbosePlot', True),
-    ('nodeNumber', 1000),
+    ('nodeNumber', 500),
 ])
 
 if __name__ == '__main__':

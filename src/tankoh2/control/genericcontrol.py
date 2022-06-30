@@ -115,11 +115,11 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             if not designArgs[f'{domeName}LengthByR']:
                 raise Tankoh2Error(f'{domeName}Type == "ellipse" but "{domeName}LengthByR" is not defined')
 
-        if designArgs[f'{domeName}Type'] == 'conical':
+        if designArgs[f'{domeName}Type'] == 'conicalElliptical':
             params = ['alpha', 'beta', 'gamma', 'delta1']
             for param in params:
                 if not designArgs[param]:
-                    raise Tankoh2Error(f'domeType == "conical" but "{param}" is not defined')
+                    raise Tankoh2Error(f'domeType == "conicalElliptical" but "{param}" is not defined')
 
         dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
                         designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
@@ -150,6 +150,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+
     dome, dome2 = designArgs['dome'], designArgs['dome2']
 
     dome2 = designArgs['dome2'] if 'dome2' in designArgs is None else designArgs['dome']
