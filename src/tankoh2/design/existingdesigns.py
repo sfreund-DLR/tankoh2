@@ -285,15 +285,24 @@ ttDesignCh2.update([
 
 atheat = OrderedDict([
     # Medium: Helium
+    # rocket d=438
+    # rocket skin thk approx 5mm
     ('tankname', 'atheat_He'),
     ('polarOpeningRadius', 15),  # mm
-    ('dcyl', 438 - 10),  # mm d_a - 2*t_estimate
-    ('lcyl', 21.156),  # mm - just an estimate for now
+    ('dcyl', 400),  # mm
+    ('lcyl', 65),  # mm
     ('safetyFactor', 1.5),
-    ('pressure', 35),  # pressure in MPa (bar / 10.)
+    ('pressure', 60),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
+])
+
+
+atheatAlu = atheat.copy()
+atheatAlu.update([
+    ('windingOrMetal', 'metal'),
+    ('materialName', 'alu2219'),
 ])
 
 tk_cgh2 = OrderedDict([
