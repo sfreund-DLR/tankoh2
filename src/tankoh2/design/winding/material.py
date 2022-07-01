@@ -1,15 +1,19 @@
 """define material and composite"""
 
 import numpy as np
+import os
 
 from tankoh2 import pychain
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
+from tankoh2.service.exception import Tankoh2Error
 
 
 def getMaterial(materialFilename=None):
     """Creates a pychain material object"""
     material = pychain.material.OrthotropMaterial()
     if materialFilename:
+        if not os.path.exists(materialFilename):
+            raise Tankoh2Error(f'File not found: "{materialFilename}"')
         material.loadFromFile(materialFilename)
     else:
         material.setDefaultCFRP()

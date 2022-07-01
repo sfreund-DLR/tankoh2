@@ -77,7 +77,8 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
     for arg, supersedeArg in removeIfIncluded:
         if arg in inputKwArgs and supersedeArg not in inputKwArgs:
-            designArgs.pop(supersedeArg)
+            if supersedeArg in designArgs:
+                designArgs.pop(supersedeArg)
     designArgs.update(inputKwArgs)
 
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)

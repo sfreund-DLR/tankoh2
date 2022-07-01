@@ -289,6 +289,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
                                          polarOpeningRadius, useHoopIndices, useFibreFailure,
                                          verbosePlot, symmetricContour)
+            log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
             if layerNumber == 1 or (resHoop[1] < resHelical[1] * hoopOrHelicalFac): #  puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
