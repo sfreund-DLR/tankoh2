@@ -122,7 +122,7 @@ def createDesign(**kwargs):
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts)
 
-    frpMass, volume, area, iterations, angles, hoopLayerShifts = results
+    frpMass, area, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime
 
     # #############################################################################
@@ -132,13 +132,17 @@ def createDesign(**kwargs):
     dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
                                                            designArgs['dome2Type'].lower(), dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
+    linerThk, insThk, fairThk = designArgs['linerThickness'], designArgs['insulationThickness'], designArgs['fairingThickness'],
     if burstPressure > 5:
         # compressed gas vessel
-        auxMasses = [getLinerMass(linerTankoh), 0., 0.]
+        auxMasses = [getLinerMass(linerTankoh, linerThk), 0., 0.]
     else:
         # liquid, cryo vessel
-        auxMasses = [getLinerMass(linerTankoh), getInsulationMass(linerTankoh), getFairingMass(linerTankoh)]
+        auxMasses = [getLinerMass(linerTankoh, linerThk), getInsulationMass(linerTankoh, insThk),
+                     getFairingMass(linerTankoh, fairThk)]
     totalMass = np.sum([frpMass]+auxMasses)
+    linerInnerTankoh = linerTankoh.getLinerResizedByThickness(-1*linerThk)
+    volume = linerInnerTankoh.volume
     results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
         vessel.getNumberOfLayers() + 1, iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)

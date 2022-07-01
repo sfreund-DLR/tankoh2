@@ -82,6 +82,11 @@ allArgs = pd.DataFrame(
         ['heatUpCycles', 'Fatigue parameters', '', 100, int, 'Number of cycles to ambient T and p [-]', ''],
         ['simulatedLives', 'Fatigue parameters', '', 5, int, 'Number of simulated lifes (scatter) [-]', ''],
         ['Kt', 'Fatigue parameters', 'Kt', 5., float, 'Stress concentration factor [-]', ''],
+        # aux thicknesses
+        ['linerThickness', 'AuxThicknesses', 'linerThk', 0., float, 'Thickness of the liner [mm]', ''],
+        ['insulationThickness', 'AuxThicknesses', 'insThk', 0., float, 'Thickness of the insluation [mm]', ''],
+        ['fairingThickness', 'AuxThicknesses', 'fairingThk', 0., float, 'Thickness of the fairing [mm]', ''],
+
     ],
     columns=['name', 'group', 'metavar', 'default', 'type', 'help', 'action']
 )
@@ -220,6 +225,9 @@ vphDesign1 = OrderedDict([
     ('polarOpeningRadius', 120),
     ('failureMode', 'interFibreFailure'),
     ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
+    ('linerThickness', 0.5),
+    ('insulationThickness', 127),
+    ('fairingThickness', 0.5),
 ])
 
 vphDesign1_isotensoid = vphDesign1.copy()
@@ -290,15 +298,28 @@ atheat = OrderedDict([
     ('tankname', 'atheat_He'),
     ('polarOpeningRadius', 15),  # mm
     ('dcyl', 400),  # mm
-    ('lcyl', 65),  # mm
+    ('lcyl', 75),  # mm
     ('safetyFactor', 1.5),
     ('pressure', 60),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('linerThickness', 3),
 ])
 
-
+scaling = 400/422
+import numpy as np
+from tankoh2 import programDir
+import os
+points = np.loadtxt(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'))
+x,r = points.T*scaling
+x+=1500
+atheat2 = atheat.copy()
+atheat2.update([
+    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
+    ('domeContour', (x*3,r)),
+])
 atheatAlu = atheat.copy()
 atheatAlu.update([
     ('windingOrMetal', 'metal'),

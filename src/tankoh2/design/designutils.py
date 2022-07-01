@@ -16,14 +16,16 @@ def getLengthRadiusFromVolume(
         polarOpeningRadius = float(allArgs[allArgs['name']=='polarOpeningRadius']['default']),
         mode = 'accurate',
         domeType = allArgs[allArgs['name']=='domeType']['default'].to_list()[0],
+        linerThickness = allArgs[allArgs['name']=='linerThickness']['default'].to_list()[0],
 ):
-    """Calculate cylindrical length and radius from volume
+    """Calculate cylindrical length and radius of the liner outer contour from required volume
     :param volume: volume [mm**3]
     :param lcylByR: cylindrical length by cylindrical radius
     :param domeLengthByR: dome length by cylindrical radius
     :param polarOpeningRadius: polar opening radius [mm]
     :param mode: [quick, accurate] Quick does not consider the polar opening reducing the effective dome vol
     :param domeType: type of dome
+    :param linerThickness: thickness of the liner
     :return: radius, length
     """
     def getVol(rCyl):
@@ -32,6 +34,8 @@ def getLengthRadiusFromVolume(
         rCyl = rCyl[0]
         dome = getDome(rCyl, polarOpeningRadius, domeType,  rCyl * domeLengthByR)
         liner = Liner(dome, rCyl * lcylByR)
+        if linerThickness > 1e-8:
+            liner = liner.getLinerResizedByThickness(-1*linerThickness)
         return abs(liner.volume - volume)
 
     if mode == 'quick':
