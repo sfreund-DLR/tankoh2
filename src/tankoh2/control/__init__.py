@@ -15,6 +15,8 @@ if __name__ == '__main__':
     params = parameters.defaultDesign.copy()
     #params = parameters.defaultUnsymmetricDesign.copy()
     params = parameters.atheat.copy()
+    #params = parameters.NGTBITDesign.copy()
+
 
     #params['failureMode'] = 'interfibrefailure'
     params['verbosePlot'] = True

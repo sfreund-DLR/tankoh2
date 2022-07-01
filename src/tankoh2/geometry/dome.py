@@ -179,7 +179,9 @@ class DomeGeneric(AbstractDome):
         return self._r[0]
 
     def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
+        """return a dome that has a resized geometry by given thickness
+
+        Perform resizing based on contour normals"""
         diff = np.array([self._x[:-1]-self._x[1:], self._r[:-1]-self._r[1:]])
         normals = diff
         normals[0] *= -1

@@ -330,9 +330,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     stats = vessel.calculateVesselStatistics()
     frpMass = stats.overallFRPMass  # in [kg]
 
-    volume = liner.getVolume()  # [l]
     dome = liner.getDome1()
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
     area *= 1e-6  # [m**2]
-    return frpMass, volume, area, iterations, *(np.array(anglesShifts).T)
+    return frpMass, area, iterations, *(np.array(anglesShifts).T)
