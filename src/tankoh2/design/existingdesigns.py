@@ -35,6 +35,14 @@ allArgs = pd.DataFrame(
         ['polarOpeningRadius', 'Geometry', 'r_po', 20, float, 'Polar opening radius [mm]', ''],
         ['domeLengthByR', 'Geometry_Dome', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
+        ['alpha', 'Geometry_Dome', '(dcyl - dsmall)/dcyl', 0.5, float,
+         'ratio of the difference of cylindrical and small radius to the cylindrical radius', ''],
+        ['beta', 'Geometry_Dome', '(lcyl + lcone)/dcyl', 1.5, float,
+         'ratio of the cylindrical and conical length to the cylindrical radius', ''],
+        ['gamma', 'Geometry_Dome', 'lrad/(lrad + lcone)', 0.5, float,
+         'ratio of the radial length to the sum f radial and conical length', ''],
+        ['delta1', 'Geometry_Dome', 'ldome/rsmall', 0.5, float,
+         'ratio of the semi axes of the elliptical dome end', ''],
         # Geometry_Dome2
         ['dome2Type', 'Geometry_Dome2', '', None, '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
@@ -341,20 +349,33 @@ tk_cgh2 = OrderedDict([
 
 conicalTankDesign = OrderedDict([
     ('tankname', 'conical_tank'),
-    ('volume', 50),  # m^3
-    ('dcyl', 3000),  # mm
-    ('polarOpeningRadius', 100),  # mm
+    ('volume', 0.3),  # m^3
+    ('dcyl', 500),  # mm
+    ('polarOpeningRadius', 30),  # mm
     ('alpha', 0.5),
-    ('beta', 0.8),  # (lCone + lRad) / dCyl
+    ('beta', 1.5),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),
-    ('delta1', 0.5),
-    ('delta2', 0.8),
-    ('xPosApex', 0),  # mm
-    ('yPosApex', 0),  # mm
-    ('domeType', 'conical'),
+    ('delta1', 0.8),
+    ('domeType', 'conicalElliptical'),
+    #('dome2Type', 'ellipse'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
+    ('verbosePlot', True),
+    ('nodeNumber', 1000),
+])
+
+Klöpperboden = OrderedDict([
+    ('tankname', 'test'),
+    ('volume', 5),  # m^3
+    ('dcyl', 500),  # mm
+    ('polarOpeningRadius', 40),  # mm
+    ('domeType', 'torispherical'),
+    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('verbosePlot', True),
+    ('nodeNumber', 500),
 ])
 
 if __name__ == '__main__':

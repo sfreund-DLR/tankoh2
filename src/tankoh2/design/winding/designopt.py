@@ -161,7 +161,6 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
 
     return cylinderEndIndex, hoopIndexEnd, maxHoopShift, useHoopIndices, useHelicalIndices
 
-
 def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, symmetricContour,
                  runDir, compositeArgs, verbosePlot,
                  useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts):
@@ -201,7 +200,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
             #. next iteration step
         #. if most loaded element is in dome area:
             #. Define Optimization bounds [minAngle, 70°] and puck result bounds
-            #. Minimize puck fibre failue:
+        #. Minimize puck fibre failure:
                 #. Set angle
                 #. Use analytical linear solver
                 #. return max puck fibre failure
@@ -226,7 +225,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         x,r = flipContour(x,r)
         x = np.append(x, liner.getMandrel2().getXArray()[1:] + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray()[1:])
-    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r, 'Contour',
+    plotContour(False,  os.path.join(runDir, f'contour.png'), x, r,
                 vlines=[hoopIndexEnd], vlineColors=['black'])
 
     log.debug('Find minimal possible angle')

@@ -128,9 +128,9 @@ def createDesign(**kwargs):
     # #############################################################################
     # postprocessing
     # #############################################################################
-    domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
+    domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'], dome.domeLength)
     dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
-                                                           designArgs['dome2Type'].lower(), dome.domeLength)
+                                                           designArgs['dome2Type'], dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     linerThk, insThk, fairThk = designArgs['linerThickness'], designArgs['insulationThickness'], designArgs['fairingThickness'],
     if burstPressure > 5:
@@ -177,8 +177,8 @@ def createDesign(**kwargs):
 
 if __name__ == '__main__':
     if 0:
-        params = parameters.defaultDesign.copy()
-        #params = parameters.defaultUnsymmetricDesign.copy()
+        #params = parameters.defaultDesign.copy()
+        params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
         #params = parameters.ttDesignLh2

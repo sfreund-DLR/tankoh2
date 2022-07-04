@@ -8,7 +8,7 @@ from tankoh2 import log
 from tankoh2.service.utilities import createRstTable, getRunDir, indent
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
-from tankoh2.geometry.dome import DomeEllipsoid, DomeConical, getDome
+from tankoh2.geometry.dome import DomeEllipsoid, DomeTorispherical, DomeConicalElliptical, DomeConicalTorispherical, getDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
@@ -76,8 +76,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                         ])
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
     for arg, supersedeArg in removeIfIncluded:
-        if arg in inputKwArgs and supersedeArg not in inputKwArgs:
-            if supersedeArg in designArgs:
+        if arg in inputKwArgs and supersedeArg not in inputKwArgs and supersedeArg in designArgs:
                 designArgs.pop(supersedeArg)
     designArgs.update(inputKwArgs)
 
@@ -101,8 +100,10 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     for key in removeKeys:
         designArgs.pop(key, None)
 
+    volume = []
 
     for domeName in ['dome2', 'dome']:
+
         if f'{domeName}Type' not in designArgs or designArgs[f'{domeName}Type'] is None:
             # dome not given (especially for dome2)
             designArgs[f'{domeName}'] = None
@@ -113,25 +114,47 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         if designArgs[f'{domeName}Type'] == 'ellipse':
             if not designArgs[f'{domeName}LengthByR']:
                 raise Tankoh2Error(f'{domeName}Type == "ellipse" but "{domeName}LengthByR" is not defined')
-        if designArgs[f'{domeName}Type'] == 'conical':
-            params = ['alpha','beta' ,'gamma' ,'delta1' ,'delta2']
+
+        if designArgs[f'{domeName}Type'] == 'conicalElliptical':
+            params = ['alpha', 'beta', 'gamma', 'delta1']
             for param in params:
                 if not designArgs[param]:
-                    raise Tankoh2Error(f'domeType == "conical" but "{param}" is not defined')
-            if not designArgs['volume']:
-                raise Tankoh2Error('domeType == "conical" but "volume" is not defined')
+                    raise Tankoh2Error(f'domeType == "conicalElliptical" but "{param}" is not defined')
 
-        dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
-                       designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                       # TODO: include params for conical domes
-                       )
+        dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                        designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                        designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
+
+        volume.append(dome.volume)
+
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
+    designArgs['lcyl'] = (designArgs['volume'] * 1e9 - volume[0] - volume[-1]) / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+
+    if designArgs['lcyl'] < 20:
+
+        designArgs['lcyl'] = 20
+        log.warning('dCyl was adapted in order to fit volume requirement')
+
+        while(designArgs['volume'] * 1e9 - volume[0] - volume[-1] - np.pi * designArgs['dcyl'] / 2 * designArgs['lcyl']) > 0.01 * designArgs['volume']:
+
+            adaptGeometry = dome.adaptGeometry(5, designArgs['beta'])
+            volume[-1] = adaptGeometry[0]
+            designArgs['dcyl'] = adaptGeometry[-1]
+
+        dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                       designArgs['delta1'], r - designArgs['alpha'] * r,
+                       designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                       designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
 
     if 'lcyl' not in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+
     dome, dome2 = designArgs['dome'], designArgs['dome2']
+
+    dome2 = designArgs['dome2'] if 'dome2' in designArgs is None else designArgs['dome']
+
     designArgs['tankLength'] = designArgs['lcyl'] + dome.domeLength + \
                                (dome.domeLength if dome2 is None else dome2.domeLength)
 
