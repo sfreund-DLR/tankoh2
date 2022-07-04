@@ -36,7 +36,7 @@ def getDomeType(domeType):
     if domeType is None:
         domeType = 'isotensoid'
     elif isinstance(domeType, str):
-        domeType = domeType.lower()
+        pass
     elif isinstance(domeType, int) and domeType in validDomeTypes:
         domeType = {1:'isotensoid', 2:'circle'}[domeType]
     else:
@@ -75,6 +75,9 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
         domeMuWind = getDomeMuWind(cylinderRadius, polarOpening, domeType)
         x, r = domeMuWind.getXCoords(), domeMuWind.getRCoords()
         dome = DomeGeneric(x,r)
+
+    else:
+        raise Tankoh2Error(f'no valid dome type. Dometype {domeType}')
 
     return dome
 
@@ -225,27 +228,27 @@ class DomeConicalElliptical(AbstractDome):
         |       rLarge
     """
 
-    def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2):
-
-        AbstractDome.__init__(self)
-        self._rSmall = dCyl / 2 - alpha * dCyl / 2
-        self._rCyl = dCyl / 2
-        self._delta1 = delta1
-        self._lDome2 = delta2 * self._rCyl
-        self._rPolarOpening = rPolarOpening
-        self._lRad = beta * gamma * dCyl
-        self._lCone = beta * dCyl - self._lRad
-        self._volume = volume
-
-    # def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
-    #     AbstractDome.__init__(self)
+    # def __init__(self, volume, dCyl, rPolarOpening, alpha, beta, gamma, delta1, delta2):
     #
-    #     self._rSmall = rSmall
-    #     self._rCyl = rCyl
-    #     self._lCone = lCone
-    #     self._rPolarOpening = rPolarOpening
+    #     AbstractDome.__init__(self)
+    #     self._rSmall = dCyl / 2 - alpha * dCyl / 2
+    #     self._rCyl = dCyl / 2
     #     self._delta1 = delta1
-    #     self._lRad = lRad
+    #     self._lDome2 = delta2 * self._rCyl
+    #     self._rPolarOpening = rPolarOpening
+    #     self._lRad = beta * gamma * dCyl
+    #     self._lCone = beta * dCyl - self._lRad
+    #     self._volume = volume
+
+    def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
+        AbstractDome.__init__(self)
+
+        self._rSmall = rSmall
+        self._rCyl = rCyl
+        self._lCone = lCone
+        self._rPolarOpening = rPolarOpening
+        self._delta1 = delta1
+        self._lRad = lRad
 
     @property
     def rPolarOpening(self):

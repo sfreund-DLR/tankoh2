@@ -71,7 +71,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
     elif isinstance(domeType, str):
-        domeType = domeType.lower()
+        #domeType = domeType.lower()
         if domeType == 'isotensoid':
             domeType = pychain.winding.DOME_TYPES.ISOTENSOID
         elif domeType == 'circle':

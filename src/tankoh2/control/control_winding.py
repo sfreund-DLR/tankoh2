@@ -128,9 +128,9 @@ def createDesign(**kwargs):
     # #############################################################################
     # postprocessing
     # #############################################################################
-    domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'].lower(), dome.domeLength)
+    domeTankoh = getDomeTankoh(dcyl / 2, polarOpeningRadius, designArgs['domeType'], dome.domeLength)
     dome2Tankoh = None if dome2 is None else getDomeTankoh(dcyl / 2,polarOpeningRadius,
-                                                           designArgs['dome2Type'].lower(), dome.domeLength)
+                                                           designArgs['dome2Type'], dome.domeLength)
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     if burstPressure > 5:
         # compressed gas vessel

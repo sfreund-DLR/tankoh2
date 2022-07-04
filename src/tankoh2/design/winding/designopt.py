@@ -161,7 +161,6 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
 
     return cylinderEndIndex, hoopIndexEnd, maxHoopShift, useHoopIndices, useHelicalIndices
 
-
 def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPressure, symmetricContour,
                  runDir, compositeArgs, verbosePlot,
                  useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts):
