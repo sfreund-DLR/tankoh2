@@ -8,6 +8,7 @@
 from scipy.optimize import minimize_scalar
 from scipy.optimize import differential_evolution
 import numpy as np
+import matplotlib.pyplot as plt
 
 from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
@@ -28,12 +29,21 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
     tol = 1e-2
+    args = [vessel, layerNumber, targetPolarOpening]
     popt = minimize_scalar(targetFunction, method='bounded',
                            bounds=angleBounds,
-                           args=[vessel, layerNumber, targetPolarOpening],
+                           args=args,
                            options={"maxiter": 1000, 'disp': 1, "xatol": tol})
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
+    plotTargetFun = False
+    if plotTargetFun:
+        targetFunction = getPolarOpeningDiffByAngle
+        angles = np.linspace(angleBounds[0], 10)
+        tfValues = [targetFunction(angle, args) for angle in angles]
+        fig, ax = plt.subplots()
+        ax.plot(angles, tfValues, linewidth=2.0)
+        plt.show()
     angle, funVal, iterations = popt.x, popt.fun, popt.nfev
     if popt.fun > 1 and targetFunction is getPolarOpeningDiffByAngle:
         # desired polar opening not met. This happens, when polar opening is near fitting.

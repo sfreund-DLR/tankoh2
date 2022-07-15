@@ -14,8 +14,8 @@ if __name__ == '__main__':
 
     params = parameters.defaultDesign.copy()
     #params = parameters.defaultUnsymmetricDesign.copy()
-    params = parameters.atheat.copy()
-    #params = parameters.NGTBITDesign.copy()
+    params = parameters.atheat2.copy()
+    params = parameters.NGTBITDesignNewThk.copy()
 
 
     #params['failureMode'] = 'interfibrefailure'
@@ -27,6 +27,7 @@ if __name__ == '__main__':
     runCompositCalc = True
     if runCompositCalc:
         createDesignWinding(**params.copy())
+
     runMetalCalc = False
     if runMetalCalc:
         params['materialName'] = 'alu6061T6'

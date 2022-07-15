@@ -3,9 +3,12 @@ Characterize design input parameter for various projects
 """
 
 
-
+import os
 from collections import OrderedDict
 import pandas as pd
+
+from tankoh2 import programDir
+from tankoh2.geometry.geoutils import getReducedDomePoints
 
 
 allArgs = pd.DataFrame(
@@ -142,6 +145,7 @@ hymodDesign = OrderedDict([
 ])
 
 
+
 NGTBITDesign = OrderedDict([
     ('tankname', 'NGT-BIT-2022-03-04'),
     ('pressure', 70), # MPa
@@ -158,21 +162,39 @@ NGTBITDesign = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     # single ply thickness with 62% FVG
-    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG    
+    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
     ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
     # single ply thickness with 55% FVG
     #('hoopLayerThickness', 0.101010101), # thickness for 55% FVG
     #('helixLayerThickenss', 0.101010101), # thickness for 55% FVG
     # single ply thickness with 60% FVG
-    #('hoopLayerThickness', 0.092592593), # thickness for 60% FVG    
-    #('helixLayerThickenss', 0.092592593), # thickness for 60% FVG          
+    #('hoopLayerThickness', 0.092592593), # thickness for 60% FVG
+    #('helixLayerThickenss', 0.092592593), # thickness for 60% FVG
     ('rovingWidth', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
     # optimizer settings
-    ('maxlayers', 200), 
-    ('verbose', True)
+    ('maxlayers', 200),
+    ('verbose', True),
+    ])
+
+NGTBITDesignNewThk = NGTBITDesign.copy()
+NGTBITDesignNewThk.update([
+    ('pressure', 7), # MPa
+    ('burstPressure', None), # MPa
+    ('tankname', 'NGT-BIT-2022-07_new_thk'),
+    ('dcyl', 400.), # due to shrinkage
+    ('materialName', 'kuempers_k-preg-002-012-65-00'),
+    ('hoopLayerThickness', 0.191), # thickness for 61% FVG
+    ('helixLayerThickenss', 0.191), # thickness for 61% FVG
+    ('rovingWidth', 4.00),
+    ('numberOfRovings', 1), # number of used spools at FVT
+    ('tex', 830),
+    ('fibreDensity', 1.78),
+    ('relRadiusHoopLayerEnd', 0.993),
+    ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
+    ('verbose', False),
     ])
 
 NGTBITDesign_old = OrderedDict([
@@ -306,7 +328,7 @@ atheat = OrderedDict([
     ('tankname', 'atheat_He'),
     ('polarOpeningRadius', 15),  # mm
     ('dcyl', 400),  # mm
-    ('lcyl', 75),  # mm
+    #('lcyl', 75),  # mm
     ('safetyFactor', 1.5),
     ('pressure', 60),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
@@ -314,20 +336,31 @@ atheat = OrderedDict([
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
+    ('volume', 0.03),
 ])
 
 scaling = 400/422
-import numpy as np
-from tankoh2 import programDir
-import os
-points = np.loadtxt(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'))
-x,r = points.T*scaling
-x+=1500
 atheat2 = atheat.copy()
 atheat2.update([
+    ('tankname', 'atheat_He_fvt_geo'),
     ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
-    ('domeContour', (x*3,r)),
+    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('domeType', 'generic'),
+    #('lcyl', 79.85),  # mm
+    # ('initialAnglesAndShifts', [
+    #     (7.862970189270743   , 0                    ),
+    #     (90                  , 21.984637908159538   ),
+    #     (13.866345007970057  , 0                    ),
+    #     (13.866345007970057  , 0                    ),
+    #     (58.4334573009439    , 0                    ),
+    #     (69.01950346986695   , 0                    ),
+    #     (47.36658070728886   , 0                    ),
+    #     (9.171105727970618   , 0                    ),
+    #     (9.539139023476652   , 0                    ),
+    #     (25.001541085240873  , 0                    ),
+    #     (90                  , -2.1997272973884687  ),]),
 ])
+
 atheatAlu = atheat.copy()
 atheatAlu.update([
     ('windingOrMetal', 'metal'),
@@ -377,6 +410,26 @@ Klöpperboden = OrderedDict([
     ('verbosePlot', True),
     ('nodeNumber', 500),
 ])
+
+hytazerSmall = OrderedDict([
+    # Medium: Helium
+    # rocket d=438
+    # rocket skin thk approx 5mm
+    ('tankname', 'hytazer_small'),
+    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
+    ('dcyl', 400),  # mm
+    ('lcyl', 500),  # mm
+    ('safetyFactor', 2),
+    ('pressure', 5),  # pressure in MPa (bar / 10.)
+    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('domeType', 'generic'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', False),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 2),
+])
+
+
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

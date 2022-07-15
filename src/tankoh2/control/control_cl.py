@@ -1,8 +1,7 @@
 """control a tank optimization"""
 
-import sys
+from tankoh2.control.genericcontrol import saveLayerBook
 from tankoh2.design.existingdesigns import kautextDesign
-from tankoh2.design.winding.vessel_cl import winding_helical_layer
 
 #from builtins import True, False
 #from builtins import
@@ -14,9 +13,10 @@ import os
 
 from tankoh2 import programDir, log, pychain
 from tankoh2.service.utilities import indent, getRunDir
-from tankoh2.design.winding.windingutils import getRadiusByShiftOnMandrel, updateName, \
+from tankoh2.design.winding.windingutils import updateName, \
     changeSimulationOptions
-from tankoh2.design.winding.contour import getLiner, getDome, getReducedDomePoints #, getLengthContourPath
+from tankoh2.design.winding.contour import getLiner, getDome  #, getLengthContourPath
+from tankoh2.geometry.geoutils import getReducedDomePoints
 from tankoh2.design.winding.material import getMaterial, getComposite, readLayupData
 from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
@@ -316,46 +316,6 @@ def builtVesselByOptimizedDesign(design, domeContourFilename):
         # start design optimization with specified design and given (x,r)-liner contour data
         createDesign(**design, domeContour = (x, r), runDir=runDir)
 
-def getLayerBook(directory, vesselName): 
-    
-    # get vessel
-    vessel = pychain.winding.Vessel()    
-    filename = directory + "//" + vesselName + ".vessel"
-    log.info(f' load vessel from {filename}')     
-    vessel.loadFromFile(filename)
-    vessel.finishWinding()
-    
-    # get composite design of vessel 
-    composite = pychain.material.Composite()
-    filename = filename = directory + "//" + vesselName + ".design"
-    composite.loadFromFile(filename)
-    
-    #get Liner    
-    linerOuterDiameter =  2.*vessel.getLiner().cylinderRadius
-    
-    outputFileName = directory + "//" + vesselName + "LayupBook.txt"  
-    
-    log.info(f' No. Layer , Angle in cylinder, HoopLayerShift left, HoopLayerShift right, single ply thickness, wounded layer thickness,Polar Opening Radius, vessel cinder thickness')
-    
-    with open(outputFileName, "w") as file:
-        file.write('\t'.join(["No. Layer" , "Angle in cylinder", "HoopLayerShift left", "HoopLayerShift right", "single ply thickness", "wounded layer thickness","Polar Opening Radius", "outer vessel cylinder diameter"]) + '\n')
-    outArr = [] 
-    
-    vesselThickness = linerOuterDiameter
-    for layerNo in range(vessel.getNumberOfLayers()):
-        woundedPlyThickness = composite.getLayerThicknessFromWindingProps(layerNo) #composite.getOrthotropLayer(layerNo).thickness
-        vesselThickness = vesselThickness + 2.*woundedPlyThickness                         
-        log.info(f' { layerNo+1 }, {composite.getAngle(layerNo)}, {vessel.getHoopLayerShift(layerNo, True)}, {vessel.getHoopLayerShift(layerNo, True)}, {composite.getLayerThicknessFromWindingProps(layerNo)/2.}, {composite.getLayerThicknessFromWindingProps(layerNo)},{vessel.getPolarOpeningR(layerNo, True)},{vesselThickness}')
-        outArr.append([layerNo+1, composite.getAngle(layerNo), vessel.getHoopLayerShift(layerNo, True), vessel.getHoopLayerShift(layerNo, True), woundedPlyThickness/2.,woundedPlyThickness,vessel.getPolarOpeningR(layerNo, True), vesselThickness])
-        # alternative thickness: composite.getLayerThicknessFromWindingProps(layerNo)
-    
-    with open(outputFileName, "w") as file:
-        file.write(indent([["No. Layer" , "Angle in cylinder", "HoopLayerShift left", "HoopLayerShift right", "single ply thickness", "wounded layer thickness","Polar Opening Radius", "vessel cylinder thickness"]] + outArr))
-    #with open(outputFileName, "a") as file:
-    #        file.write('\t'.join([str(s) for s in outArr[-1]]) + '\n')
-    
-
-
 
 #####################################################################################################
 #        MAIN PROGRAMM
@@ -374,7 +334,7 @@ def main():
     # --- Parameters for As-Built
     symmetricTank = True
     servicepressure = 700. #bar
-    saftyFactor = 1.
+    safetyFactor = 1.
     layersToWind = 95 #48
     
     optimizeWindingHelical = False #False
@@ -435,16 +395,18 @@ def main():
 #####################################################################################################
 
     if AsBuilt: 
-        builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical, optimizeWindingHoop, tankname, 
-                           dataDir, dcyl, polarOpening, lcylinder, dpoints, defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth, numberOfRovingsHelical, 
-                           numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)        
+        builtVesselAsBuilt(symmetricTank, servicepressure, safetyFactor, layersToWind, optimizeWindingHelical,
+                           optimizeWindingHoop, tankname, dataDir, dcyl, polarOpening, lcylinder, dpoints,
+                           defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth,
+                           numberOfRovingsHelical, numberOfRovingsHoop, tex, rho, hoopStart,
+                           hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)
     
     if createDesign:    
         builtVesselByOptimizedDesign(design, domeContourFilename)
         print(design)
     
     if createLayerBook:
-        getLayerBook(directory, vesselName)
+        saveLayerBook(directory, vesselName)
         
         
 
