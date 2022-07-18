@@ -24,6 +24,8 @@ gh2Properties = pd.DataFrame(
 
 
 def test_cryoProps():
+    assert np.allclose(70.1147693795599, rhoLh2Saturation(21))
+
     assert np.allclose(lh2Properties['rho'][:-1], rhoLh2Saturation(lh2Properties['T'][:-1]), rtol=0.05)
     assert np.allclose(gh2Properties['rho'][:-1], rhoGh2Saturation(lh2Properties['T'][:-1]), rtol=0.1)
     assert np.allclose(lh2Properties['rho'][:-1], rhoLh2ByPSaturation(lh2Properties['p'][:-1]), rtol=0.05)
