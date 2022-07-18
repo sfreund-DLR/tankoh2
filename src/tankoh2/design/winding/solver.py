@@ -28,7 +28,7 @@ def getMaxPuckAndIndexByAngle(angle, args):
         log.debug(f'Layer {layerNumber}, wind angle {angle}')
         actualPolarOpening = windLayer(vessel, layerNumber, angle)
         if actualPolarOpening is np.inf:
-            return np.inf
+            return np.inf, 0
     maxPuck, maxIndex = _getMaxPuck(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
     log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
@@ -61,7 +61,7 @@ def getMaxPuckAndIndexByShift(shift, args):
     vessel.setHoopLayerShift(layerNumber, shift, True)
     actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
-        return np.inf
+        return np.inf, 0
     maxPuck, maxIndex = _getMaxPuck(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
     log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
