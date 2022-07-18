@@ -427,6 +427,7 @@ hytazerSmall = OrderedDict([
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 2),
+    ('polarOpeningRadius', 23),  # mm
 ])
 
 
