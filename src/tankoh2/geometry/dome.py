@@ -170,6 +170,11 @@ class DomeGeneric(AbstractDome):
         :param r: vector r starts at cylinder radius decreasing
         """
         AbstractDome.__init__(self)
+        epsilon = 1e-8 * np.max((x,r))
+        if not np.all((x[1:] - x[:-1]) > epsilon):
+            raise Tankoh2Error(f'x is not increasing. Please check your dome contour input')
+        if not np.all((r[1:] - r[:-1]) < -epsilon):
+            raise Tankoh2Error(f'r is not decreasing. Please check your dome contour input')
         self._x = x
         self._r = r
 
@@ -182,7 +187,9 @@ class DomeGeneric(AbstractDome):
         return self._r[0]
 
     def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
+        """return a dome that has a resized geometry by given thickness
+
+        Perform resizing based on contour normals"""
         diff = np.array([self._x[:-1]-self._x[1:], self._r[:-1]-self._r[1:]])
         normals = diff
         normals[0] *= -1

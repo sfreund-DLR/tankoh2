@@ -3,7 +3,7 @@
 import numpy as np
 from scipy import optimize
 
-from tankoh2.service.physicalprops import rhoLh2ByP, rhoGh2NonCryo
+from tankoh2.service.physicalprops import rhoLh2ByPSaturation, rhoGh2
 from tankoh2.design.existingdesigns import allArgs
 from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
@@ -16,14 +16,16 @@ def getLengthRadiusFromVolume(
         polarOpeningRadius = float(allArgs[allArgs['name']=='polarOpeningRadius']['default']),
         mode = 'accurate',
         domeType = allArgs[allArgs['name']=='domeType']['default'].to_list()[0],
+        linerThickness = allArgs[allArgs['name']=='linerThickness']['default'].to_list()[0],
 ):
-    """Calculate cylindrical length and radius from volume
+    """Calculate cylindrical length and radius of the liner outer contour from required volume
     :param volume: volume [mm**3]
     :param lcylByR: cylindrical length by cylindrical radius
     :param domeLengthByR: dome length by cylindrical radius
     :param polarOpeningRadius: polar opening radius [mm]
     :param mode: [quick, accurate] Quick does not consider the polar opening reducing the effective dome vol
     :param domeType: type of dome
+    :param linerThickness: thickness of the liner
     :return: radius, length
     """
     def getVol(rCyl):
@@ -32,6 +34,8 @@ def getLengthRadiusFromVolume(
         rCyl = rCyl[0]
         dome = getDome(rCyl, polarOpeningRadius, domeType,  rCyl * domeLengthByR)
         liner = Liner(dome, rCyl * lcylByR)
+        if linerThickness > 1e-8:
+            liner = liner.getLinerResizedByThickness(-1*linerThickness)
         return abs(liner.volume - volume)
 
     if mode == 'quick':
@@ -54,9 +58,9 @@ def getRequiredVolume(lh2Mass, operationalPressure, maxFill = 0.9, roh=None, lh2
     """
     if roh is None and lh2OrGh2:
         if lh2OrGh2 == 'lh2':
-            roh = rhoLh2ByP(operationalPressure)  # roh at 22K
+            roh = rhoLh2ByPSaturation(operationalPressure)  # roh at 22K
         else:
-            roh = rhoGh2NonCryo(operationalPressure, 273 + 20)[0]
+            roh = rhoGh2(operationalPressure, 273 + 20)[0]
     v = lh2Mass / roh
     v *= 1 / maxFill
     return v
@@ -72,9 +76,9 @@ def getMassByVolume(lh2Volume, operationalPressure, maxFill = 0.9, roh=None, lh2
     """
     if roh is None and lh2OrGh2:
         if lh2OrGh2 == 'lh2':
-            roh = rhoLh2ByP(operationalPressure)  # roh at 22K
+            roh = rhoLh2ByPSaturation(operationalPressure)  # roh at 22K
         else:
-            roh = rhoGh2NonCryo(operationalPressure, 273 + 20)[0]
+            roh = rhoGh2(operationalPressure, 273 + 20)[0]
     m = lh2Volume * roh * maxFill
     return m
 

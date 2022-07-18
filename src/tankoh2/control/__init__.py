@@ -14,17 +14,20 @@ if __name__ == '__main__':
 
     params = parameters.defaultDesign.copy()
     #params = parameters.defaultUnsymmetricDesign.copy()
+    params = parameters.atheat2.copy()
+    params = parameters.NGTBITDesignNewThk.copy()
 
 
     #params['failureMode'] = 'interfibrefailure'
     params['verbosePlot'] = True
     #params['initialAnglesAndShifts'] = [(8,0),(90,2),(16,0)]
-
     # params['nodeNumber'] = 50
-    params['verbose'] = True
+    #params['verbose'] = True
 
-    params['burstPressure'] = 5
-    createDesignWinding(**params.copy())
+    runCompositCalc = True
+    if runCompositCalc:
+        createDesignWinding(**params.copy())
+
     runMetalCalc = False
     if runMetalCalc:
         params['materialName'] = 'alu6061T6'
