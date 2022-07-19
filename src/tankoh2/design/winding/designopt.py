@@ -223,7 +223,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
     save = True
     layerNumber = 0
     iterations = 0
-    hoopOrHelicalFac = 1.
+    hoopOrHelicalFac = 1.1
     liner = vessel.getLiner()
 
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
