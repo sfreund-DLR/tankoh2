@@ -21,8 +21,8 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
-validDomeTypes = ['isotensoid', 'circle',  # also CAPITAL letters are allowed
-                  'ellipse', 'torispherical',
+validDomeTypes = ['isotensoid_MuWind', 'circle',  # also CAPITAL letters are allowed
+                  'ellipse', 'torispherical', 'isotensoid',
                   'conicalElliptical', 'conicalTorispherical', 'conicalIsotensoid', # allowed by own implementation in tankoh2.geometry.contour
                   1, 2,  # types from µWind
                   ]
@@ -71,6 +71,8 @@ def getDome(cylinderRadius, polarOpening, domeType = None, lDomeHalfAxis = None,
     elif domeType == 'circle':
         dome = DomeSphere(cylinderRadius, polarOpening)
     elif domeType == 'isotensoid':
+        dome = DomeIsotensoid(cylinderRadius, polarOpening)
+    elif domeType == 'isotensoid_MuWind':
         from tankoh2.design.winding.contour import getDome as getDomeMuWind
         domeMuWind = getDomeMuWind(cylinderRadius, polarOpening, domeType)
         x, r = domeMuWind.getXCoords(), domeMuWind.getRCoords()
@@ -551,7 +553,7 @@ class DomeConicalTorispherical(DomeConicalElliptical):
 
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
-        return DomeConicalTorispherical(self._rCyl + thickness, self._rPolarOpening, self._delta1, self._rSmall + thickness, self._lRad, self._lCone)
+        return DomeConicalTorispherical(self._rCyl + thickness, self._rPolarOpening, self._rSmall + thickness, self._lRad, self._lCone)
 
     def getGeometry(self):
 
@@ -1092,6 +1094,96 @@ class DomeTorispherical(AbstractDome):
 
         return volume
 
+class DomeIsotensoid(AbstractDome):
+
+    def __init__(self, rCyl, rPolarOpening):
+        AbstractDome.__init__(self)
+        if rPolarOpening >= rCyl:
+            raise Tankoh2Error('Polar opening should not be greater or equal to the cylindrical radius')
+        self._rPolarOpening = rPolarOpening
+        self._rCyl = rCyl
+
+    @property
+    def rCyl(self):
+        return self._rCyl
+
+    @property
+    def rPolarOpening(self):
+        return self._rPolarOpening
+
+    @property
+    def volume(self):
+        return self.getVolume()
+
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        return DomeIsotensoid(self._rCyl + thickness, self._rPolarOpening)
+
+    def getContour(self, nodeNumber = 1000):
+
+        dPhi = 1/nodeNumber
+        tol = 10E-6
+
+        scaleFactor = 0
+
+        r = self._rCyl
+        x = 0
+        phi = 0
+        alpha = np.arcsin(self._rPolarOpening / self._rCyl)
+
+        rListKonv = []
+        rListKonv.append(r)
+
+        xListKonv = []
+        xListKonv.append(x)
+
+        slopeList = []
+
+        while alpha < np.arctan(np.sqrt(2)):
+            phi = phi + dPhi
+            alpha = np.arcsin(self._rPolarOpening / r)
+
+            rm = r / (np.cos(phi) * (2 - np.tan(alpha) ** 2))
+
+            dr = rm * dPhi * np.sin(phi)
+            r = r - dr
+            rListKonv.append(r)
+
+            dx = rm * dPhi * np.cos(phi)
+            x = x + dx
+            xListKonv.append(x)
+
+            slopeList.append(-dr / dx)
+
+        xLine = np.linspace(xListKonv[-1], (self._rPolarOpening - (rListKonv[-1] - slopeList[-1] * xListKonv[-1])) / slopeList[-1], 10)
+        rLine = slopeList[-1] * xLine + (rListKonv[-1] - slopeList[-1] * xListKonv[-1])
+
+        x = np.concatenate([xListKonv, xLine[1:]])
+        r = np.concatenate([rListKonv, rLine[1:]])
+
+        points = np.array([x, r])
+
+        return points
+
+    def getVolume(self):
+
+        xCoords = DomeIsotensoid.getContour(self)[0]
+        rCoords = DomeIsotensoid.getContour(self)[1]
+
+        rCoords = list(rCoords)
+        xCoords = list(xCoords)
+
+        volume = 0
+
+        for i in range(len(rCoords) - 1):
+
+            def fun(x):
+                return ((rCoords[i] + rCoords[i + 1]) / 2) ** 2
+
+            volume = volume + np.pi * quad(fun, xCoords[i], xCoords[i + 1])[0]
+
+        return volume
+
 class DomeSphere(DomeEllipsoid):
     """Defines a spherical dome"""
 
@@ -1119,9 +1211,8 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     if 1:
-        dt = DomeConicalIsotensoid(1000, 250, 700, 500, 500)
+        dt = DomeIsotensoid(1000, 500)
         dt.plotContour()
-        dt.getVolume()
 
     elif 0:
         fig, axs = plt.subplots(1, 2, figsize=(17, 5))
