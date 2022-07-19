@@ -326,8 +326,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, puckProperties, burstPre
         plotPuckAndTargetFunc(puck, tfValues, anglesShifts, optResult[0], layerNumber, runDir,
                               verbosePlot, useFibreFailure, show, elemIdxmax, hoopIndexEnd, newDesignIndex)
 
-        print(anglesShifts)
-
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:
         log.warning('Reached max layers. You need to specify more initial layers')
