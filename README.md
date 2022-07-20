@@ -28,6 +28,8 @@ The winding simulation is carried out by [µChain](https://www.mefex.de/software
 
 see **tool.poetry.dependencies** section in [pyproject.toml](pyproject.toml)
 
+FreeCAD is required for conical domes
+
 Requirements from [µChain](https://www.mefex.de/software/):
 - Python 3.8 (x64) + Numpy 1.20.0
 
