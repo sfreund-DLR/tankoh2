@@ -12,13 +12,16 @@ import matplotlib.pyplot as plt
 
 from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarOpeningDiffHoop, \
     getPolarOpeningDiffHelicalUsingLogFriction, getPolarOpeningXDiffHoop, \
-    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, getPolarOpeningDiffHelicalUsingNegativeLogFriction
+    getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, \
+    getPolarOpeningDiffHelicalUsingNegativeLogFriction, getPolarOpeningDiffByAngleBandMid
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckAndIndexByAngle, getMaxPuckAndIndexByShift
 import tankoh2.settings as settings
+from tankoh2 import log
 
 
-def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
+
+def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidth,
                   targetFunction=getPolarOpeningDiffByAngle):
     """optimizes the angle of the actual layer to realize the desired polar opening
 
@@ -26,10 +29,15 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
     :param targetPolarOpening: polar opening radius that should be realized
     :param layerNumber: number of the actual layer
     :param angleBounds: bounds of the angles used (min angle, max angle)
+    :param bandWidth: total width of the band (only used for tf getPolarOpeningDiffByAngleBandMid)
+    :param targetFunction: target function to be minimized
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
     tol = 1e-2
-    args = [vessel, layerNumber, targetPolarOpening]
+    if targetFunction is getPolarOpeningDiffByAngleBandMid:
+        args = [vessel, layerNumber, targetPolarOpening, bandWidth]
+    else:
+        args = [vessel, layerNumber, targetPolarOpening]
     popt = minimize_scalar(targetFunction, method='bounded',
                            bounds=angleBounds,
                            args=args,
@@ -38,8 +46,7 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
         raise Tankoh2Error('Could not find optimal solution')
     plotTargetFun = False
     if plotTargetFun:
-        targetFunction = getPolarOpeningDiffByAngle
-        angles = np.linspace(angleBounds[0], 10)
+        angles = np.linspace(angleBounds[0], 10, 200)
         tfValues = [targetFunction(angle, args) for angle in angles]
         fig, ax = plt.subplots()
         ax.plot(angles, tfValues, linewidth=2.0)
@@ -52,8 +59,7 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
                                                   getNegAngleAndPolarOpeningDiffByAngle)
     else:
         windLayer(vessel, layerNumber, angle)
-    #angle2 = vessel.estimateCylinderAngle(layerNumber, targetPolarOpening)
-    #r = angle / angle2
+    log.debug(f'Min angle {angle} at funcVal {funVal}')
     return angle, funVal, iterations
 
 

@@ -1094,6 +1094,7 @@ class DomeTorispherical(AbstractDome):
 
         return volume
 
+
 class DomeIsotensoid(AbstractDome):
 
     def __init__(self, rCyl, rPolarOpening):

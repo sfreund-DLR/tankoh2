@@ -13,59 +13,6 @@ def getAnglesFromVessel(vessel):
     return [np.rad2deg(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).clairaultAngle) for layerNumber in range(vessel.getNumberOfLayers())]
 
 
-def getRadiusByShiftOnMandrel(mandrel, startRadius, shift):
-    """Calculates a shift along the mandrel surface in the dome section
-
-    :param mandrel: mandrel obj
-    :param startRadius: radius on mandrel where the shift should be applied
-    :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
-    :return: radius
-    """
-    # x-coordinate, radius, length on mandrel
-    coords = pd.DataFrame(np.array([  # mandrel.getXArray(),
-        mandrel.getRArray(),
-        mandrel.getLArray()]).T,
-                          columns=[  # 'x',
-                              'r', 'l'])
-
-    # cut section of above 0.9*maxRadius
-    maxR = coords['r'].max()
-    coords = coords[coords['r'] < 0.9 * maxR]
-
-    # invert index order
-    coordsRev = coords.iloc[::-1]
-
-    # get initial length and perform shift
-    startLength = np.interp(startRadius, coordsRev['r'], coordsRev['l'])
-    targetLength = startLength + shift
-
-    # get target radius
-    targetRadius = np.interp(targetLength, coords['l'], coords['r'])
-    return targetRadius
-
-
-def getCoordsShiftFromLength(mandrel, startLength, shift):
-    """Calculates a shift along the mandrel surface in the dome section
-
-    :param mandrel: mandrel obj
-    :param startLength: length on mandrel where the shift should be applied
-    :param shift: (Scalar or Vector) Shift along the surface. Positive values shift in fitting direction
-    :return: 4-tuple with scalar or vector entires depending on parameter "shift"
-        x-coordinate, radius, length, nearestElementIndices
-
-    """
-    targetLength = startLength + shift
-    x, r, l = mandrel.getXArray(), mandrel.getRArray(), mandrel.getLArray()
-
-    targetRadius = np.interp(targetLength, l, r)
-    targetX = np.interp(targetLength, l, x)
-    nodalLengths = mandrel.getLArray()
-    elementLengths = (nodalLengths[:-1]+nodalLengths[1:]) / 2
-    elementLengths = np.array([elementLengths] * len(targetLength))
-    indicies = np.argmin(np.abs(elementLengths.T - targetLength), axis=0)
-    return targetX, targetRadius, targetLength, indicies
-
-
 def getLayerThicknesses(vessel, symmetricContour):
     """returns a dataframe with thicknesses of each layer along the whole vessel"""
     thicknesses = []
