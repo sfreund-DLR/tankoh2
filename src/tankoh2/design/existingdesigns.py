@@ -382,9 +382,9 @@ tk_cgh2 = OrderedDict([
 
 conicalTankDesign = OrderedDict([
     ('tankname', 'conical_torispherical'),
-    ('volume', 33),  # m^3
-    ('dcyl', 2500),  # mm
-    ('polarOpeningRadius', 200),  # mm
+    ('volume', 0.3),  # m^3
+    ('dcyl', 500),  # mm
+    ('polarOpeningRadius', 50),  # mm
     ('alpha', 0.5),
     ('beta', 1.5),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),
@@ -394,7 +394,7 @@ conicalTankDesign = OrderedDict([
     #('dome2LengthByR', 0.5),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
-    ('useHydrostaticPressure', False),
+    ('useHydrostaticPressure', True),
     ('verbosePlot', True),
 ])
 
@@ -429,8 +429,6 @@ hytazerSmall = OrderedDict([
     ('numberOfRovings', 2),
     ('polarOpeningRadius', 23),  # mm
 ])
-
-
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
