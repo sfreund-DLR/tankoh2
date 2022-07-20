@@ -99,7 +99,6 @@ def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
         tfPlotVals = None
     return x, funVal, iterations, tfPlotVals
 
-
 def optimizeFriction(vessel, wendekreisradius, layerindex):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))
     #

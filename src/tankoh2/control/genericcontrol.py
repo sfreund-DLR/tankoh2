@@ -152,6 +152,9 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
         if designArgs['lcyl'] < 20:
             # TODO: document why/what
+            # if the tank volume given in the designArgs is too low to fulfill geometrical properties defined, the tank contour
+            # is scaled down to achieve a mimimum of 20 mm cylindrical length needed to run simulation with muWind.
+            # The parameters alpha, beta, gamma and delta are kept constant while the cylindrical diameter is changed
 
             designArgs['lcyl'] = 20
             log.warning('dCyl was adapted in order to fit volume requirement')
@@ -159,13 +162,15 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             while(designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1] - np.pi * designArgs['dcyl'] / 2 * designArgs['lcyl']) > 0.01 * designArgs['volume']:
 
                 adaptGeometry = dome.adaptGeometry(5, designArgs['beta'])
-                domeVolumes[-1] = adaptGeometry[0]
+                #domeVolumes[-1] = adaptGeometry[0]
                 designArgs['dcyl'] = adaptGeometry[-1]
 
             dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
                            designArgs['delta1'], r - designArgs['alpha'] * r,
                            designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
                            designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
+
+            designArgs['dome'] = dome
 
     dome, dome2 = designArgs['dome'], designArgs['dome2']
     dome2 = designArgs['dome2'] if 'dome2' in designArgs else None
