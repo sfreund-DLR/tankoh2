@@ -71,7 +71,7 @@ def createDesign(**kwargs):
     helixLayerThickenss = designArgs['helixLayerThickenss']
     rovingWidth = designArgs['rovingWidth']
     numberOfRovings = designArgs['numberOfRovings']
-    #bandWidth = rovingWidth * numberOfRovings
+    bandWidth = rovingWidth * numberOfRovings
     tex = designArgs['tex'] # g / km
     rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
@@ -119,7 +119,7 @@ def createDesign(**kwargs):
     # #############################################################################
     vessel.saveToFile(vesselFilename)  # save vessel
     copyAsJson(vesselFilename, 'vessel')
-    results = designLayers(vessel, layersToWind, polarOpeningRadius, puckProperties, burstPressure,
+    results = designLayers(vessel, layersToWind, polarOpeningRadius, bandWidth, puckProperties, burstPressure,
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts)
 

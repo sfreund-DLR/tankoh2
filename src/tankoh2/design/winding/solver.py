@@ -162,8 +162,8 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
 def _getShellModels(vessel, burstPressure, symmetricContour):
     # build shell model for internal calculation
     converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, burstPressure, True)  # pressure in MPa (bar / 10.)
-    shellModel2 = None if symmetricContour else converter.buildAxShellModell(vessel, burstPressure, False)
+    shellModel = converter.buildAxShellModell(vessel, burstPressure, True, True)  # pressure in MPa (bar / 10.)
+    shellModel2 = None if symmetricContour else converter.buildAxShellModell(vessel, burstPressure, True, False)
 
     # run linear solver
     linerSolver = pychain.mycrofem.LinearSolver(shellModel)

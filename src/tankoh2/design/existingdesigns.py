@@ -180,9 +180,9 @@ NGTBITDesign = OrderedDict([
     ])
 
 NGTBITDesignNewThk = NGTBITDesign.copy()
+NGTBITDesignNewThk.pop('burstPressure')
 NGTBITDesignNewThk.update([
-    ('pressure', 7), # MPa
-    ('burstPressure', None), # MPa
+    ('pressure', 70), # MPa
     ('tankname', 'NGT-BIT-2022-07_new_thk'),
     ('dcyl', 400.), # due to shrinkage
     ('materialName', 'kuempers_k-preg-002-012-65-00'),

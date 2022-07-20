@@ -12,10 +12,13 @@ from tankoh2.service.utilities import importFreeCad
 
 importFreeCad()
 
-import FreeCAD
-import Part
-from Part import LineSegment, Point
-import Sketcher
+try:
+    import FreeCAD
+    import Part
+    from Part import LineSegment, Point
+    import Sketcher
+except:
+    FreeCAD, Part, LineSegment, Point, Sketcher = [None] * 5
 
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
@@ -1093,6 +1096,7 @@ class DomeTorispherical(AbstractDome):
         volume = np.pi * (quad(rRadius1Fun, 0, geometry[0].StartPoint[0])[0] + quad(rRadius2Fun, geometry[1].EndPoint[0], geometry[1].StartPoint[0])[0])
 
         return volume
+
 
 class DomeIsotensoid(AbstractDome):
 
