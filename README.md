@@ -30,6 +30,7 @@ Python Packages:
 - Numpy
 - Scipy
 - Pandas
+- CoolProp
 
 Requirements from [µChain](https://www.mefex.de/software/):
 - Python 3.8 (x64) + Numpy 1.20.0
