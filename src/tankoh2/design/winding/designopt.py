@@ -240,14 +240,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 vlines=[hoopIndexEnd], vlineColors=['black'])
     log.debug('Find minimal possible angle')
 
-    minAngleByOpt = True
-    if minAngleByOpt:
-        minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle),
-                                       bandWidth, targetFunction=getPolarOpeningDiffByAngleBandMid)
-    else:
-        windLayer(vessel, layerNumber, maxHelicalAngle)
-        minAngle = vessel.estimateCylinderAngle(layerNumber, polarOpeningRadius)
-    #minAngle = 7.2
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle),
+                                   bandWidth, targetFunction=getPolarOpeningDiffByAngleBandMid)
 
     if initialAnglesAndShifts is not None and len(initialAnglesAndShifts) > 0:
         # wind given angles
@@ -261,8 +255,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         anglesShifts = [(minAngle,0)]
 
         composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
-    #angle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (minAngle, maxHelicalAngle), False,
-    #                            targetFunction=getNegAngleAndPolarOpeningDiffByAngle)
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
