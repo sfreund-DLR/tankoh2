@@ -9,9 +9,17 @@ SPDX-License-Identifier: MIT
 Versions follow [SemVer](https://semver.org/) with a strict backwards compatibility policy.
 The third digit is only for regressions.
 
-## [2.3.0] - Unreleased
+## [2.4.0] - Unreleased
 ### Added
 
+
+## [2.3.0] - 20.07.2022
+### Added
+
+- isotensoid dome
+- conical dome geometry finalized
+- bug fix in optimizer
+- issue 50 include liner thickness to volume calculation
 
 ### Changed
 

@@ -12,10 +12,13 @@ from tankoh2.service.utilities import importFreeCad
 
 importFreeCad()
 
-import FreeCAD
-import Part
-from Part import LineSegment, Point
-import Sketcher
+try:
+    import FreeCAD
+    import Part
+    from Part import LineSegment, Point
+    import Sketcher
+except:
+    FreeCAD, Part, LineSegment, Point, Sketcher = [None] * 5
 
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2 import log
