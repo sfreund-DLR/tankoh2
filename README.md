@@ -26,11 +26,7 @@ The winding simulation is carried out by [µChain](https://www.mefex.de/software
 
 ### Requirements
 
-Python Packages:
-- Numpy
-- Scipy
-- Pandas
-- CoolProp
+see **tool.poetry.dependencies** section in [pyproject.toml](pyproject.toml)
 
 Requirements from [µChain](https://www.mefex.de/software/):
 - Python 3.8 (x64) + Numpy 1.20.0
