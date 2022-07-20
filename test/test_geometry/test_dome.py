@@ -1,6 +1,6 @@
 import numpy as np
 
-from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere, DomeGeneric
+from tankoh2.geometry.dome import DomeEllipsoid, DomeSphere, DomeGeneric, DomeIsotensoid
 
 
 def test_domeEllipsoidSphere():
@@ -122,3 +122,9 @@ def test_domeVolumes():
     assert np.allclose(dc.volume, dg.volume)
     assert np.allclose(dc.getWallVolume(thk), de.getWallVolume(thk))
     assert np.allclose(dc.getWallVolume(thk), dg.getWallVolume(thk), rtol=1e-4)
+
+def test_domeIsotensoid():
+    di = DomeIsotensoid(400/3, 20)
+    points = di.getContour(250)
+    assert np.any(np.isnan(points))
+
