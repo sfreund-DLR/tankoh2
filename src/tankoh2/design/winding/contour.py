@@ -8,6 +8,7 @@ from tankoh2 import log
 from tankoh2.geometry.geoutils import contourLength
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
+from tankoh2.geometry.dome import validDomeTypes
 
 
 
@@ -25,10 +26,6 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     :param x: x-coordinates of a custom dome contour
     :param r: radius-coordinates of a custom dome contour. r[0] starts at cylinderRadius
     """
-    validDomeTypes = ['isotensoid', 'circle',
-                      'ellipse', 'torispherical', 'generic',
-                      'conicalElliptical', 'conicalTorispherical', 'conicalIsotensoid' # allowed by own implementation in tankoh2.geometry.contour
-                      ]
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
     elif isinstance(domeType, str):
@@ -95,9 +92,10 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     polarOpeningRadius = dome.polarOpening
     scaleFittingRadii = 1.
     for fitting in [liner.getFitting(True), liner.getFitting(False)]:
-        fitting.r0 = polarOpeningRadius / 4 * scaleFittingRadii
+        fitting.r0 = polarOpeningRadius / 2 * scaleFittingRadii
         fitting.r1 = polarOpeningRadius * scaleFittingRadii
         fitting.rD = polarOpeningRadius + polarOpeningRadius * scaleFittingRadii
+        fitting.rebuildFitting()
 
     if linerFilename and linerName:
         liner.saveToFile(linerFilename)

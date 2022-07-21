@@ -116,11 +116,16 @@ defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 # design to make plots where the layers are visible in µWind
 plotDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 plotDesign.update([
-    ('dcyl', plotDesign['dcyl']/1.5),
-    ('lcyl', plotDesign['lcyl']/2),
+    ('dcyl', plotDesign['dcyl']/3),
+    ('lcyl', plotDesign['lcyl']/4),
     ('helixLayerThickenss', plotDesign['helixLayerThickenss']*2),
-    ('rovingWidth', plotDesign['rovingWidth']/1.5),
+    ('hoopLayerThickness', plotDesign['hoopLayerThickness']*2),
+    #('rovingWidth', plotDesign['rovingWidth']/1.5),
     ('burstPressure', 42.),
+    ('maxlayers', 3),
+    ('domeType', 'ellipse'),
+    ('numberOfRovings', 2),
+    ('polarOpeningRadius', 7),
     ])
 
 defaultUnsymmetricDesign = defaultDesign.copy()
@@ -182,7 +187,7 @@ NGTBITDesign = OrderedDict([
 NGTBITDesignNewThk = NGTBITDesign.copy()
 NGTBITDesignNewThk.pop('burstPressure')
 NGTBITDesignNewThk.update([
-    ('pressure', 70), # MPa
+    ('pressure', 7), # MPa
     ('tankname', 'NGT-BIT-2022-07_new_thk'),
     ('dcyl', 400.), # due to shrinkage
     ('materialName', 'kuempers_k-preg-002-012-65-00'),
@@ -336,16 +341,17 @@ atheat = OrderedDict([
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
-    ('volume', 0.03),
+    ('volume', 0.037),
 ])
 
 scaling = 400/422
 atheat2 = atheat.copy()
 atheat2.update([
     ('tankname', 'atheat_He_fvt_geo'),
-    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
-    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']),
+    ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
     ('domeType', 'generic'),
+    ('lcyl', 77.75+11.55),  # mm
     #('lcyl', 79.85),  # mm
     # ('initialAnglesAndShifts', [
     #     (7.862970189270743   , 0                    ),
@@ -421,7 +427,7 @@ hytazerSmall = OrderedDict([
     ('lcyl', 500),  # mm
     ('safetyFactor', 2),
     ('pressure', 5),  # pressure in MPa (bar / 10.)
-    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
     ('domeType', 'generic'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),

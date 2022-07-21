@@ -173,3 +173,28 @@ def _getShellModels(vessel, burstPressure, symmetricContour):
         linerSolver.run(True)
     return shellModel, shellModel2
 
+
+if __name__ == '__main__':
+    import pandas as pd
+    from matplotlib import pyplot as plt
+    from tankoh2.design.winding.windingutils import getLayerThicknesses
+    from tankoh2.service.plot.muwind import plotThicknesses
+    vessel = pychain.winding.Vessel()
+    filename = r'C:\PycharmProjects\tankoh2\tmp\tank_20220720_102607_NGT-BIT-2022-07_new_thk_mail_mefex\backup.vessel'
+    print(f' load vessel from {filename}')
+    vessel.loadFromFile(filename)
+    vessel.finishWinding()
+    converter = pychain.mycrofem.VesselConverter()
+    shellModel = converter.buildAxShellModell(vessel, 45, True, True)  # pressure in MPa (bar / 10.)
+    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
+    linerSolver.run(True)
+    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
+    df = pd.DataFrame(np.array([S11[:,0],S22[:,0],S12[:,0]]).T, columns=['S11', 'S22', 'S12'])
+    df.plot()
+    plt.show()
+    t = getLayerThicknesses(vessel, True)
+    plotThicknesses(True, '', t)
+    eAxBot = shellModel.getEpsAxialBottom(0)
+    fig, ax = plt.subplots()
+    ax.plot(eAxBot, linewidth=2.0)
+    plt.show()

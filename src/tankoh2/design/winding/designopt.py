@@ -322,7 +322,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:
-        log.warning('Reached max layers. You need to specify more initial layers')
+        log.warning(f'Reached max layers ({maxLayers}) but puck values are '
+                    f'still greater 1 ({puck.max().max()}). You need to specify more initial layers')
 
     vessel.finishWinding()
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
