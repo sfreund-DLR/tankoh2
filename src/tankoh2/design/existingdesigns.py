@@ -384,7 +384,7 @@ conicalTankDesign = OrderedDict([
     ('tankname', 'conical_torispherical'),
     ('volume', 0.2),  # m^3
     ('dcyl', 500),  # mm
-    ('polarOpeningRadius', 50),  # mm
+    ('polarOpeningRadius', 100),  # mm
     ('alpha', 0.5),
     ('beta', 1.5),  # (lCone + lRad) / dCyl
     ('gamma', 0.5),

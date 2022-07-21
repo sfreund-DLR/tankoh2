@@ -25,15 +25,15 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
     :param x: x-coordinates of a custom dome contour
     :param r: radius-coordinates of a custom dome contour. r[0] starts at cylinderRadius
     """
-    validDomeTypes = ['isotensoid', 'circle',
-                      'ellipse', 'torispherical', 'generic',
+    validDomeTypes = ['isotensoid_MuWind', 'circle',
+                      'ellipse', 'torispherical', 'generic', 'isotensoid',
                       'conicalElliptical', 'conicalTorispherical', 'conicalIsotensoid' # allowed by own implementation in tankoh2.geometry.contour
                       ]
     if domeType is None:
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
     elif isinstance(domeType, str):
         #domeType = domeType.lower()
-        if domeType == 'isotensoid':
+        if domeType == 'isotensoid_MuWind':
             domeType = pychain.winding.DOME_TYPES.ISOTENSOID
         elif domeType == 'circle':
             domeType = pychain.winding.DOME_TYPES.CIRCLE
@@ -61,7 +61,6 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
             raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
         dome.setPoints(x, r)
     return dome
-
 
 def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nodeNumber = 500):
     """Creates a liner
