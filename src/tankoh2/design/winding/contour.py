@@ -89,11 +89,14 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
         liner.buildFromDome(dome, length, deltaLengthSpline)
     
     polarOpeningRadius = dome.polarOpening
-    scaleFittingRadii = 1.
+    scaleFittingRadii = .5
     for fitting in [liner.getFitting(True), liner.getFitting(False)]:
         fitting.r0 = polarOpeningRadius / 2 * scaleFittingRadii
         fitting.r1 = polarOpeningRadius * scaleFittingRadii
         fitting.rD = polarOpeningRadius + polarOpeningRadius * scaleFittingRadii
+        fitting.dx1 = polarOpeningRadius / 2
+        fitting.dxB = polarOpeningRadius * 3
+        fitting.lV = polarOpeningRadius * 2
         fitting.rebuildFitting()
 
     if linerFilename and linerName:
