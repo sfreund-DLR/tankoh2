@@ -5,7 +5,7 @@
 - optimize layup
 """
 
-from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize_scalar, minimize
 from scipy.optimize import differential_evolution
 import numpy as np
 import matplotlib.pyplot as plt
@@ -63,29 +63,40 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidt
     return angle, funVal, iterations
 
 
-def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot):
+def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot, localOptimization = False):
     """Minimizes puck fibre failure criterion in a certain region of angles
     :param bounds: iterable with 2 items: lower and upper bound
     :param targetFunction: function to be used as target function
     :param optArgs: list with these items: vessel, layerNumber, puckProperties, burstPressure, useIndices,
         useFibreFailure, symmetricContour
     :param verbosePlot: flag if the target function values should be calculated for plotting
+    :param localOptimization: can be (True, False, 'both')
     :return:
 
     """
+    if localOptimization not in [True, False, 'both']:
+        raise Tankoh2Error('no proper value for localOptimization')
     tol = 1e-2
-    localOptimization = False
-    if localOptimization:
-        popt = minimize_scalar(targetFunction, method='bounded',
-                               bounds=bounds,  # bounds of the angle
-                               args=optArgs,
-                               options={"maxiter": 1000, 'disp': 1, "xatol": tol})
-    else:
-        popt = differential_evolution(targetFunction,
-                                      bounds=(bounds,),
-                                      args=[optArgs],
-                                      atol=tol*10,
-                                      seed=settings.optimizerSeed)
+    if localOptimization is True or localOptimization=='both':
+        popt_loc = minimize(targetFunction, bounds[:1], #method='bounded',
+                            bounds=[bounds],  # bounds of the angle
+                            args=optArgs,
+                            tol=tol,
+                            #options={"maxiter": 1000, 'disp': 1, "xatol": tol}
+                            )
+        if localOptimization is True:
+            popt = popt_loc
+    if localOptimization is False or localOptimization=='both':
+        popt_glob = differential_evolution(targetFunction,
+                                           bounds=(bounds,),
+                                           args=[optArgs],
+                                           atol=tol*10,
+                                           seed=settings.optimizerSeed)
+
+        if localOptimization is False:
+            popt = popt_glob
+    if localOptimization == 'both':
+        popt = popt_loc if popt_loc.fun < popt_glob.fun else popt_glob
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
     x, funVal, iterations = popt.x, popt.fun, popt.nfev

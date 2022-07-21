@@ -73,7 +73,8 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
     optArgs = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure,
             symmetricContour]
     for tryIterations in range(20):
-        angle, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByAngle, optArgs, verbosePlot)
+        angle, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByAngle, optArgs,
+                                                                 verbosePlot, localOptimization='both')
 
         layerOk, bounds = checkThickness(vessel, angle, bounds, symmetricContour)
         if layerOk:
