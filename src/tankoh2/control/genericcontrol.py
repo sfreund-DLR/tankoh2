@@ -112,6 +112,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     if 'lcyl' not in designArgs and 'lcylByR' in designArgs:
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
 
+    linerThk = designArgs['linerThickness']
     for domeName in ['dome2', 'dome']:
 
         if f'{domeName}Type' not in designArgs or designArgs[f'{domeName}Type'] is None:
@@ -141,14 +142,18 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                             designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
                             designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
 
-        domeVolumes.append(dome.volume)
+        domeVolumes.append(dome.getDomeResizedByThickness(-linerThk).volume)
 
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
     if 'volume' in designArgs:
         # use volume in order to scale tank length → resets lcyl
-        designArgs['lcyl'] = (designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1]) / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+        requiredCylVol = designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1]
+        lcylNew = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+        log.info(f'Due to volume requriement ({designArgs["volume"]} m^3), '
+                 f'the cylindrical length changed from {designArgs["lcyl"]:.2f} mm to {lcylNew:.2f} mm')
+        designArgs['lcyl'] = lcylNew
 
         if designArgs['lcyl'] < 20:
             # TODO: document why/what
