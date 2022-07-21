@@ -23,7 +23,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.plot.generic import plotContour
 
 validDomeTypes = ['isotensoid_MuWind', 'circle',  # also CAPITAL letters are allowed
-                  'ellipse', 'torispherical', 'isotensoid', 'isotensoid_MuWind', 'generic',
+                  'ellipse', 'torispherical', 'isotensoid', 'generic',
                   'conicalElliptical', 'conicalTorispherical', 'conicalIsotensoid', # allowed by own implementation in tankoh2.geometry.contour
                   1, 2,  # types from µWind
                   ]
@@ -117,7 +117,9 @@ class AbstractDome(metaclass=ABCMeta):
 
     @abstractmethod
     def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
+        """return a dome that has a resized geometry by given thickness. P
+        :param thickness: thickness [mm]. Positive values increase length and radius
+        """
 
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used

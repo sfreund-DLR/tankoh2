@@ -15,8 +15,8 @@ if __name__ == '__main__':
     params = parameters.defaultDesign.copy()
     #params = parameters.defaultUnsymmetricDesign.copy()
     params = parameters.NGTBITDesignNewThk.copy()
-    params = parameters.plotDesign.copy()
     params = parameters.atheat2.copy()
+    #params = parameters.plotDesign.copy()
 
 
 
