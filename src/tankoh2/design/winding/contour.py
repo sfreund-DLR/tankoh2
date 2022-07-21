@@ -30,7 +30,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
         domeType = pychain.winding.DOME_TYPES.ISOTENSOID
     elif isinstance(domeType, str):
         #domeType = domeType.lower()
-        if domeType == 'isotensoid':
+        if domeType == 'isotensoid_MuWind':
             domeType = pychain.winding.DOME_TYPES.ISOTENSOID
         elif domeType == 'circle':
             domeType = pychain.winding.DOME_TYPES.CIRCLE
@@ -58,7 +58,6 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
             raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
         dome.setPoints(x, r)
     return dome
-
 
 def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nodeNumber = 500):
     """Creates a liner

@@ -1213,7 +1213,7 @@ if __name__ == '__main__':
     from tankoh2.service.utilities import indent
 
     if 1:
-        dt = DomeIsotensoid(1000, 500)
+        dt = DomeIsotensoid(400/3, 20)
         dt.plotContour()
 
     elif 0:

@@ -254,7 +254,14 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         windLayer(vessel, layerNumber, minAngle)
         anglesShifts = [(minAngle,0)]
 
-        composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
+    # # wind layer up to the end of conical tank section
+    # conicalAngle = 33
+    # printLayer(layerNumber, '- conical layer')
+    # windLayer(vessel, layerNumber, conicalAngle)
+    # anglesShifts = [(conicalAngle, 0)]
+    # #layerNumber += 1
+
+    composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
@@ -278,6 +285,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         printLayer(layerNumber)
         log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
         composite = windAnglesAndShifts(anglesShifts + [(90, 0.)], vessel, compositeArgs)
+        from tankoh2.design.winding.material import saveComposite
+        saveComposite(composite, 'test', 'testDesign')
 
         # check zone of highest puck values
         if layerNumber == 1 and useFibreFailure:
