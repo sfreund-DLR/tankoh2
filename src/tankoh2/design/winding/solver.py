@@ -96,7 +96,7 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     S11, S22, S12 = shellModel.calculateLayerStressesBottom()
     if not symmetricContour:
         stressesMandrel2 = shellModel2.calculateLayerStressesBottom()
-        if 1:
+        if 0:
             from tankoh2.service.utilities import indent
             outarr=[]
             liner = vessel.getLiner()

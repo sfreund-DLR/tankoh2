@@ -184,7 +184,6 @@ if __name__ == '__main__':
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
-        #params = parameters.ttDesignLh2
         params = parameters.conicalTankDesign
         createDesign(**params.copy())
     elif 0:

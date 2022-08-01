@@ -338,8 +338,6 @@ class DomeConicalElliptical(AbstractDome):
 
             sketch.addConstraint(Sketcher.Constraint('DistanceX', 2, 1, 4, 2, geometry[2].MinorRadius - (np.sqrt((1 - (self._rPolarOpening ** 2 / geometry[2].MajorRadius ** 2)) * geometry[2].MinorRadius ** 2))))
 
-            tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/tank")
-
         geometry = sketch.getPropertyByName('Geometry')
 
         return geometry
@@ -1044,8 +1042,6 @@ class DomeTorispherical(AbstractDome):
 
         sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(0, 2/3 * self._rCyl, 0),FreeCAD.Vector(0,0,1),2 * 0.1 * self._rCyl), 0.4 ,1.4),False)
         sketch.addGeometry(Part.ArcOfCircle(Part.Circle(FreeCAD.Vector(-1.5 * self._rCyl,0,0),FreeCAD.Vector(0,0,1),2 * self._rCyl), 0.1, 0.5),False)
-
-        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/toris_ursprung")
 
         sketch.addConstraint(Sketcher.Constraint('Tangent',0,1,1,2))
 

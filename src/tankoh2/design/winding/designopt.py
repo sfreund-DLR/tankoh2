@@ -254,12 +254,12 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         windLayer(vessel, layerNumber, minAngle)
         anglesShifts = [(minAngle,0)]
 
+    # layerNumber += 1
+    #
     # # wind layer up to the end of conical tank section
-    # conicalAngle = 33
+    # conicalAngle = 30
     # printLayer(layerNumber, '- conical layer')
-    # windLayer(vessel, layerNumber, conicalAngle)
-    # anglesShifts = [(conicalAngle, 0)]
-    # #layerNumber += 1
+    # anglesShifts += [(conicalAngle, 0)]
 
     composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
 
