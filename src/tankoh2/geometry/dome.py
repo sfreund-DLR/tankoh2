@@ -1,12 +1,11 @@
 """This module creates dome contours"""
-from abc import ABCMeta, abstractmethod
 
+from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import special
 from scipy import optimize
 import mpl_toolkits.mplot3d.axes3d as axes3d
 from scipy.integrate import quad
-import statistics
 
 from tankoh2.service.utilities import importFreeCad
 
@@ -21,11 +20,10 @@ except:
     FreeCAD, Part, LineSegment, Point, Sketcher = [None] * 5
 
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2 import log
 from tankoh2.service.plot.generic import plotContour
 
 validDomeTypes = ['isotensoid_MuWind', 'circle',  # also CAPITAL letters are allowed
-                  'ellipse', 'torispherical', 'isotensoid',
+                  'ellipse', 'torispherical', 'isotensoid', 'generic',
                   'conicalElliptical', 'conicalTorispherical', 'conicalIsotensoid', # allowed by own implementation in tankoh2.geometry.contour
                   1, 2,  # types from µWind
                   ]
@@ -119,7 +117,9 @@ class AbstractDome(metaclass=ABCMeta):
 
     @abstractmethod
     def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
+        """return a dome that has a resized geometry by given thickness. P
+        :param thickness: thickness [mm]. Positive values increase length and radius
+        """
 
     def getWallVolume(self, wallThickness):
         """Calculate the volume of the material used

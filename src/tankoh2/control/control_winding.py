@@ -143,7 +143,7 @@ def createDesign(**kwargs):
                      getFairingMass(linerTankoh, fairThk)]
     totalMass = np.sum([frpMass]+auxMasses)
     linerInnerTankoh = linerTankoh.getLinerResizedByThickness(-1*linerThk)
-    volume = linerInnerTankoh.volume
+    volume = linerInnerTankoh.volume / 1e6
     results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
         vessel.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)

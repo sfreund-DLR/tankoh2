@@ -114,13 +114,18 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
 # design to make plots where the layers are visible in µWind
-plotDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
+plotDesign = defaultDesign.copy()
 plotDesign.update([
-    ('dcyl', plotDesign['dcyl']/1.5),
-    ('lcyl', plotDesign['lcyl']/2),
+    ('dcyl', plotDesign['dcyl']/4),
+    ('lcyl', plotDesign['lcyl']/5),
     ('helixLayerThickenss', plotDesign['helixLayerThickenss']*2),
-    ('rovingWidth', plotDesign['rovingWidth']/1.5),
+    ('hoopLayerThickness', plotDesign['hoopLayerThickness']*2),
+    #('rovingWidth', plotDesign['rovingWidth']/1.5),
     ('burstPressure', 42.),
+    ('maxlayers', 3),
+    ('domeType', 'isotensoid_MuWind'),
+    ('numberOfRovings', 4),
+    ('polarOpeningRadius', 7),
     ])
 
 defaultUnsymmetricDesign = defaultDesign.copy()
@@ -182,7 +187,7 @@ NGTBITDesign = OrderedDict([
 NGTBITDesignNewThk = NGTBITDesign.copy()
 NGTBITDesignNewThk.pop('burstPressure')
 NGTBITDesignNewThk.update([
-    ('pressure', 70), # MPa
+    ('pressure', 7), # MPa
     ('tankname', 'NGT-BIT-2022-07_new_thk'),
     ('dcyl', 400.), # due to shrinkage
     ('materialName', 'kuempers_k-preg-002-012-65-00'),
@@ -329,23 +334,25 @@ atheat = OrderedDict([
     ('polarOpeningRadius', 15),  # mm
     ('dcyl', 400),  # mm
     #('lcyl', 75),  # mm
-    ('safetyFactor', 1.5),
+    ('safetyFactor', 2.),
     ('pressure', 60),  # pressure in MPa (bar / 10.)
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
-    ('volume', 0.03),
+    ('volume', 0.037),
 ])
 
-scaling = 400/422
 atheat2 = atheat.copy()
 atheat2.update([
     ('tankname', 'atheat_He_fvt_geo'),
-    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
-    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']),
+    ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
     ('domeType', 'generic'),
+    ('lcyl', 77.75+11.55),  # mm
+    ('dcyl', 400),  # mm
+    ('pressure', 60),
     #('lcyl', 79.85),  # mm
     # ('initialAnglesAndShifts', [
     #     (7.862970189270743   , 0                    ),
@@ -359,6 +366,13 @@ atheat2.update([
     #     (9.539139023476652   , 0                    ),
     #     (25.001541085240873  , 0                    ),
     #     (90                  , -2.1997272973884687  ),]),
+])
+
+atheat3 = atheat2.copy()
+atheat3.pop('domeContour')
+atheat3.update([
+    ('domeType', 'isotensoid'),
+    ('dcyl', 370),  # mm
 ])
 
 atheatAlu = atheat.copy()
@@ -417,12 +431,12 @@ hytazerSmall = OrderedDict([
     # rocket d=438
     # rocket skin thk approx 5mm
     ('tankname', 'hytazer_small'),
-    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']*scaling),
+    ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']),
     ('dcyl', 400),  # mm
     ('lcyl', 500),  # mm
     ('safetyFactor', 2),
     ('pressure', 5),  # pressure in MPa (bar / 10.)
-    ('domeContour', scaling * getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-2022-03-04.txt'), 4)),
+    ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
     ('domeType', 'generic'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
