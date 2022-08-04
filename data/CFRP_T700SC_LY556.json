@@ -3,7 +3,7 @@
     "materials": {
         "1": {
             "name": "CFRP_T700SC_LY556", 
-            "uuid": "00000000-0000-0000-0000-00defaultCFK",
+            "uuid": "CFRP_T700SC_LY556",
             "failure_type": 2,
             "phi": 0.60,
             "elasticProperties": {
