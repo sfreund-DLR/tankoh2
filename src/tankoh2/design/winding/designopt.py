@@ -348,7 +348,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     thicknesses = getLayerThicknesses(vessel, symmetricContour)
     if show or save:
-        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
+        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '',
                           *results)
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
 

@@ -16,7 +16,7 @@ if __name__ == '__main__':
     #params = parameters.defaultUnsymmetricDesign.copy()
     params = parameters.NGTBITDesignNewThk.copy()
     #params = parameters.atheat2.copy()
-    params = parameters.testPostprocessing.copy()
+    params = parameters.NGTBITDesignNewThkCustomV4.copy()
 
 
 
