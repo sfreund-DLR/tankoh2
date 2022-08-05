@@ -126,5 +126,11 @@ def test_domeVolumes():
 def test_domeIsotensoid():
     di = DomeIsotensoid(400/3, 20)
     points = di.getContour(250)
-    assert np.any(np.isnan(points))
+    assert not np.any(np.isnan(points))
+
+
+def test_domeIsotensoid2():
+    di = DomeIsotensoid(400/2, 20)
+    points = di.getContour(250)
+    assert not np.any(np.isnan(points))
 

@@ -113,6 +113,14 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
+testPostprocessing = defaultDesign.copy()
+testPostprocessing.update([
+    ('initialAnglesAndShifts', [(7.862970189270743, 0), (90, 21.984637908159538)]),
+    ('maxlayers', 2),
+    ('nodeNumber', 1000),
+    #('domeType', 'isotensoid_MuWind'),
+    ])
+
 # design to make plots where the layers are visible in µWind
 plotDesign = defaultDesign.copy()
 plotDesign.update([
