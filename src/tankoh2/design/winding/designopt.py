@@ -305,13 +305,17 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             #optHoopRegion = elemIdxmax < cylinderEndIndex
             optHoopRegion = elemIdxmax < hoopIndexEnd
         if optHoopRegion:
-            resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure, useHoopIndices,
+            resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
+                                   #[elemIdxmax],
+                                   useHoopIndices,
                                    useFibreFailure, maxHoopShift, verbosePlot, symmetricContour)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                         polarOpeningRadius, bandWidth, useHoopIndices, useFibreFailure,
-                                         verbosePlot, symmetricContour)
+                                         polarOpeningRadius, bandWidth,
+                                         #[elemIdxmax],
+                                         useHoopIndices,
+                                         useFibreFailure, verbosePlot, symmetricContour)
             log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
-            if layerNumber == 1 or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
+            if (layerNumber == 1 and useFibreFailure) or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
                 windHoopLayer(vessel, layerNumber, shift)  # must be run since optimizeHelical ran last time
@@ -323,8 +327,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 anglesShifts.append((optResult[0], 0))
         else:
             optResult = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                        polarOpeningRadius, bandWidth, useHelicalIndices, useFibreFailure,
-                                        verbosePlot, symmetricContour)
+                                        polarOpeningRadius, bandWidth,
+                                        #[elemIdxmax],
+                                        useHelicalIndices,
+                                        useFibreFailure, verbosePlot, symmetricContour)
 
             anglesShifts.append((optResult[0],0))
 
