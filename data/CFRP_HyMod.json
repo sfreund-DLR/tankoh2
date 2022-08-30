@@ -3,7 +3,7 @@
     "materials": {
         "1": {
             "name": "CFRP_HyMod",
-            "uuid": "00000000-0000-0000-0000-00CFRP_HyMod",
+            "uuid": "CFRP_HyMod",
             "failure_type": 2,
             "phi": 0.62,
             "elasticProperties": {

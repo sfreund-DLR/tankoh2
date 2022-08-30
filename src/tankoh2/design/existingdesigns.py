@@ -187,10 +187,11 @@ NGTBITDesign = OrderedDict([
 NGTBITDesignNewThk = NGTBITDesign.copy()
 NGTBITDesignNewThk.pop('burstPressure')
 NGTBITDesignNewThk.update([
-    ('pressure', 7), # MPa
+    ('pressure', 70), # MPa
+    ('nodeNumber', 2000),
     ('tankname', 'NGT-BIT-2022-07_new_thk'),
     ('dcyl', 400.), # due to shrinkage
-    ('materialName', 'kuempers_k-preg-002-012-65-00'),
+    #('materialName', 'kuempers_k-preg-002-012-65-00'),
     ('hoopLayerThickness', 0.191), # thickness for 61% FVG
     ('helixLayerThickenss', 0.191), # thickness for 61% FVG
     ('rovingWidth', 4.00),
