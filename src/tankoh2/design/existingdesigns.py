@@ -113,6 +113,14 @@ metalOnlyKeywords = allArgs[allArgs['group'] == 'Fatigue parameters']['name'].to
 
 defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 
+testPostprocessing = defaultDesign.copy()
+testPostprocessing.update([
+    ('initialAnglesAndShifts', [(7.862970189270743, 0), (90, 21.984637908159538)]),
+    ('maxlayers', 2),
+    ('nodeNumber', 1000),
+    #('domeType', 'isotensoid_MuWind'),
+    ])
+
 # design to make plots where the layers are visible in µWind
 plotDesign = defaultDesign.copy()
 plotDesign.update([
@@ -203,6 +211,35 @@ NGTBITDesignNewThk.update([
     ('verbose', False),
     ])
 
+NGTBITDesignNewThkCustomV2 = NGTBITDesignNewThk.copy()
+NGTBITDesignNewThkCustomV2.update([
+    ('initialAnglesAndShifts',
+        [[7.12871052,0  ],[90,13.5       ],[8.5507069,0   ],[90,12.88636364],[90,12.27272727],[9.32314508,0  ],
+        [90,11.65909091],[9.92738099,0  ],[90,11.04545455],[10.88676553,0 ],[11.56075346,0 ],[90,10.43181818],
+        [12.46307046,0 ],[90,9.818181818],[13.60741528,0 ],[90,9.204545455],[13.73034838,0 ],[90,8.590909091],
+        [13.92459572,0 ],[90,7.977272727],[14.80151089,0 ],[90,7.363636364],[14.832526,0   ],[90,6.75       ],
+        [17.20627466,0 ],[90,6.136363636],[17.35186339,0 ],[90,5.522727273],[90,4.909090909],[17.54000139,0 ],
+        [90,4.295454545],[21.45077766,0 ],[90,3.681818182],[90,3.068181818],[22.50403636,0 ],[90,2.454545455],
+        [90,1.840909091],[23.34315396,0 ],[26.8693583,0  ],[90,1.227272727],[27.56435185,0 ],[90,0.613636364],
+        [30.56698498,0 ],[90,0          ],[32.03011118,0 ],[32.67851261,0 ],]
+     ),
+    ('maxlayers', 46)
+])
+
+NGTBITDesignNewThkCustomV3 = NGTBITDesignNewThkCustomV2.copy()
+NGTBITDesignNewThkCustomV3.update([
+    ('initialAnglesAndShifts',
+        [[7.12871052,0 ],[90,13.5       ],[7,0           ],[90,12.88636364],[90,12.27272727],[7.3,0         ],
+        [90,11.65909091],[6.92738099,0  ],[90,11.04545455],[9.88676553,0  ],[11.56075346,0 ],[90,10.43181818],
+        [12.46307046,0 ],[90,9.818181818],[13.60741528,0 ],[90,9.204545455],[13.73034838,0 ],[90,8.590909091],
+        [13.92459572,0 ],[90,7.977272727],[14.80151089,0 ],[90,7.363636364],[15.3,0        ],[90,6.75       ],
+        [16.20627466,0 ],[90,6.136363636],[17.35186339,0 ],[90,5.522727273],[90,4.909090909],[17.54000139,0 ],
+        [90,4.295454545],[21.45077766,0 ],[90,3.681818182],[90,3.068181818],[22.50403636,0 ],[90,2.454545455],
+        [90,1.840909091],[23.34315396,0 ],[26.8693583,0  ],[90,1.227272727],[27.56435185,0 ],[90,0.613636364],
+        [30.56698498,0 ],[90,0          ],[32.03011118,0 ],[32.67851261,0 ],]
+     ),
+])
+
 NGTBITDesign_old = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
     ('pressure', 70),
@@ -257,7 +294,7 @@ vphDesign1 = OrderedDict([
     ('lcyl', 3218.8),
     ('dcyl', 1200.*2),
     ('safetyFactor', 2.25),
-    ('pressure', .2),  # pressure in MPa (bar / 10.)
+    ('pressure', .2),  # [MPa]
     ('polarOpeningRadius', 120),
     ('failureMode', 'interFibreFailure'),
     ('domeType', 'circle'),  # [isotensoid, circle], if None isotensoid is used
@@ -290,7 +327,7 @@ kautextDesign = OrderedDict([
 
                              # Design
                              ('safetyFactor', 2.0),
-                             ('pressure', 70.),  # pressure in MPa (bar / 10.)
+                             ('pressure', 70.),  # [MPa]
                              ('failureMode', 'fibreFailure'),
 
                              # Material
@@ -312,7 +349,7 @@ ttDesignLh2 = OrderedDict([
     ('dcyl', 223.862*2),  # mm
     ('lcyl', 559.6572), #mm
     ('safetyFactor', 1.55),
-    ('pressure', 0.25),  # pressure in MPa (bar / 10.)
+    ('pressure', 0.25),  # [MPa]
     ('domeType', 'isotensoid'),
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
@@ -323,7 +360,7 @@ ttDesignCh2.update([
     ('tankname', 'tt_ch2'),
     ('dcyl', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
-    ('pressure', 70.),  # pressure in MPa (bar / 10.)
+    ('pressure', 70.),  # [MPa]
     ('maxlayers', 200),
     ])
 
@@ -336,7 +373,7 @@ atheat = OrderedDict([
     ('dcyl', 400),  # mm
     #('lcyl', 75),  # mm
     ('safetyFactor', 2.),
-    ('pressure', 60),  # pressure in MPa (bar / 10.)
+    ('pressure', 60),  # [MPa]
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
@@ -388,7 +425,7 @@ tk_cgh2 = OrderedDict([
     ('dcyl', 590),  # mm d_a - 2*t_estimate
     ('lcyl', 4500),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
-    ('pressure', 70),  # pressure in MPa (bar / 10.)
+    ('pressure', 70),  # [MPa]
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', True),
@@ -427,7 +464,7 @@ hytazer = OrderedDict([
     ('safetyFactor', 1.33),
     ('domeType', 'isotensoid'),
     #('dome2Type', 'torispherical'),
-    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
+    ('pressure', 0.2),  # [MPa]
     ('failureMode', 'interFiberFailure'),
     ('tankLocation', 'fuselage'),
     ('useHydrostaticPressure', True),
@@ -444,7 +481,7 @@ DomeTest = OrderedDict([
     ('polarOpeningRadius', 100),  # mm
     ('domeType', 'torispherical'),
     ('domeLengthByR', 0.2),
-    ('pressure', 0.25),  # pressure in MPa (bar / 10.)
+    ('pressure', 0.25),  # [MPa]
     ('failureMode', 'interFibreFailure'),
     ('tankLocation', 'fuselage'),
     ('useHydrostaticPressure', True),
@@ -454,23 +491,40 @@ DomeTest = OrderedDict([
     ('nodeNumber', 1000),
 ])
 
+hytazerSMR1 = OrderedDict([ # short/medium range single aisle aircraft, tank #1
+    ('tankname', 'hytazer_smr'),
+    ('polarOpeningRadius', 100),
+    ('dcyl', 2 * (1716 + defaultDesign['linerThickness'])),  # mm
+    ('safetyFactor', 1.33),
+    ('pressure', .2),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'interFibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('volume', 23.252)
+])
+
+hytazerSMR2 = hytazerSMR1.copy()
+hytazerSMR2.update([
+    ('volume', 23.252),
+    ('dcyl', 1431 * 2 + 2 * defaultDesign['linerThickness']),  # mm
+    ('lcyl', 150),  # mm
+    ('domeType', 'conicalIsotensoid'), # alternative: conicalTorispherical
+    # TODO: beta etc.
+])
+
 hytazerSmall = OrderedDict([
-    # Medium: Helium
-    # rocket d=438
-    # rocket skin thk approx 5mm
     ('tankname', 'hytazer_small'),
     ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']),
     ('dcyl', 400),  # mm
     ('lcyl', 500),  # mm
     ('safetyFactor', 2),
-    ('pressure', 5),  # pressure in MPa (bar / 10.)
+    ('pressure', 5),  # [MPa]
     ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-shrinkage.txt'), 4)),
     ('domeType', 'generic'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 2),
-    ('polarOpeningRadius', 23),  # mm
 ])
 
 if __name__ == '__main__':

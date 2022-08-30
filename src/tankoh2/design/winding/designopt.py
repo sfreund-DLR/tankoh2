@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import logging
-
+import pandas as pd
 
 from tankoh2 import log
 from tankoh2.service.exception import Tankoh2Error
@@ -10,7 +10,7 @@ from tankoh2.service.utilities import indent
 from tankoh2.design.winding.material import getComposite
 from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckByShift, getCriticalElementIdx, \
-    getLinearResults
+    getLinearResults, getLinearResultsAsDataFrame
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
 from tankoh2.design.winding.windingutils import getLayerThicknesses
 from tankoh2.geometry.dome import AbstractDome, flipContour
@@ -220,6 +220,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             #. next iteration step
     #. postprocessing: plot stresses, strains, puck, thickness
     """
+    def getPuck():
+        puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
+                                           puckOnly=True, symmetricContour=symmetricContour)
+        return  puckFF if useFibreFailure else puckIFF
 
     vessel.resetWindingSimulation()
 
@@ -266,10 +270,9 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
+    puck = None
     for layerNumber in range(layerNumber + 1, maxLayers):
-        puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
-                                           puckOnly=True, symmetricContour=symmetricContour)
-        puck = puckFF if useFibreFailure else puckIFF
+        puck = getPuck()
         elemIdxmax, layermax = getCriticalElementIdx(puck)
 
         if puck.max().max() < 1:
@@ -302,13 +305,17 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             #optHoopRegion = elemIdxmax < cylinderEndIndex
             optHoopRegion = elemIdxmax < hoopIndexEnd
         if optHoopRegion:
-            resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure, useHoopIndices,
+            resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
+                                   #[elemIdxmax],
+                                   useHoopIndices,
                                    useFibreFailure, maxHoopShift, verbosePlot, symmetricContour)
             resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                         polarOpeningRadius, bandWidth, useHoopIndices, useFibreFailure,
-                                         verbosePlot, symmetricContour)
+                                         polarOpeningRadius, bandWidth,
+                                         #[elemIdxmax],
+                                         useHoopIndices,
+                                         useFibreFailure, verbosePlot, symmetricContour)
             log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
-            if layerNumber == 1 or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
+            if (layerNumber == 1 and useFibreFailure) or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
                 windHoopLayer(vessel, layerNumber, shift)  # must be run since optimizeHelical ran last time
@@ -320,8 +327,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 anglesShifts.append((optResult[0], 0))
         else:
             optResult = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                        polarOpeningRadius, bandWidth, useHelicalIndices, useFibreFailure,
-                                        verbosePlot, symmetricContour)
+                                        polarOpeningRadius, bandWidth,
+                                        #[elemIdxmax],
+                                        useHelicalIndices,
+                                        useFibreFailure, verbosePlot, symmetricContour)
 
             anglesShifts.append((optResult[0],0))
 
@@ -332,18 +341,27 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:
+        if puck is None:
+            puck = getPuck()
         log.warning(f'Reached max layers ({maxLayers}) but puck values are '
                     f'still greater 1 ({puck.max().max()}). You need to specify more initial layers')
 
     vessel.finishWinding()
+
+    # postprocessing
+    # ##############################################################################
+
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
+    thicknesses = getLayerThicknesses(vessel, symmetricContour)
     if show or save:
-        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck_{layerNumber}.png') if save else '',
+        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '',
                           *results)
-        thicknesses = getLayerThicknesses(vessel, symmetricContour)
-        columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle,_) in enumerate(anglesShifts)]
-        thicknesses.columns=columns
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
+
+    thicknesses.columns = ['thk_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
+    mechResults = getLinearResultsAsDataFrame(results)
+    elementalResults = pd.concat([thicknesses, mechResults], join='outer', axis=1)
+    elementalResults.to_csv(os.path.join(runDir, 'elementalResults.csv'), sep=';')
 
     if log.level == logging.DEBUG:
         # vessel.printSimulationStatus()
@@ -352,7 +370,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     # get volume and surface area
     stats = vessel.calculateVesselStatistics()
     frpMass = stats.overallFRPMass  # in [kg]
-
     dome = liner.getDome1()
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]

@@ -1,7 +1,7 @@
 """solver related methods"""
 
 import numpy as np
-import pandas
+import pandas as pd
 
 from tankoh2 import pychain, log
 from tankoh2.design.winding.winding import windLayer
@@ -77,6 +77,31 @@ def _getMaxPuck(args):
     maxPuck = maxPerElement.max()
     return maxPuck, maxIndex
 
+
+def getLinearResultsAsDataFrame(results = None):
+    """returns the mechanical results as dataframe
+
+    :param results: tuple with results returned by getLinearResults()
+    :return: dataframe with results
+    """
+    if len(results) == 2:
+        puckFF, puckIFF = results
+        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop = [[]], [[]], [[]], [], [], [], []
+    else:
+        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF = results
+    layers = range(puckFF.shape[1])
+    dfList = [puckFF, puckIFF]
+    for data, name in zip([S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop],
+                               ['S11', 'S22', 'S12', 'epsAxBot', 'epsAxTop', 'epsCircBot', 'epsCircTop']):
+        if len(data.shape) == 2:
+            columns = [f'{name}lay{layerNumber}' for layerNumber in layers]
+            dfAdd = pd.DataFrame(data, columns=columns)
+        else:
+            dfAdd = pd.DataFrame(np.array([data]).T, columns=[name])
+        dfList.append(dfAdd)
+    df = pd.concat(dfList, join='outer', axis=1)
+    return df
+
 def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False,
                      symmetricContour=True):
     """Calculates puck results and returns them as dataframe
@@ -136,9 +161,10 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
             failures = np.array(failures)
         puckFF.append(failures[:,0])
         puckIFF.append(failures[:,1])
-    columns = [f'layer {layerNumber}' for layerNumber in range(numberOfLayers)]
-    puckFF = pandas.DataFrame(np.array(puckFF), columns=columns)
-    puckIFF = pandas.DataFrame(np.array(puckIFF), columns=columns)
+    columns = [f'puckFFlay{layerNumber}' for layerNumber in range(numberOfLayers)]
+    puckFF = pd.DataFrame(np.array(puckFF), columns=columns)
+    columns = [f'puckIFFlay{layerNumber}' for layerNumber in range(numberOfLayers)]
+    puckIFF = pd.DataFrame(np.array(puckIFF), columns=columns)
     if puckOnly:
         if useIndices is not None:
             noUseIndices = set(puckFF.index).difference(useIndices)
@@ -174,7 +200,6 @@ def _getShellModels(vessel, burstPressure, symmetricContour):
 
 
 if __name__ == '__main__':
-    import pandas as pd
     from matplotlib import pyplot as plt
     from tankoh2.design.winding.windingutils import getLayerThicknesses
     from tankoh2.service.plot.muwind import plotThicknesses
