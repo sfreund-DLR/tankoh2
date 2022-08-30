@@ -34,7 +34,6 @@ def getMaxPuckAndIndexByAngle(angle, args):
     log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
     return maxPuck, maxIndex
 
-
 def getMaxPuckByAngle(angle, args):
     """Sets the given angle, winding sim, puck analysis
 

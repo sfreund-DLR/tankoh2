@@ -227,7 +227,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     save = True
     layerNumber = 0
     iterations = 0
-    hoopOrHelicalFac = 1.1
+    hoopOrHelicalFac = 1
     liner = vessel.getLiner()
 
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
@@ -258,7 +258,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     # layerNumber += 1
     #
     # # wind layer up to the end of conical tank section
-    # conicalAngle = 30
+    # conicalAngle = 15
     # printLayer(layerNumber, '- conical layer')
     # anglesShifts += [(conicalAngle, 0)]
 

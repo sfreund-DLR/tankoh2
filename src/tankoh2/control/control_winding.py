@@ -184,7 +184,7 @@ if __name__ == '__main__':
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
-        params = parameters.conicalTankDesign
+        params = parameters.hytazer
         createDesign(**params.copy())
     elif 0:
         createDesign(pressure=5)

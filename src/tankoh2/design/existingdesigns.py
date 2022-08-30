@@ -395,35 +395,62 @@ tk_cgh2 = OrderedDict([
 ])
 
 conicalTankDesign = OrderedDict([
-    ('tankname', 'cylindrical'),
-    ('volume', 1.5),  # m^3
-    ('dcyl', 1000),  # mm
-    ('polarOpeningRadius', 50),  # mm
-    ('alpha', 0.7),
-    ('beta', 2),  # (lCone + lRad) / dCyl
-    ('gamma', 0.2),
-    ('delta1', 0.8),
-    ('domeType', 'isotensoid_MuWind'),
-    #('dome2Type', 'torispherical'),
-    #('dome2LengthByR', 0.5),
-    ('pressure', 0.2),  # pressure in MPa (bar / 10.)
-    ('failureMode', 'interFibreFailure'),
+    ('tankname', 'Test_tank'),
+    ('volume', 20),  # m^3
+    ('dcyl', 3000),  # mm
+    ('polarOpeningRadius', 60),  # mm
+    ('alpha', 0.831),
+    ('beta', 2.453),
+    ('gamma', 0.796),
+    ('safetyFactor', 2),
+    ('domeType', 'conicalTorispherical'),
+    ('dome2Type', 'torispherical'),
+    ('pressure', 0.172),  # pressure in MPa (bar / 10.)
+    ('failureMode', 'fibreFailure'),
+    ('tankLocation', 'fuselage'),
     ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
     ('minPressure', 0.12),
     ('verbosePlot', True),
+    ('nodeNumber', 1000),
 ])
 
-Kloepperboden = OrderedDict([
-    ('tankname', 'kloepperboden'),
-    ('volume', 5),  # m^3
-    ('dcyl', 500),  # mm
-    ('polarOpeningRadius', 40),  # mm
-    ('domeType', 'torispherical'),
+hytazer = OrderedDict([
+    ('tankname', 'hytazer_front_defined'),
+    ('volume', 23.252),  # m^3
+    ('dcyl', 2678),  # mm
+    ('polarOpeningRadius', 50),  # mm
+    ('alpha', 0.893),
+    ('beta', 2.541),
+    ('gamma', 0.67),
+    ('safetyFactor', 1.33),
+    ('domeType', 'isotensoid'),
+    #('dome2Type', 'torispherical'),
     ('pressure', 0.2),  # pressure in MPa (bar / 10.)
-    ('failureMode', 'interFibreFailure'),
-    ('useHydrostaticPressure', False),
+    ('failureMode', 'interFiberFailure'),
+    ('tankLocation', 'fuselage'),
+    ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
+    ('minPressure', 0.11),
     ('verbosePlot', True),
-    ('nodeNumber', 500),
+    ('nodeNumber', 1000),
+])
+
+DomeTest = OrderedDict([
+    ('tankname', 'torispherical_const_length045'),
+    ('lcyl', 200),  # m^3
+    ('dcyl', 3650),  # mm
+    ('polarOpeningRadius', 100),  # mm
+    ('domeType', 'torispherical'),
+    ('domeLengthByR', 0.2),
+    ('pressure', 0.25),  # pressure in MPa (bar / 10.)
+    ('failureMode', 'interFibreFailure'),
+    ('tankLocation', 'fuselage'),
+    ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
+    ('minPressure', 0.12),
+    ('verbosePlot', True),
+    ('nodeNumber', 1000),
 ])
 
 hytazerSmall = OrderedDict([
