@@ -13,6 +13,11 @@ The third digit is only for regressions.
 ### Added
 
 
+## [2.3.1] - 31.08.2022
+### Added
+
+- unsymmetric tanks finalized
+
 ## [2.3.0] - 20.07.2022
 ### Added
 
