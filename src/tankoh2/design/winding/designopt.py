@@ -288,7 +288,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
-    puck = None
     for layerNumber in range(layerNumber + 1, maxLayers):
         puck = getPuck()
         elemIdxmax, layermax = getCriticalElementIdx(puck)
@@ -306,9 +305,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         # add one layer
         printLayer(layerNumber)
         log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
-        composite = windAnglesAndShifts(anglesShifts + [(90, 0.)], vessel, compositeArgs)
-        from tankoh2.design.winding.material import saveComposite
-        saveComposite(composite, 'test', 'testDesign')
+        windAnglesAndShifts(anglesShifts + [(90, 0.)], vessel, compositeArgs)
 
         # check zone of highest puck values
         if layerNumber == 1 and useFibreFailure:
@@ -353,6 +350,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
             anglesShifts.append((optResult[0],0))
 
+        composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
         _, _, loopIt, newDesignIndexes, tfValues = optResult
         iterations += loopIt
         plotPuckAndTargetFunc(puck, tfValues, anglesShifts, optResult[0], layerNumber, runDir,
@@ -361,8 +359,11 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:
-        if puck is None:
-            puck = getPuck()
+        puck = getPuck()
+        columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
+        puck.columns = columns
+        plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber+1}.png'), puck,
+                      yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
         log.warning(f'Reached max layers ({maxLayers}) but puck values are '
                     f'still greater 1 ({puck.max().max()}). You need to specify more initial layers')
 
