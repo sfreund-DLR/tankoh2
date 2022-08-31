@@ -436,15 +436,15 @@ conicalTankDesign = OrderedDict([
     ('tankname', 'Test_tank'),
     ('volume', 20),  # m^3
     ('dcyl', 3000),  # mm
-    ('polarOpeningRadius', 60),  # mm
+    ('polarOpeningRadius', 100),  # mm
     ('alpha', 0.831),
     ('beta', 2.453),
     ('gamma', 0.796),
     ('safetyFactor', 2),
     ('domeType', 'conicalTorispherical'),
-    ('dome2Type', 'torispherical'),
+    ('dome2Type', 'isotensoid_MuWind'),
     ('pressure', 0.172),  # pressure in MPa (bar / 10.)
-    ('failureMode', 'fibreFailure'),
+    ('failureMode', 'interFibreFailure'),
     ('tankLocation', 'fuselage'),
     ('useHydrostaticPressure', True),
     ('numberOfRovings', 12),
@@ -463,7 +463,7 @@ hytazer = OrderedDict([
     ('gamma', 0.67),
     ('safetyFactor', 1.33),
     ('domeType', 'isotensoid'),
-    #('dome2Type', 'torispherical'),
+    ('dome2Type', 'torispherical'),
     ('pressure', 0.2),  # [MPa]
     ('failureMode', 'interFiberFailure'),
     ('tankLocation', 'fuselage'),

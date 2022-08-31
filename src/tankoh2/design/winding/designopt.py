@@ -83,13 +83,20 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
     else:
         raise Tankoh2Error('Could not correct the thickness of the actual layer. Possibly the number of '
                            'nodes in respect to the tank radius and band width is not sufficient')
-    polarOpeningRadiusOfLayer = windLayer(vessel, layerNumber, angle)
-    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
-    newDesignIndex = np.argmin(np.abs(mandrel.getRArray() - polarOpeningRadiusOfLayer))
+    layerPolarOpeningRadius1 = windLayer(vessel, layerNumber, angle)
+    radii1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1().getRArray()
+    if symmetricContour:
+        newDesignIndexes = [np.argmin(np.abs(radii1 - layerPolarOpeningRadius1))]
+    else:
+        elemCount1 = len(radii1) - 1
+        layerPolarOpeningRadius2 = vessel.getPolarOpeningR(layerNumber, False)
+        radii2 = vessel.getVesselLayer(layerNumber).getOuterMandrel2().getRArray()
+        newDesignIndexes = [elemCount1 - np.argmin(np.abs(radii1 - layerPolarOpeningRadius1)),
+                            elemCount1 + np.argmin(np.abs(radii2 - layerPolarOpeningRadius2))]
     log.debug(f'anlge {angle}, puck value {funcVal}, loopIterations {loopIt}, '
-              f'polar opening contour coord {newDesignIndex}')
+              f'polar opening contour coord {newDesignIndexes}')
 
-    return angle, funcVal, loopIt, newDesignIndex, tfPlotVals
+    return angle, funcVal, loopIt, newDesignIndexes, tfPlotVals
 
 
 def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
@@ -113,15 +120,24 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
             symmetricContour]
     shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByShift, optArgs, verbosePlot)
 
-    mandrel = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
-    r, l = mandrel.getRArray(), mandrel.getLArray()
-    cylLenIdx = len(r) - np.argmin(np.abs(r - r[0])[::-1]) # np.argmin from the back of the mandrels radii
-    hoopLength = l[cylLenIdx] + shift
-    newDesignIndex = np.argmin(np.abs(l - hoopLength))
+    mandrel1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+    r1, l1 = mandrel1.getRArray(), mandrel1.getLArray()
+    cylLenIdx1 = len(r1) - np.argmin(np.abs(r1 - r1[0])[::-1]) # np.argmin from the back of the mandrels radii
+    hoopLength1 = l1[cylLenIdx1] + shift
+    if symmetricContour:
+        newDesignIndexes = [np.argmin(np.abs(l1 - hoopLength1))]
+    else:
+        mandrel2 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
+        elemCount1 = len(r1) - 1
+        r2, l2 = mandrel2.getRArray(), mandrel2.getLArray()
+        cylLenIdx2 = len(r2) - np.argmin(np.abs(r2 - r2[0])[::-1])  # np.argmin from the back of the mandrels radii
+        hoopLength2 = l2[cylLenIdx2] + shift
+        newDesignIndexes = [elemCount1 - np.argmin(np.abs(l1 - hoopLength1)),
+                            elemCount1 + np.argmin(np.abs(l2 - hoopLength2))]
     log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}, '
-              f'hoop end contour coord {newDesignIndex}')
+              f'hoop end contour coord {newDesignIndexes}')
 
-    return shift, funcVal, loopIt, newDesignIndex, tfPlotVals
+    return shift, funcVal, loopIt, newDesignIndexes, tfPlotVals
 
 def _getHoopAndHelicalIndices(vessel, symmetricContour,
                                relRadiusHoopLayerEnd):
@@ -131,7 +147,7 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
     :param symmetricContour: Flag if the contour is symmetric
     :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
     :return:
-        - cylinderEndIndex: index which distinguishes between indicies of
+        - hoopIndexEnd: index which distinguishes between indicies of
             cylindrical and dome section (mandrel1)
         - maxHoopShift: maximal length of hoop shifts into dome section
         - useHoopIndices:
@@ -139,37 +155,39 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
     """
     liner = vessel.getLiner()
     mandrel1 = liner.getMandrel1()
-    mandrel2 = liner.getMandrel2() if not symmetricContour else None
+    if symmetricContour:
+        mandrels = [mandrel1]
+    else:
+        mandrels = [liner.getMandrel2() if not symmetricContour else None, mandrel1]
 
     useHoopIndices, useHelicalIndices = np.array([], dtype=np.int), np.array([], dtype=np.int)
-    cylinderEndIndex, maxHoopShift = None, None
-    for mandrel in [mandrel2, mandrel1]:
-        if mandrel is None:
-            continue
+    maxHoopShifts = []
+    for mandrel in mandrels:
         r = mandrel.getRArray()
         rCyl = r[0]
-        elementCount = len(r)-1
-        hoopIndexEnd = np.argmin(np.abs(r - rCyl*relRadiusHoopLayerEnd))
-        cylinderEndIndex = np.argmin(np.abs(r - rCyl*0.995)[::-1])
-        maxHoopShift = mandrel.getLArray()[hoopIndexEnd] - liner.cylinderLength/2
+        mandrelElementCount = len(r)-1
+        hoopHelicalBorderIndex = np.argmin(np.abs(r - rCyl*relRadiusHoopLayerEnd))
+        maxHoopShifts.append(mandrel.getLArray()[hoopHelicalBorderIndex] - liner.cylinderLength/2)
 
         hoopIndexStart = int(np.argmax((-mandrel.getRArray()+rCyl)>rCyl*1e-4) * 0.7) # not all hoop elements must be evaluated
-        hoopIndices = np.linspace(hoopIndexStart, hoopIndexEnd, hoopIndexEnd-hoopIndexStart+1, dtype=np.int)
+        hoopIndices = np.linspace(hoopIndexStart, hoopHelicalBorderIndex, hoopHelicalBorderIndex-hoopIndexStart+1, dtype=np.int)
         if mandrel is mandrel1:
             hoopIndices = np.append([0], hoopIndices)
-        helicalIndices = np.linspace(hoopIndexEnd, elementCount, elementCount-hoopIndexEnd+1, dtype=np.int)
+        helicalIndices = np.linspace(hoopHelicalBorderIndex, mandrelElementCount, mandrelElementCount-hoopHelicalBorderIndex+1, dtype=np.int)
         if not symmetricContour and mandrel is mandrel1:
             # shift existing indices and include by mandrel 1 indices
-            useHoopIndices += elementCount
-            useHelicalIndices += elementCount
+            useHoopIndices += mandrelElementCount
+            useHelicalIndices += mandrelElementCount
             # twist indices
-            hoopIndices = elementCount - hoopIndices[::-1]
-            helicalIndices = elementCount - helicalIndices[::-1]
+            hoopIndices = mandrelElementCount - hoopIndices[::-1]
+            helicalIndices = mandrelElementCount - helicalIndices[::-1]
 
         useHoopIndices = np.append(hoopIndices, useHoopIndices)
         useHelicalIndices = np.append(helicalIndices, useHelicalIndices)
 
-    return cylinderEndIndex, hoopIndexEnd, maxHoopShift, useHoopIndices, useHelicalIndices
+    hoopBounds = [np.min(useHoopIndices), np.max(useHoopIndices)]
+    maxHoopShift = np.min(maxHoopShifts)
+    return *hoopBounds, maxHoopShift, useHoopIndices, useHelicalIndices
 
 
 def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckProperties, burstPressure, symmetricContour,
@@ -235,14 +253,14 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     liner = vessel.getLiner()
 
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
-    cylinderEndIndex, hoopIndexEnd, maxHoopShift, useHoopIndices, useHelicalIndices = indiciesAndShifts
+    hoopStart, hoopEnd, maxHoopShift, useHoopIndices, useHelicalIndices = indiciesAndShifts
     x,r = liner.getMandrel1().getXArray(), liner.getMandrel1().getRArray()
     if not symmetricContour:
         x,r = flipContour(x,r)
         x = np.append(x, liner.getMandrel2().getXArray()[1:] + np.max(x))
         r = np.append(r, liner.getMandrel2().getRArray()[1:])
     plotContour(False,  os.path.join(runDir, f'contour.png'), x, r,
-                vlines=[hoopIndexEnd], vlineColors=['black'])
+                vlines=[hoopStart, hoopEnd], vlineColors=['black', 'black'])
     log.debug('Find minimal possible angle')
 
     minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle),
@@ -302,8 +320,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             optHoopRegion = anglesShifts[layermax][0] > 89
 
         else:
-            #optHoopRegion = elemIdxmax < cylinderEndIndex
-            optHoopRegion = elemIdxmax < hoopIndexEnd
+            optHoopRegion = hoopStart <= elemIdxmax <= hoopEnd
+            log.info(f'{hoopStart} <= {elemIdxmax} <= {hoopEnd}')
         if optHoopRegion:
             resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
                                    #[elemIdxmax],
@@ -314,7 +332,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                                          #[elemIdxmax],
                                          useHoopIndices,
                                          useFibreFailure, verbosePlot, symmetricContour)
-            log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
+            if not (layerNumber == 1 and useFibreFailure):
+                log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
             if (layerNumber == 1 and useFibreFailure) or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
@@ -334,10 +353,11 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
             anglesShifts.append((optResult[0],0))
 
-        _, _, loopIt, newDesignIndex, tfValues = optResult
+        _, _, loopIt, newDesignIndexes, tfValues = optResult
         iterations += loopIt
         plotPuckAndTargetFunc(puck, tfValues, anglesShifts, optResult[0], layerNumber, runDir,
-                              verbosePlot, useFibreFailure, show, elemIdxmax, hoopIndexEnd, newDesignIndex)
+                              verbosePlot, useFibreFailure, show, elemIdxmax, hoopStart, hoopEnd,
+                              newDesignIndexes)
 
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:

@@ -1049,7 +1049,7 @@ class DomeTorispherical(AbstractDome):
         sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,1, self._rPolarOpening))
         sketch.addConstraint(Sketcher.Constraint('DistanceY',-1,1,1,3, 0))
 
-        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/toris_only")
+        #tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/toris_only")
 
         geometry = sketch.getPropertyByName('Geometry')
 
