@@ -433,34 +433,62 @@ tk_cgh2 = OrderedDict([
 ])
 
 conicalTankDesign = OrderedDict([
-    ('tankname', 'conical_torispherical'),
-    ('volume', 0.2),  # m^3
-    ('dcyl', 500),  # mm
+    ('tankname', 'conicalTankDesign'),
+    ('volume', 20),  # m^3
+    ('dcyl', 3000),  # mm
     ('polarOpeningRadius', 100),  # mm
-    ('alpha', 0.5),
-    ('beta', 1.5),  # (lCone + lRad) / dCyl
-    ('gamma', 0.5),
-    ('delta1', 0.8),
+    ('alpha', 0.831),
+    ('beta', 2.453),
+    ('gamma', 0.796),
+    ('safetyFactor', 2),
     ('domeType', 'conicalTorispherical'),
-    ('dome2Type', 'ellipse'),
-    ('dome2LengthByR', 0.5),
-    ('pressure', 0.2),  # [MPa]
+    ('dome2Type', 'isotensoid_MuWind'),
+    ('pressure', 0.172),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
+    ('tankLocation', 'fuselage'),
     ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
+    ('minPressure', 0.12),
     ('verbosePlot', True),
+    ('nodeNumber', 1000),
 ])
 
-Kloepperboden = OrderedDict([
-    ('tankname', 'kloepperboden'),
-    ('volume', 5),  # m^3
-    ('dcyl', 500),  # mm
-    ('polarOpeningRadius', 40),  # mm
-    ('domeType', 'torispherical'),
+hytazer = OrderedDict([
+    ('tankname', 'hytazer_front_defined'),
+    ('volume', 23.252),  # m^3
+    ('dcyl', 2678),  # mm
+    ('polarOpeningRadius', 50),  # mm
+    ('alpha', 0.893),
+    ('beta', 2.541),
+    ('gamma', 0.67),
+    ('safetyFactor', 1.33),
+    ('domeType', 'isotensoid'),
+    ('dome2Type', 'torispherical'),
     ('pressure', 0.2),  # [MPa]
-    ('failureMode', 'interFibreFailure'),
-    ('useHydrostaticPressure', False),
+    ('failureMode', 'interFiberFailure'),
+    ('tankLocation', 'fuselage'),
+    ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
+    ('minPressure', 0.11),
     ('verbosePlot', True),
-    ('nodeNumber', 500),
+    ('nodeNumber', 1000),
+])
+
+DomeTest = OrderedDict([
+    ('tankname', 'torispherical_const_length045'),
+    ('lcyl', 200),  # m^3
+    ('dcyl', 3650),  # mm
+    ('polarOpeningRadius', 100),  # mm
+    ('domeType', 'torispherical'),
+    ('domeLengthByR', 0.2),
+    ('pressure', 0.25),  # [MPa]
+    ('failureMode', 'interFibreFailure'),
+    ('tankLocation', 'fuselage'),
+    ('useHydrostaticPressure', True),
+    ('numberOfRovings', 12),
+    ('minPressure', 0.12),
+    ('verbosePlot', True),
+    ('nodeNumber', 1000),
 ])
 
 hytazerSMR1 = OrderedDict([ # short/medium range single aisle aircraft, tank #1

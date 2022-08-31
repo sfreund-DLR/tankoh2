@@ -17,14 +17,19 @@ def getLayerThicknesses(vessel, symmetricContour):
     """returns a dataframe with thicknesses of each layer along the whole vessel"""
     thicknesses = []
     columns = ['lay{}_{:04.1f}'.format(i, angle) for i, angle in enumerate(getAnglesFromVessel(vessel))]
+
+    liner = vessel.getLiner()
+    numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
+    numberOfElements2 = liner.getMandrel2().numberOfNodes - 1
     for layerNumber in range(vessel.getNumberOfLayers()):
         vesselLayer = vessel.getVesselLayer(layerNumber)
-        mandrelOuter2 = vesselLayer.getOuterMandrel2()
-        numberOfElements = mandrelOuter2.numberOfNodes - 1
         layerThicknesses = []
-        for elementNumber in range(numberOfElements):
-            layerElement = vesselLayer.getVesselLayerElement(elementNumber, False)
-            layerThicknesses.append(layerElement.elementThickness)
+        for numberOfElements, isMandrel1 in [(numberOfElements1, True), (numberOfElements2, False)]:
+            for elementNumber in range(numberOfElements):
+                layerElement = vesselLayer.getVesselLayerElement(elementNumber, isMandrel1)
+                layerThicknesses.append(layerElement.elementThickness)
+            if not symmetricContour and isMandrel1:
+                layerThicknesses = layerThicknesses[::-1] # reverse order of mandrel 1
         thicknesses.append(layerThicknesses)
     thicknesses = pd.DataFrame(thicknesses).T
     thicknesses.columns = columns

@@ -10,7 +10,7 @@ from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
 
 def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, angleOrHoopShift, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
-                          elemIdxmax, hoopIndexEnd, newDesignIndex):
+                          elemIdxmax, hoopStart, hoopEnd, newDesignIndexes):
     """"""
     puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
@@ -36,8 +36,8 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, angleOrHoopShift, layerN
     else:
         ax = axs  # if only one subplot is used, axs is no iterable
     plotDataFrame(False, '', puck, ax,
-                  vlines=[elemIdxmax + 0.5, hoopIndexEnd, newDesignIndex],
-                  vlineColors=['red', 'black', 'green'],
+                  vlines=[elemIdxmax + 0.5, hoopStart, hoopEnd] + newDesignIndexes,
+                  vlineColors=['red', 'black', 'black'] + ['green'] * len(newDesignIndexes),
                   yLabel=yLabel, xLabel='Contour index')
     saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png'), show=show, fig=fig)
 

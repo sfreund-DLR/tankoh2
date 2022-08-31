@@ -150,32 +150,41 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     if 'volume' in designArgs:
         # use volume in order to scale tank length → resets lcyl
         requiredCylVol = designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1]
-        lcylNew = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
-        log.info(f'Due to volume requriement ({designArgs["volume"]} m^3), '
-                 f'the cylindrical length changed from {designArgs["lcyl"]:.2f} mm to {lcylNew:.2f} mm')
-        designArgs['lcyl'] = lcylNew
+        designArgs['lcyl'] = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
 
-        if designArgs['lcyl'] < 20:
-            # TODO: document why/what
+        log.info(f'Due to volume requirement ({designArgs["volume"]} m^3)')
+
+        if designArgs['lcyl'] < 150:
+
             # if the tank volume given in the designArgs is too low to fulfill geometrical properties defined, the tank contour
-            # is scaled down to achieve a mimimum of 20 mm cylindrical length needed to run simulation with muWind.
+            # is scaled down to achieve a minimum of 150 mm cylindrical length needed to run simulation with muWind.
             # The parameters alpha, beta, gamma and delta are kept constant while the cylindrical diameter is changed
 
-            designArgs['lcyl'] = 20
+            designArgs['lcyl'] = 150
             log.warning('dCyl was adapted in order to fit volume requirement')
 
-            while(designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1] - np.pi * designArgs['dcyl'] / 2 * designArgs['lcyl']) > 0.01 * designArgs['volume']:
+            while(abs(designArgs['volume'] - domeVolumes[-2] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * designArgs['volume']:
 
-                adaptGeometry = dome.adaptGeometry(5, designArgs['beta'])
-                #domeVolumes[-1] = adaptGeometry[0]
-                designArgs['dcyl'] = adaptGeometry[-1]
+                adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
+                #domeVolumes.append(adaptGeometry[0])
+                designArgs['dcyl'] = 2 * adaptGeometry[-1]
 
-            dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                           designArgs['delta1'], r - designArgs['alpha'] * r,
-                           designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                           designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
+                for domeName in ['dome2', 'dome']:
 
-            designArgs['dome'] = dome
+                    domeVolumes.append(dome.volume)
+
+                    domeType = designArgs[f'{domeName}Type']
+                    r = designArgs['dcyl'] / 2
+
+                    dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
+                               designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                               designArgs['delta1'], r - designArgs['alpha'] * r,
+                               designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                               designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
+                               designArgs['dcyl'])
+
+                    designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
+                    designArgs[f'{domeName}'] = dome
 
     dome, dome2 = designArgs['dome'], designArgs['dome2']
     dome2 = designArgs['dome2'] if 'dome2' in designArgs else None
@@ -188,7 +197,6 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             handler.setLevel(logging.DEBUG)
     designArgs.pop('help',None)
     return designArgs
-
 
 def getBurstPressure(designArgs, length):
     """Calculate burst pressure
