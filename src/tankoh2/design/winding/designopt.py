@@ -117,20 +117,20 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
     bounds = [0, maxHoopShift]
 
     optArgs = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure,
-            symmetricContour]
+               symmetricContour]
     shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByShift, optArgs, verbosePlot)
 
     mandrel1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
     r1, l1 = mandrel1.getRArray(), mandrel1.getLArray()
-    cylLenIdx1 = len(r1) - np.argmin(np.abs(r1 - r1[0])[::-1]) # np.argmin from the back of the mandrels radii
+    elemCount1 = mandrel1.numberOfNodes - 1
+    cylLenIdx1 = mandrel1.numberOfNodes - np.argmin(np.abs(r1 - r1[0])[::-1]) # np.argmin from the back of the mandrels radii
     hoopLength1 = l1[cylLenIdx1] + shift
     if symmetricContour:
         newDesignIndexes = [np.argmin(np.abs(l1 - hoopLength1))]
     else:
         mandrel2 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
-        elemCount1 = len(r1) - 1
         r2, l2 = mandrel2.getRArray(), mandrel2.getLArray()
-        cylLenIdx2 = len(r2) - np.argmin(np.abs(r2 - r2[0])[::-1])  # np.argmin from the back of the mandrels radii
+        cylLenIdx2 = mandrel2.numberOfNodes - np.argmin(np.abs(r2 - r2[0])[::-1])  # np.argmin from the back of the mandrels radii
         hoopLength2 = l2[cylLenIdx2] + shift
         newDesignIndexes = [elemCount1 - np.argmin(np.abs(l1 - hoopLength1)),
                             elemCount1 + np.argmin(np.abs(l2 - hoopLength2))]
@@ -165,7 +165,7 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
     for mandrel in mandrels:
         r = mandrel.getRArray()
         rCyl = r[0]
-        mandrelElementCount = len(r)-1
+        mandrelElementCount = mandrel.numberOfNodes - 1
         hoopHelicalBorderIndex = np.argmin(np.abs(r - rCyl*relRadiusHoopLayerEnd))
         maxHoopShifts.append(mandrel.getLArray()[hoopHelicalBorderIndex] - liner.cylinderLength/2)
 
