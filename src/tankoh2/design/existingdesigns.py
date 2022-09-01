@@ -525,6 +525,8 @@ hytazerSmall = OrderedDict([
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 2),
+    #('maxlayers', 10),
+    ('nodeNumber', 500),
 ])
 
 if __name__ == '__main__':

@@ -15,7 +15,8 @@ from tankoh2.design.winding.winding import getPolarOpeningDiffHelical, getPolarO
     getPolarOpeningDiffByAngle, getNegAngleAndPolarOpeningDiffByAngle, windLayer, windHoopLayer, \
     getPolarOpeningDiffHelicalUsingNegativeLogFriction, getPolarOpeningDiffByAngleBandMid
 from tankoh2.service.exception import Tankoh2Error
-from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckAndIndexByAngle, getMaxPuckAndIndexByShift
+from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckLocalPuckMassIndexByAngle, \
+    getMaxPuckLocalPuckMassIndexByShift, getWeightedTargetFuncByAngle, getMaxPuckByShift
 import tankoh2.settings as settings
 from tankoh2 import log
 
@@ -63,26 +64,56 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidt
     return angle, funVal, iterations
 
 
-def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot, localOptimization = False):
-    """Minimizes puck fibre failure criterion in a certain region of angles
+def minimizeUtilization(bounds, targetFunction, optArgs, localOptimization = False):
+    """Minimizes puck (inter) fibre failure criterion in defined bounds (angles or hoop shifts)
+
+    This method calls the optimization routines. There is a disctinction between local and global
+    optimization.
+
     :param bounds: iterable with 2 items: lower and upper bound
     :param targetFunction: function to be used as target function
-    :param optArgs: list with these items: vessel, layerNumber, puckProperties, burstPressure, useIndices,
-        useFibreFailure, symmetricContour
-    :param verbosePlot: flag if the target function values should be calculated for plotting
-    :param localOptimization: can be (True, False, 'both')
-    :return:
+    :param optArgs: list with these items: 
+        - vessel: µWind vessel instance
+        - layerNumber: actual layer (zero based counting)
+        - puckProperties: µWind puckProperties instance
+        - burstPressure: burst pressure in MPa
+        - useIndices: list of element indicies that will be used for stress and puck evaluation
+        - useFibreFailure: flag if fibrefailure or interfibrefailure is used
+        - verbosePlot: flag if additional plot output values should be created
+        - symmetricContour: flag if the conour is symmetric or unsymmetric
+        - critIndex: index of the most critical element before adding the actual layer
+        - targetFuncScaling: scaling of the target function constituents for the weighted sum
+    :param localOptimization: can be (True, False, 'both'). Performs a local or global optimization. If 'both'
+        is selected, both optimizations are performed and the result with the lowest function value is used.
+    :return: 4-tuple
+        - x optimization result
+        - funVal: target function value at x
+        - iterations: number of iterations used
+        - tfPlotVals: plot values of the target function if verbosePlot==True else None
 
     """
+    helicalTargetFunctions = [getWeightedTargetFuncByAngle, getMaxPuckByAngle]
+
+    verbosePlot = optArgs[6]
+    if verbosePlot:
+        tfX = np.linspace(*bounds, 200)
+        targetFunctionPlot = getMaxPuckLocalPuckMassIndexByAngle if targetFunction in helicalTargetFunctions else \
+            getMaxPuckLocalPuckMassIndexByShift
+        tfPlotVals = np.array([targetFunctionPlot(angleParam, optArgs) for angleParam in tfX]).T
+        if targetFunction in [getMaxPuckByAngle, getMaxPuckByShift]:
+            tfPlotVals = np.append(tfPlotVals[:1], tfPlotVals[-1:], axis=0)
+        tfPlotVals = np.append([tfX], tfPlotVals, axis=0)
+    else:
+        tfPlotVals = None
+
     if localOptimization not in [True, False, 'both']:
         raise Tankoh2Error('no proper value for localOptimization')
     tol = 1e-2
     if localOptimization is True or localOptimization=='both':
-        popt_loc = minimize(targetFunction, bounds[:1], #method='bounded',
-                            bounds=[bounds],  # bounds of the angle
+        popt_loc = minimize(targetFunction, bounds[:1],
+                            bounds=[bounds],  # bounds of the angle or hoop shift
                             args=optArgs,
                             tol=tol,
-                            #options={"maxiter": 1000, 'disp': 1, "xatol": tol}
                             )
         if localOptimization is True:
             popt = popt_loc
@@ -98,23 +129,22 @@ def minimizeUtilization(bounds, targetFunction, optArgs, verbosePlot, localOptim
     if localOptimization == 'both':
         popt = popt_loc if popt_loc.fun < popt_glob.fun else popt_glob
     if not popt.success:
-        raise Tankoh2Error('Could not find optimal solution')
+        from tankoh2.service.plot.muwind import plotTargetFunc
+        errMsg = 'Could not find optimal solution'
+        log.error(errMsg)
+        plotTargetFunc(None, tfPlotVals, [(popt.x,0)], 'label Name', None, None, True)
+        raise Tankoh2Error(errMsg)
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
     if hasattr(x, '__iter__'):
         x = x[0]
     vessel, layerNumber = optArgs[:2]
-    if targetFunction is getMaxPuckByAngle:
+    if targetFunction in helicalTargetFunctions:
         windLayer(vessel, layerNumber, x)
     else:
         windHoopLayer(vessel, layerNumber, x)
-    if verbosePlot:
-        tfX = np.linspace(*bounds,200)
-        targetFunction = getMaxPuckAndIndexByAngle if targetFunction is getMaxPuckByAngle else getMaxPuckAndIndexByShift
-        tfPlotVals = np.array([targetFunction(angleParam, optArgs) for angleParam in tfX]).T
-        tfPlotVals = np.append([tfX], tfPlotVals, axis=0)
-    else:
-        tfPlotVals = None
+
     return x, funVal, iterations, tfPlotVals
+
 
 def optimizeFriction(vessel, wendekreisradius, layerindex):
     # popt, pcov = curve_fit(getPolarOpeningDiff, layerindex, wk_goal, bounds=([0.], [1.]))

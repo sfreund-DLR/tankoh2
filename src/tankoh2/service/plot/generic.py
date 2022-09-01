@@ -24,9 +24,13 @@ def plotDataFrame(show, filename, dataframe, ax=None, vlines=None, vlineColors=[
     useLegend = plotKwArgs.get('legend', True)
     if 'legend' in plotKwArgs:
         plotKwArgs.pop('legend')
+    if 'legendKwargs' in plotKwArgs:
+        legendKwargs = plotKwArgs['legendKwargs']
+        plotKwArgs.pop('legendKwargs')
+    else:
+        legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if ax is None else {'loc': 'best'}
     dataframe.plot(ax=useAx, legend=False, **plotKwArgs)
     if useLegend:
-        legendKwargs = {'bbox_to_anchor':(1.05, 1), 'loc':'upper left'} if ax is None else {'loc': 'best'}
         useAx.legend(**legendKwargs)
     useAx.set(xlabel='' if xLabel is None else xLabel,
            ylabel='' if yLabel is None else yLabel,

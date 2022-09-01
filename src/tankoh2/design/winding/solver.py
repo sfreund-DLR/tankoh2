@@ -5,23 +5,28 @@ import pandas as pd
 
 from tankoh2 import pychain, log
 from tankoh2.design.winding.winding import windLayer
+from tankoh2.design.winding.windingutils import getLayerThicknesses
 
 
-def getCriticalElementIdx(puck):
-    """Returns the index of the most critical element
-
-    :param puck: 2d array defining puckFF or puckIFF for each element and layer
-    """
-    # identify critical element
-    layermax = puck.max().argmax()
-    return puck.idxmax()[layermax], layermax
-
-
-def getMaxPuckAndIndexByAngle(angle, args):
+def getMaxPuckByAngle(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _ = args
+    return getMaxPuckLocalPuckMassIndexByAngle(angle, args)[0]
+
+
+def getWeightedTargetFuncByAngle(angle, args):
+    """Sets the given angle, winding sim, puck analysis
+
+    :return: maximum puck fibre failure"""
+    return np.sum(getMaxPuckLocalPuckMassIndexByAngle(angle, args)[:3])
+
+
+def getMaxPuckLocalPuckMassIndexByAngle(angle, args):
+    """Sets the given angle, winding sim, puck analysis
+
+    :return: maximum puck fibre failure"""
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _, _, _, _ = args
     if hasattr(angle, '__iter__'):
         angle = angle[0]
     if angle is not None:
@@ -29,16 +34,11 @@ def getMaxPuckAndIndexByAngle(angle, args):
         actualPolarOpening = windLayer(vessel, layerNumber, angle)
         if actualPolarOpening is np.inf:
             return np.inf, 0
-    maxPuck, maxIndex = _getMaxPuck(args)
+    maxPuck, puckAtCritIdx, layMass, maxIndex = _getMaxPuckLocalPuckMass(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-    log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, index {maxIndex}')
-    return maxPuck, maxIndex
-
-def getMaxPuckByAngle(angle, args):
-    """Sets the given angle, winding sim, puck analysis
-
-    :return: maximum puck fibre failure"""
-    return getMaxPuckAndIndexByAngle(angle, args)[0]
+    log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, '
+              f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
+    return maxPuck, puckAtCritIdx, layMass, maxIndex
 
 
 def getMaxPuckByShift(shift, args):
@@ -46,61 +46,53 @@ def getMaxPuckByShift(shift, args):
 
     :return: maximum puck fibre failure
     """
-    return getMaxPuckAndIndexByShift(shift, args)[0]
+    return getMaxPuckLocalPuckMassIndexByShift(shift, args)[0]
 
 
-def getMaxPuckAndIndexByShift(shift, args):
+def getWeightedTargetFuncByShift(angle, args):
+    """Sets the given angle, winding sim, puck analysis
+
+    :return: maximum puck fibre failure"""
+    return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:3])
+
+
+def getMaxPuckLocalPuckMassIndexByShift(shift, args):
     """Sets the given hoop shift, winding sim, puck analysis
 
+    :param shift:
+    :param args:
     :return: tuple, (maximum puck fibre failure, index of max FF/IFF)
     """
     if hasattr(shift, '__iter__'):
         shift = shift[0]
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _ = args
+    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _, _, _, _ = args
     vessel.setHoopLayerShift(layerNumber, shift, True)
     actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
         return np.inf, 0
-    maxPuck, maxIndex = _getMaxPuck(args)
+    maxPuck, puckAtCritIdx, layMass, maxIndex = _getMaxPuckLocalPuckMass(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-    log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, index {maxIndex}')
-    return maxPuck, maxIndex
+    log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, '
+              f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
+    return maxPuck, puckAtCritIdx, layMass, maxIndex
 
 
-def _getMaxPuck(args):
+def _getMaxPuckLocalPuckMass(args):
     """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, _, puckProperties, burstPressure, useIndices, useFibreFailure, symmetricContour = args
+    vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, _, symmetricContour, \
+        critIdx, targetFuncScaling = args
     index = 0 if useFibreFailure else 1
     maxPerElement = getLinearResults(
         vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index].max(axis=1)
     maxIndex = maxPerElement.idxmax()
     maxPuck = maxPerElement.max()
-    return maxPuck, maxIndex
+    puckAtCritIdx = maxPerElement[critIdx]
 
+    # layer mass
+    layMass = vessel.getVesselLayer(layerNumber).getVesselLayerPropertiesSolver().getWindingLayerResults().fiberMass
+    maxPuck, puckAtCritIdx, layMass = np.array([maxPuck, puckAtCritIdx, layMass]) * targetFuncScaling
+    return maxPuck, puckAtCritIdx, layMass, maxIndex
 
-def getLinearResultsAsDataFrame(results = None):
-    """returns the mechanical results as dataframe
-
-    :param results: tuple with results returned by getLinearResults()
-    :return: dataframe with results
-    """
-    if len(results) == 2:
-        puckFF, puckIFF = results
-        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop = [[]], [[]], [[]], [], [], [], []
-    else:
-        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF = results
-    layers = range(puckFF.shape[1])
-    dfList = [puckFF, puckIFF]
-    for data, name in zip([S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop],
-                               ['S11', 'S22', 'S12', 'epsAxBot', 'epsAxTop', 'epsCircBot', 'epsCircTop']):
-        if len(data.shape) == 2:
-            columns = [f'{name}lay{layerNumber}' for layerNumber in layers]
-            dfAdd = pd.DataFrame(data, columns=columns)
-        else:
-            dfAdd = pd.DataFrame(np.array([data]).T, columns=[name])
-        dfList.append(dfAdd)
-    df = pd.concat(dfList, join='outer', axis=1)
-    return df
 
 def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False,
                      symmetricContour=True):
@@ -152,10 +144,10 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     columns = [f'puckIFFlay{layerNumber}' for layerNumber in range(numberOfLayers)]
     puckIFF = pd.DataFrame(np.array(puckIFF), columns=columns)
     if puckOnly:
-        if useIndices is not None:
-            noUseIndices = set(puckFF.index).difference(useIndices)
-            puckFF.drop(noUseIndices, inplace=True)
-            puckIFF.drop(noUseIndices, inplace=True)
+        # if useIndices is not None:
+        #     noUseIndices = set(puckFF.index).difference(useIndices)
+        #     puckFF.drop(noUseIndices, inplace=True)
+        #     puckIFF.drop(noUseIndices, inplace=True)
         return puckFF, puckIFF
 
     epsAxialBot = shellModel.getEpsAxialBottom(0)
@@ -185,26 +177,3 @@ def _getShellModels(vessel, burstPressure, symmetricContour):
     return shellModel, shellModel2
 
 
-if __name__ == '__main__':
-    from matplotlib import pyplot as plt
-    from tankoh2.design.winding.windingutils import getLayerThicknesses
-    from tankoh2.service.plot.muwind import plotThicknesses
-    vessel = pychain.winding.Vessel()
-    filename = r'C:\PycharmProjects\tankoh2\tmp\tank_20220720_102607_NGT-BIT-2022-07_new_thk_mail_mefex\backup.vessel'
-    print(f' load vessel from {filename}')
-    vessel.loadFromFile(filename)
-    vessel.finishWinding()
-    converter = pychain.mycrofem.VesselConverter()
-    shellModel = converter.buildAxShellModell(vessel, 45, True, True)  # pressure in MPa (bar / 10.)
-    linerSolver = pychain.mycrofem.LinearSolver(shellModel)
-    linerSolver.run(True)
-    S11, S22, S12 = shellModel.calculateLayerStressesBottom()
-    df = pd.DataFrame(np.array([S11[:,0],S22[:,0],S12[:,0]]).T, columns=['S11', 'S22', 'S12'])
-    df.plot()
-    plt.show()
-    t = getLayerThicknesses(vessel, True)
-    plotThicknesses(True, '', t)
-    eAxBot = shellModel.getEpsAxialBottom(0)
-    fig, ax = plt.subplots()
-    ax.plot(eAxBot, linewidth=2.0)
-    plt.show()

@@ -1,3 +1,6 @@
+"""utility functions for µWind objects"""
+
+
 import json
 
 import shutil
@@ -13,18 +16,29 @@ def getAnglesFromVessel(vessel):
     return [np.rad2deg(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).clairaultAngle) for layerNumber in range(vessel.getNumberOfLayers())]
 
 
-def getLayerThicknesses(vessel, symmetricContour):
-    """returns a dataframe with thicknesses of each layer along the whole vessel"""
+def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param vessel: vessel obj
+    :param symmetricContour: flag if symmetric contour is used
+    :param layerNumbers: list of layers that should be evaluated. If None, all layers are used
+    :return: 
+    """
     thicknesses = []
-    columns = ['lay{}_{:04.1f}'.format(i, angle) for i, angle in enumerate(getAnglesFromVessel(vessel))]
+    if layerNumbers is None:
+        layerNumbers = range(vessel.getNumberOfLayers())
+    angles = getAnglesFromVessel(vessel)
+    columns = ['lay{}_{:04.1f}'.format(layNum, angles[layNum]) for layNum in layerNumbers]
 
     liner = vessel.getLiner()
     numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
     numberOfElements2 = liner.getMandrel2().numberOfNodes - 1
-    for layerNumber in range(vessel.getNumberOfLayers()):
+    for layerNumber in layerNumbers:
         vesselLayer = vessel.getVesselLayer(layerNumber)
         layerThicknesses = []
-        for numberOfElements, isMandrel1 in [(numberOfElements1, True), (numberOfElements2, False)]:
+        elemsMandrels =  [(numberOfElements1, True)]
+        if not symmetricContour:
+            elemsMandrels.append((numberOfElements2, False))
+        for numberOfElements, isMandrel1 in elemsMandrels:
             for elementNumber in range(numberOfElements):
                 layerElement = vesselLayer.getVesselLayerElement(elementNumber, isMandrel1)
                 layerThicknesses.append(layerElement.elementThickness)
@@ -93,3 +107,38 @@ def changeSimulationOptions(vesselFilename, nLayers, minThicknessValue, hoopLaye
 
     with open(vesselFilename, "w") as jsonFile:
         json.dump(data, jsonFile, indent=4)
+
+
+def getLinearResultsAsDataFrame(results = None):
+    """returns the mechanical results as dataframe
+
+    :param results: tuple with results returned by getLinearResults()
+    :return: dataframe with results
+    """
+    if len(results) == 2:
+        puckFF, puckIFF = results
+        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop = [[]], [[]], [[]], [], [], [], []
+    else:
+        S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF = results
+    layers = range(puckFF.shape[1])
+    dfList = [puckFF, puckIFF]
+    for data, name in zip([S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop],
+                               ['S11', 'S22', 'S12', 'epsAxBot', 'epsAxTop', 'epsCircBot', 'epsCircTop']):
+        if len(data.shape) == 2:
+            columns = [f'{name}lay{layerNumber}' for layerNumber in layers]
+            dfAdd = pd.DataFrame(data, columns=columns)
+        else:
+            dfAdd = pd.DataFrame(np.array([data]).T, columns=[name])
+        dfList.append(dfAdd)
+    df = pd.concat(dfList, join='outer', axis=1)
+    return df
+
+
+def getCriticalElementIdx(puck):
+    """Returns the index of the most critical element
+
+    :param puck: 2d array defining puckFF or puckIFF for each element and layer
+    """
+    # identify critical element
+    layermax = puck.max().argmax()
+    return puck.idxmax()[layermax], layermax

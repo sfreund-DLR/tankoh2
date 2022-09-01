@@ -9,10 +9,12 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
 from tankoh2.design.winding.material import getComposite
 from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
-from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckByShift, getCriticalElementIdx, \
-    getLinearResults, getLinearResultsAsDataFrame
+from tankoh2.design.winding.solver import getMaxPuckByAngle, getMaxPuckByShift, getLinearResults, \
+    getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
-from tankoh2.design.winding.windingutils import getLayerThicknesses
+from tankoh2.design.winding.windingutils import getLayerThicknesses, getLinearResultsAsDataFrame, \
+    getCriticalElementIdx
+from tankoh2.design.designutils import getOptScalingFactors
 from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses, plotPuckAndTargetFunc
@@ -56,25 +58,34 @@ def checkThickness(vessel, angle, bounds, symmetricContour):
     if lastLayThick[::-1].idxmax() - lastLayThick.idxmax() > lastLayThick.shape[0] * 0.1:
         #adjust bounds
         bounds = [angle+0.1, bounds[1]]
+        raise
         return False, bounds
     return True, bounds
 
 
-def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                    polarOpeningRadius, bandWidth, useIndices, useFibreFailure, verbosePlot, symmetricContour):
+def optimizeHelical(polarOpeningRadius, bandWidth, optArgs):
+    """Optimize the angle of helical layers
+
+    :param polarOpeningRadius: polar opening radius of tank
+    :param bandWidth: width of the band
+    :param optArgs: list with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
+         for a description
+    :return:
+    """
     log.debug('Optimize helical layer')
     # get location of critical element
-
+    vessel, layerNumber = optArgs[:2]
+    symmetricContour = optArgs[7]
     windLayer(vessel, layerNumber, maxHelicalAngle)
     minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), bandWidth,
                                    targetFunction=getPolarOpeningDiffByAngleBandMid)
     bounds = [minAngle, maxHelicalAngle]
 
-    optArgs = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure,
-            symmetricContour]
     for tryIterations in range(20):
-        angle, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByAngle, optArgs,
-                                                                 verbosePlot, localOptimization='both')
+        angle, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds,
+                                                                 #getMaxPuckByAngle,
+                                                                 getWeightedTargetFuncByAngle,
+                                                                 optArgs, localOptimization='both')
 
         layerOk, bounds = checkThickness(vessel, angle, bounds, symmetricContour)
         if layerOk:
@@ -83,6 +94,8 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
     else:
         raise Tankoh2Error('Could not correct the thickness of the actual layer. Possibly the number of '
                            'nodes in respect to the tank radius and band width is not sufficient')
+
+    # calculate border indices of the new layer
     layerPolarOpeningRadius1 = windLayer(vessel, layerNumber, angle)
     radii1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1().getRArray()
     if symmetricContour:
@@ -94,32 +107,30 @@ def optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
         newDesignIndexes = [elemCount1 - np.argmin(np.abs(radii1 - layerPolarOpeningRadius1)),
                             elemCount1 + np.argmin(np.abs(radii2 - layerPolarOpeningRadius2))]
     log.debug(f'anlge {angle}, puck value {funcVal}, loopIterations {loopIt}, '
-              f'polar opening contour coord {newDesignIndexes}')
+              f'polar opening contour coord index {newDesignIndexes}')
 
     return angle, funcVal, loopIt, newDesignIndexes, tfPlotVals
 
 
-def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                 useIndices, useFibreFailure, maxHoopShift, verbosePlot, symmetricContour):
+def optimizeHoop(maxHoopShift, optArgs):
     """
-    :param vessel:
-    :param layerNumber:
-    :param puckProperties:
-    :param burstPressure:
-    :param useIndices: element indicies that should be used for strength evaluation
-    :param useFibreFailure:
-    :param maxHoopShift:
-    :param verbosePlot:
-    :param symmetricContour: Flag if the contour is symmetric
+    :param maxHoopShift: maximum hoop shift
+    :param optArgs: list with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
+         for a description
     :return:
     """
     log.debug('Optimize hoop layer')
     bounds = [0, maxHoopShift]
 
-    optArgs = [vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure,
-               symmetricContour]
-    shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds, getMaxPuckByShift, optArgs, verbosePlot)
+    vessel, layerNumber = optArgs[:2]
+    symmetricContour = optArgs[7]
 
+    shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds,
+                                                             #getMaxPuckByShift,
+                                                             getWeightedTargetFuncByShift,
+                                                             optArgs)
+
+    # calculate border indices of the new layer
     mandrel1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
     r1, l1 = mandrel1.getRArray(), mandrel1.getLArray()
     elemCount1 = mandrel1.numberOfNodes - 1
@@ -135,9 +146,10 @@ def optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
         newDesignIndexes = [elemCount1 - np.argmin(np.abs(l1 - hoopLength1)),
                             elemCount1 + np.argmin(np.abs(l2 - hoopLength2))]
     log.debug(f'hoop shift {shift}, puck value {funcVal}, loopIterations {loopIt}, '
-              f'hoop end contour coord {newDesignIndexes}')
+              f'hoop end contour coord index {newDesignIndexes}')
 
     return shift, funcVal, loopIt, newDesignIndexes, tfPlotVals
+
 
 def _getHoopAndHelicalIndices(vessel, symmetricContour,
                                relRadiusHoopLayerEnd):
@@ -147,11 +159,11 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
     :param symmetricContour: Flag if the contour is symmetric
     :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
     :return:
-        - hoopIndexEnd: index which distinguishes between indicies of
-            cylindrical and dome section (mandrel1)
+        - hoopStart: index where the hoop region starts (0 if symm contour, on mandrel1 of unsymm contour)
+        - hoopEnd: index where the hoop region ends (mandrel1 if symm contour, on mandrel2 of unsymm contour)
         - maxHoopShift: maximal length of hoop shifts into dome section
-        - useHoopIndices:
-        - useHelicalIndices
+        - useHoopIndices: list of element indicies that will be evaluated (stress, puck) in the hoop region
+        - useHelicalIndices: list of element indicies that will be evaluated (stress, puck) in the dome region
     """
     liner = vessel.getLiner()
     mandrel1 = liner.getMandrel1()
@@ -241,7 +253,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     def getPuck():
         puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
                                            puckOnly=True, symmetricContour=symmetricContour)
-        return  puckFF if useFibreFailure else puckIFF
+        return puckFF if useFibreFailure else puckIFF
 
     vessel.resetWindingSimulation()
 
@@ -250,8 +262,9 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     layerNumber = 0
     iterations = 0
     hoopOrHelicalFac = 1
-    liner = vessel.getLiner()
+    targetFuncWeights = np.array([1.,1.,.1])
 
+    liner = vessel.getLiner()
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
     hoopStart, hoopEnd, maxHoopShift, useHoopIndices, useHelicalIndices = indiciesAndShifts
     x,r = liner.getMandrel1().getXArray(), liner.getMandrel1().getRArray()
@@ -277,13 +290,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         windLayer(vessel, layerNumber, minAngle)
         anglesShifts = [(minAngle,0)]
 
-    # layerNumber += 1
-    #
-    # # wind layer up to the end of conical tank section
-    # conicalAngle = 15
-    # printLayer(layerNumber, '- conical layer')
-    # anglesShifts += [(conicalAngle, 0)]
-
     composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
 
     # create other layers
@@ -291,8 +297,11 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     for layerNumber in range(layerNumber + 1, maxLayers):
         puck = getPuck()
         elemIdxmax, layermax = getCriticalElementIdx(puck)
+        puckMax = puck.max().max()
+        targetFuncScaling = getOptScalingFactors(
+            targetFuncWeights, vessel.calculateVesselStatistics().overallFiberMass / layerNumber, puckMax)
 
-        if puck.max().max() < 1:
+        if puckMax < 1:
             log.debug('End Iteration')
             # stop criterion reached
             columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
@@ -308,30 +317,25 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         windAnglesAndShifts(anglesShifts + [(90, 0.)], vessel, compositeArgs)
 
         # check zone of highest puck values
-        if layerNumber == 1 and useFibreFailure:
-            # this layer should be a hoop layer
-            optHoopRegion = True
-
+        add90DegLay1FF = layerNumber == 1 and useFibreFailure
+        if add90DegLay1FF:
+            optHoopRegion = True  # this layer should be a hoop layer
         elif useFibreFailure:
             # check if max puck value occurred in hoop or helical layer
             optHoopRegion = anglesShifts[layermax][0] > 89
-
         else:
             optHoopRegion = hoopStart <= elemIdxmax <= hoopEnd
             log.info(f'{hoopStart} <= {elemIdxmax} <= {hoopEnd}')
+
+        optArgs = [vessel, layerNumber, puckProperties, burstPressure, useHelicalIndices,
+                   useFibreFailure, verbosePlot, symmetricContour, elemIdxmax, targetFuncScaling]
         if optHoopRegion:
-            resHoop = optimizeHoop(vessel, layerNumber, puckProperties, burstPressure,
-                                   #[elemIdxmax],
-                                   useHoopIndices,
-                                   useFibreFailure, maxHoopShift, verbosePlot, symmetricContour)
-            resHelical = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                         polarOpeningRadius, bandWidth,
-                                         #[elemIdxmax],
-                                         useHoopIndices,
-                                         useFibreFailure, verbosePlot, symmetricContour)
-            if not (layerNumber == 1 and useFibreFailure):
+            optArgs[4] = useHoopIndices
+            resHoop = optimizeHoop(maxHoopShift, optArgs)
+            resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
+            if not add90DegLay1FF:
                 log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
-            if (layerNumber == 1 and useFibreFailure) or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
+            if add90DegLay1FF or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
                 windHoopLayer(vessel, layerNumber, shift)  # must be run since optimizeHelical ran last time
@@ -341,19 +345,15 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             else:
                 optResult = resHelical
                 anglesShifts.append((optResult[0], 0))
+                optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
         else:
-            optResult = optimizeHelical(vessel, layerNumber, puckProperties, burstPressure,
-                                        polarOpeningRadius, bandWidth,
-                                        #[elemIdxmax],
-                                        useHelicalIndices,
-                                        useFibreFailure, verbosePlot, symmetricContour)
-
+            optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
             anglesShifts.append((optResult[0],0))
 
         composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
         _, _, loopIt, newDesignIndexes, tfValues = optResult
         iterations += loopIt
-        plotPuckAndTargetFunc(puck, tfValues, anglesShifts, optResult[0], layerNumber, runDir,
+        plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                               verbosePlot, useFibreFailure, show, elemIdxmax, hoopStart, hoopEnd,
                               newDesignIndexes)
 
