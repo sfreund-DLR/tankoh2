@@ -8,6 +8,7 @@ Goal of a target function:
 ## Min(Max(Puck))
 This is the most basic approach: Minimize the maximal puck value in all elements and all layers.
 
+![lay4](file:///puck_4.png)
 
 
 
