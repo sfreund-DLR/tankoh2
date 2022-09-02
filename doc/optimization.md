@@ -8,10 +8,10 @@ Goal of a target function:
 ## Min(Max(Puck))
 This is the most basic approach: Minimize the maximal puck value in all elements and all layers.
 
-![lay4](sfreund-DLR/tankoh2/doc/images/optimization/minmaxpuck_4.png)
-![lay5](sfreund-DLR/tankoh2/doc/images/optimization/minmaxpuck_5.png)
-![lay6](sfreund-DLR/tankoh2/doc/images/optimization/minmaxpuck_6.png)
-![lay7](sfreund-DLR/tankoh2/doc/images/optimization/minmaxpuck_7.png)
+![lay4](images/optimization/minmaxpuck_4.png)
+![lay5](images/optimization/minmaxpuck_5.png)
+![lay6](images/optimization/minmaxpuck_6.png)
+![lay7](images/optimization/minmaxpuck_7.png)
 
 
 Con: This approach minimizes the whole dome region (or hoop region in hoop case) but does not find the optimium to work on one peak at a time. As seen in the images, this produces a ping-pong like behavior. It minimizes both, but not one peak properly at a time.
@@ -22,9 +22,9 @@ In example "conicalTankDesign" (commit bb76384) this method resulted in  layers
 This approach minimizes the puck value at the very exact peak of the last iteration. 
 
 
-![lay3](sfreund-DLR/tankoh2/doc/images/optimization/minmaxcritpuck_3.png)
-![lay4](sfreund-DLR/tankoh2/doc/images/optimization/minmaxcritpuck_4.png)
-![lay5](sfreund-DLR/tankoh2/doc/images/optimization/minmaxcritpuck_5.png)
+![lay3](images/optimization/minmaxcritpuck_3.png)
+![lay4](images/optimization/minmaxcritpuck_4.png)
+![lay5](images/optimization/minmaxcritpuck_5.png)
 
 con: the next peak may be right next to the last one. So a target function that incorporates the total maximum or the neighborhood of the
 last critial location might be beneficial
