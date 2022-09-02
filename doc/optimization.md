@@ -43,7 +43,12 @@ These Weights are used:
 - 0.5 Min(Max(Puck(crit index)))
 - 0.1 next Layer Mass
 
-It improves the above behavior
+![lay4](images/optimization/minmaxweightedpuck_4.png)
+![lay5](images/optimization/minmaxweightedpuck_5.png)
+![lay6](images/optimization/minmaxweightedpuck_6.png)
+
+It improves the above behavior as seen in third image but still does very local changes as seen in the first and second image
 
 In example "conicalTankDesign" (commit bb76384) this method resulted in 14 layers
 
+## Integral func
