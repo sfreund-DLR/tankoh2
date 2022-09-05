@@ -241,7 +241,7 @@ def _getHoopAndHelicalIndices(vessel, symmetricContour,
 
 def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckProperties, burstPressure, symmetricContour,
                  runDir, compositeArgs, verbosePlot,
-                 useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts):
+                 useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights):
     """Perform design optimization layer by layer
 
     :param vessel: vessel instance of mywind
@@ -259,6 +259,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     :param useFibreFailure: flag, use fibre failure or inter fibre failure
     :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
     :param initialAnglesAndShifts: List with tuples defining angles and shifts used before optimization starts
+    :param targetFuncWeights: initial weights of the target functions constituents
     :return: frpMass, volume, area, composite, iterations, anglesShifts
 
     Strategy:
@@ -299,7 +300,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     layerNumber = 0
     iterations = 0
     hoopOrHelicalFac = 1.
-    targetFuncWeights = np.array([1.,.25,2.,.1])
 
     liner = vessel.getLiner()
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
@@ -394,7 +394,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         iterations += loopIt
         plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                               verbosePlot, useFibreFailure, show, elemIdxmax, hoopStart, hoopEnd,
-                              newDesignIndexes)
+                              newDesignIndexes, (targetFuncWeights, targetFuncScaling))
 
         vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     else:

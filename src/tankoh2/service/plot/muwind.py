@@ -10,14 +10,14 @@ from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
 
 def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
-                          elemIdxmax, hoopStart, hoopEnd, newDesignIndexes):
+                          elemIdxmax, hoopStart, hoopEnd, newDesignIndexes, targetFuncScaling):
     """"""
     puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
     fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
     if verbosePlot:
-        plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, None, None, False)
+        plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
     else:
         ax = axs  # if only one subplot is used, axs is no iterable
@@ -30,7 +30,7 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
     saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '', show=show, fig=fig)
 
 
-def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, runDir, layerNumber, show):
+def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling, runDir, layerNumber, show):
     # create target function plot
     if ax is None:
         fig, ax = plt.subplots(1, 1, figsize=(8, 7))
@@ -41,9 +41,10 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, runDir, layerNumbe
     tfX = tfValues[0]
     tfMaxIndexes = tfValues[-1]
     tfValues = tfValues[1:-1]
-
-    labelNames = [puckLabelName + ' (weighted)', f'{puckLabelName[4:]} at last crit location (weighted)',
-                  'puck sum (weighted)', 'mass (weighted)']
+    weights, scaling = targetFuncScaling
+    labelNames = [puckLabelName, f'{puckLabelName[4:]} at last crit location', 'puck sum', 'mass']
+    labelNames = [f'{labelName}, weight: {weight:.4f}, scaleFac: {scale:.4f}' for labelName, weight, scale
+                  in zip(labelNames, weights, scaling)]
     for values, labelName in zip(tfValues, labelNames):
         if np.all(values < 1e-8):
             continue
