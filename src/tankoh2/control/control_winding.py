@@ -45,6 +45,7 @@ def createDesign(**kwargs):
     # Optimization
     layersToWind = designArgs['maxlayers']
     relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
+    targetFuncWeights = designArgs['targetFuncWeights']
 
     # Geometry - generic
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
@@ -121,7 +122,7 @@ def createDesign(**kwargs):
     copyAsJson(vesselFilename, 'vessel')
     results = designLayers(vessel, layersToWind, polarOpeningRadius, bandWidth, puckProperties, burstPressure,
                            dome2 is None, runDir, compositeArgs, verbosePlot,
-                           useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts)
+                           useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights)
 
     frpMass, area, iterations, angles, hoopLayerShifts = results
     duration = datetime.now() - startTime

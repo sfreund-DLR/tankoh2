@@ -8,38 +8,65 @@ import os
 from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
 
 
-def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, angleOrHoopShift, layerNumber, runDir,
+def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
-                          elemIdxmax, hoopStart, hoopEnd, newDesignIndexes):
+                          elemIdxmax, hoopStart, hoopEnd, newDesignIndexes, targetFuncScaling):
     """"""
     puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
-    yLabel = 'puck fibre failure' if useFibreFailure else 'puck inter fibre failure'
+    puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
     fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
     if verbosePlot:
-        # create target function plot
-        xLabel = 'angle' if anglesShifts[-1][0] < 90 else 'hoop shift'
-        ax = axs[1]
-        ax.plot(tfValues[0], tfValues[1], label=yLabel)
-        # plot optimal angle or shift as vertical line
-        ax.plot([angleOrHoopShift] * 2, [0, 1.1 * np.max(tfValues[1])], linestyle='dashed', color='green')
-        ax.set_ylabel(yLabel)
-        ax.set_xlabel(xLabel)
-        ax2 = ax.twinx()  # plot on secondary axes
-        ax2.set_ylabel('Contour index of highest Puck value')
-        ax2.scatter(tfValues[0], tfValues[2], label='Contour index of highest Puck value', s=1,
-                    color='orange')
-        lines, labels = ax.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax2.legend(lines[:1] + lines2, labels[:1] + labels2)
+        plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
     else:
         ax = axs  # if only one subplot is used, axs is no iterable
     plotDataFrame(False, '', puck, ax,
                   vlines=[elemIdxmax + 0.5, hoopStart, hoopEnd] + newDesignIndexes,
                   vlineColors=['red', 'black', 'black'] + ['green'] * len(newDesignIndexes),
-                  yLabel=yLabel, xLabel='Contour index')
-    saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png'), show=show, fig=fig)
+                  yLabel=puckLabelName, xLabel='Contour index',
+                  plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}})
+    fig.tight_layout()
+    saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '', show=show, fig=fig)
+
+
+def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling, runDir, layerNumber, show):
+    # create target function plot
+    if ax is None:
+        fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+    else:
+        fig = None
+    xLabel = 'angle' if anglesShifts[-1][0] < 89 else 'hoop shift'
+    angleOrHoopShift = anglesShifts[-1][0] if anglesShifts[-1][0] < 89 else anglesShifts[-1][1]
+    tfX = tfValues[0]
+    tfMaxIndexes = tfValues[-1]
+    tfValues = tfValues[1:-1]
+    weights, scaling = targetFuncScaling
+    labelNames = [puckLabelName, f'{puckLabelName[4:]} at last crit location', 'puck sum', 'mass']
+    labelNames = [f'{labelName}, weight: {weight:.4f}, scaleFac: {scale:.4f}' for labelName, weight, scale
+                  in zip(labelNames, weights, scaling)]
+    for values, labelName in zip(tfValues, labelNames):
+        if np.all(values < 1e-8):
+            continue
+        ax.plot(tfX, values, label=labelName)
+    if tfValues.shape[0] == 4:  # plot weighted sum
+        ax.plot(tfX, tfValues.sum(axis=0), label='target function: weighted sum')
+
+    # plot optimal angle or shift as vertical line
+    ax.plot([angleOrHoopShift] * 2, [0, 1.1 * np.max(tfValues.sum(axis=0))],
+            linestyle='dashed', color='green', label=f'new design {xLabel}')
+    ax.set_ylabel('Target function')
+    ax.set_xlabel(xLabel)
+    ax2 = ax.twinx()  # plot on secondary axes
+    ax2.set_ylabel('Contour index of highest Puck value')
+    ax2.scatter(tfX, tfMaxIndexes, label='Contour index of highest Puck value', s=2, color='orange')
+    lines, labels = ax.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(lines + lines2, labels + labels2, loc='lower center', bbox_to_anchor=(0.5, 1.01))
+    if fig:
+        fig.tight_layout()
+    saveShowClose(os.path.join(runDir, f'tf_{layerNumber}.png') if runDir else '',
+                  show=show, fig=fig)
 
 
 def plotStressEpsPuck(show, filename, S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF):

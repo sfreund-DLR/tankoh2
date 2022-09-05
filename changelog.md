@@ -13,6 +13,11 @@ The third digit is only for regressions.
 ### Added
 
 
+## [2.3.2] - 31.08.2022
+### Added
+
+- improve target function #60, #62. Now a weighted sum of variations of puck and mass can be used
+
 ## [2.3.1] - 31.08.2022
 ### Added
 
