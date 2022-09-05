@@ -11,7 +11,7 @@ Used *conicalTankDesign* which is this geometry:
 ![contour](images/optimization/contour.png)
 
 
-## Min(Max(Puck))
+## $min(max(Puck))$
 This is the most basic approach: Minimize the maximal puck value in all elements and all layers.
 
 ![lay4](images/optimization/minmaxpuck_4.png)
@@ -22,9 +22,9 @@ This is the most basic approach: Minimize the maximal puck value in all elements
 
 Con: This approach minimizes the whole dome region (or hoop region in hoop case) but does not find the optimium to work on one peak at a time. As seen in the images, this produces a ping-pong like behavior. It minimizes both, but not one peak properly at a time.
 
-In example "conicalTankDesign" (commit bb76384) this method resulted in  layers
+In example "conicalTankDesign" (commit bb76384) this method resulted in >22 layers
 
-## Min(Max(Puck(crit index)))
+## $min(max(Puck(crit index)))$
 This approach minimizes the puck value at the very exact peak of the last iteration. 
 
 
@@ -35,10 +35,10 @@ This approach minimizes the puck value at the very exact peak of the last iterat
 con: the next peak may be right next to the last one. So a target function that incorporates the total maximum or the neighborhood of the
 last critial location might be beneficial
 
-In example "conicalTankDesign" (commit bb76384) this method resulted in  layers
+In example "conicalTankDesign" (commit bb76384) this method resulted in >22 layers
 
 
-## Weighted Min(Max(Puck)) and Min(Max(Puck(crit index)))
+## Weighted $min(max(Puck))$ and $min(max(Puck(crit index)))$
 see [issue 60](https://github.com/sfreund-DLR/tankoh2/issues/60)
 
 Due to the problems with both singular methods before, they are combined in a weighted sum in order to incorporate both effects: 
@@ -57,4 +57,7 @@ It improves the above behavior as seen in third image but still does very local 
 
 In example "conicalTankDesign" (commit bb76384) this method resulted in 14 layers
 
-## Integral func
+## Integral func $min(\sum puck)$
+When using $min(\sum puck)$ instead of $min(max(Puck))$, the whole material utilization is taken into account for minimization. This might be a good combination with $min(max(Puck(crit index)))$.
+
+
