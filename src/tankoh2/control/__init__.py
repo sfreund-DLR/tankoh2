@@ -16,6 +16,7 @@ if __name__ == '__main__':
     #params = parameters.defaultUnsymmetricDesign.copy()
     params = parameters.NGTBITDesignNewThk.copy()
     params = parameters.hytazerSmall.copy()
+    params = parameters.conicalTankDesign.copy()
 
 
 

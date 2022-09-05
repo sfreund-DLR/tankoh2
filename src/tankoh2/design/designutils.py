@@ -9,32 +9,6 @@ from tankoh2.geometry.dome import getDome
 from tankoh2.geometry.liner import Liner
 
 
-def getOptScalingFactors(targetFuncWeights, meanLayerMass, puckMax):
-    """Adapt mass scaling since puck values are reduced over time and mass slightly increased.
-
-    As result, the scaling between mass and puck must be adapted for each iteration to keep the proposed
-    weights of targetFuncWeights.
-
-    :param targetFuncWeights: initial weights of the target functions constituents
-    :param meanLayerMass: mean mass of the layers already in use
-    :param puckMax: max puck value of the layers already in use
-    :return: vector to scale the optimization values
-        (used in tankoh2.design.winding.solver._getMaxPuckLocalPuckMass) for the next iteration.
-        - scale puckMax
-        - scale puck at last critical index
-        - scale masse
-    """
-    if targetFuncWeights[0] > 1e-8:
-        massByPuckFac = targetFuncWeights[2] / targetFuncWeights[0]
-    elif targetFuncWeights[1] > 1e-8:
-        massByPuckFac = targetFuncWeights[2] / targetFuncWeights[1]
-    else:
-        return targetFuncWeights  # only mass should be optimized, no extra scaling required
-    targetFuncScaling = targetFuncWeights.copy()
-    targetFuncScaling[2] = massByPuckFac * puckMax / meanLayerMass
-    return targetFuncScaling
-
-
 def getLengthRadiusFromVolume(
         volume,
         lcylByR = float(allArgs[allArgs['name']=='lcylByR']['default']),

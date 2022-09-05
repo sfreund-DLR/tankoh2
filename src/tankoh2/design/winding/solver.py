@@ -19,7 +19,7 @@ def getWeightedTargetFuncByAngle(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    return np.sum(getMaxPuckLocalPuckMassIndexByAngle(angle, args)[:3])
+    return np.sum(getMaxPuckLocalPuckMassIndexByAngle(angle, args)[:-1])
 
 
 def getMaxPuckLocalPuckMassIndexByAngle(angle, args):
@@ -34,11 +34,11 @@ def getMaxPuckLocalPuckMassIndexByAngle(angle, args):
         actualPolarOpening = windLayer(vessel, layerNumber, angle)
         if actualPolarOpening is np.inf:
             return np.inf, 0
-    maxPuck, puckAtCritIdx, layMass, maxIndex = _getMaxPuckLocalPuckMass(args)
+    maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex = getMaxPuckLocalPuckMass(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
     log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, '
               f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
-    return maxPuck, puckAtCritIdx, layMass, maxIndex
+    return maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex
 
 
 def getMaxPuckByShift(shift, args):
@@ -53,7 +53,7 @@ def getWeightedTargetFuncByShift(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:3])
+    return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:-1])
 
 
 def getMaxPuckLocalPuckMassIndexByShift(shift, args):
@@ -70,28 +70,34 @@ def getMaxPuckLocalPuckMassIndexByShift(shift, args):
     actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
         return np.inf, 0
-    maxPuck, puckAtCritIdx, layMass, maxIndex = _getMaxPuckLocalPuckMass(args)
+    maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex = getMaxPuckLocalPuckMass(args)
     failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
     log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, '
               f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
-    return maxPuck, puckAtCritIdx, layMass, maxIndex
+    return maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex
 
 
-def _getMaxPuckLocalPuckMass(args):
+
+def getMaxPuckLocalPuckMass(args, puck=None, scaleTf=True):
     """Return maximum fibre failure of the all layers after winding the given angle"""
     vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, _, symmetricContour, \
         critIdx, targetFuncScaling = args
-    index = 0 if useFibreFailure else 1
-    maxPerElement = getLinearResults(
-        vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index].max(axis=1)
+    if puck is None:
+        index = 0 if useFibreFailure else 1
+        puck = getLinearResults(
+            vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index]
+    maxPerElement = puck.max(axis=1)
     maxIndex = maxPerElement.idxmax()
+
     maxPuck = maxPerElement.max()
     puckAtCritIdx = maxPerElement[critIdx]
-
-    # layer mass
+    puckSum = np.sum(maxPerElement)
     layMass = vessel.getVesselLayer(layerNumber).getVesselLayerPropertiesSolver().getWindingLayerResults().fiberMass
-    maxPuck, puckAtCritIdx, layMass = np.array([maxPuck, puckAtCritIdx, layMass]) * targetFuncScaling
-    return maxPuck, puckAtCritIdx, layMass, maxIndex
+
+    tfValues = np.array([maxPuck, puckAtCritIdx, puckSum, layMass])
+    if scaleTf:
+        tfValues *= targetFuncScaling
+    return *tfValues, maxIndex
 
 
 def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False,

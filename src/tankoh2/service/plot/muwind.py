@@ -43,12 +43,12 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, runDir, layerNumbe
     tfValues = tfValues[1:-1]
 
     labelNames = [puckLabelName + ' (weighted)', f'{puckLabelName[4:]} at last crit location (weighted)',
-                  'mass (weighted)']
+                  'puck sum (weighted)', 'mass (weighted)']
     for values, labelName in zip(tfValues, labelNames):
         if np.all(values < 1e-8):
             continue
         ax.plot(tfX, values, label=labelName)
-    if tfValues.shape[0] == 3:  # plot weighted sum
+    if tfValues.shape[0] == 4:  # plot weighted sum
         ax.plot(tfX, tfValues.sum(axis=0), label='target function: weighted sum')
 
     # plot optimal angle or shift as vertical line
