@@ -5,6 +5,12 @@ There are various variants for the actual layer-based optimization in tankoh2. A
 Goal of a target function:
 - have a good balance between minimizing the last maximum and minimizing puck at all elements
 
+## Use-Case
+Used *conicalTankDesign* which is this geometry:
+
+![contour](images/optimization/contour.png)
+
+
 ## Min(Max(Puck))
 This is the most basic approach: Minimize the maximal puck value in all elements and all layers.
 
