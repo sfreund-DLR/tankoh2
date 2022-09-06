@@ -45,8 +45,9 @@ Due to the problems with both singular methods before, they are combined in a we
 local minimization and a global minimization. Also a mass function was added as side kick ;-)
 
 These Weights $\omega$ are used:
-- 1 Min(Max(Puck))
-- 0.5 Min(Max(Puck(crit index)))
+- 1 $max(puck)$
+- 0.5 $max(puck(crit index))$
+- 0 $\sum puck$
 - 0.1 next Layer Mass
 
 ![lay4](images/optimization/minmaxweightedpuck_4.png)
@@ -69,6 +70,12 @@ $\lambda = \omega / \bar{y} \cdot y_{i, y_i \neq 0}$
 $y_{i, y_i \neq 0}$ is used to scale the values to the amount of the first quantity, which is not zero. 
 With this, $\omega[0] == 1$ lead to comparable puck values of $min(max(Puck))$.
 
+$\omega$ describes these weights:
+- $max(puck)$
+- $max(puck(crit index))$
+- $\sum puck$
+- next Layer Mass
+
 **Results**
 
 These weights are compared:
@@ -82,31 +89,48 @@ These weights are compared:
 The result after 3 layers is nearly equal:
 
 3 layers done: $\omega_{old} = [1,1,0,0.1]$
+
 ![lay3](images/optimization/puck_3_omega_1_1_0_.1.png)
+
 3 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
 ![lay3](images/optimization/puck_3_omega_1_1_1_.1.png)
+
 3 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
 ![lay3](images/optimization/puck_3_omega_1_.5_2_.1.png)
+
 
 ### Iteration 4
 Here, the old approach $\omega_{old} = [1,1,0,0.1]$, uses only a small offset between max value and next angle
 polar opening. The new approach minimizes a larger range between maximum utilization and next angle polar opening.
 
 4 layers done: $\omega_{old} = [1,1,0,0.1]$
+
 ![lay4](images/optimization/puck_4_omega_1_1_0_.1.png)
+
 4 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
 ![lay4](images/optimization/puck_4_omega_1_1_1_.1.png)
+
 4 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
 ![lay4](images/optimization/puck_4_omega_1_.5_2_.1.png)
+
 
 ### Iteration 5
 Same observation as in previous iteration
 
 5 layers done: $\omega_{old} = [1,1,0,0.1]$
+
 ![lay5](images/optimization/puck_5_omega_1_1_0_.1.png)
+
 5 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
 ![lay5](images/optimization/puck_5_omega_1_1_1_.1.png)
+
 5 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
 ![lay5](images/optimization/puck_5_omega_1_.5_2_.1.png)
 
 ### Final result 
@@ -122,13 +146,13 @@ is more beneficial because $sum(puck)$ has much less variation between min and m
 $max(Puck(crit index))$.
 
 12 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
 ![lay12](images/optimization/puck_12_omega_1_1_1_.1.png)
+
 12 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
 
 ![lay12](images/optimization/puck_12_omega_1_.5_2_.1.png)
 
 
-
-![lay4](images/optimization/minmaxweightedpuck_4.png)
 
 
