@@ -124,7 +124,11 @@ $max(Puck(crit index))$.
 12 layers done: $\omega_{V1} = [1,1,1,0.1]$
 ![lay12](images/optimization/puck_12_omega_1_1_1_.1.png)
 12 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
 ![lay12](images/optimization/puck_12_omega_1_.5_2_.1.png)
 
+
+
+![lay4](images/optimization/minmaxweightedpuck_4.png)
 
 
