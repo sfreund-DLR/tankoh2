@@ -22,7 +22,7 @@ $min(max(Puck))$
 This is the most basic approach: Minimize the maximal puck value in all
 elements and all layers.
 
-|lay4| |lay5| |lay6| |lay7|
+|lay4_minmaxpuck| |lay5_minmaxpuck| |lay6_minmaxpuck| |lay7_minmaxpuck|
 
 Con: This approach minimizes the whole dome region (or hoop region in
 hoop case) but does not find the optimium to work on one peak at a time.
@@ -32,13 +32,13 @@ minimizes both, but not one peak properly at a time.
 In example "conicalTankDesign" (commit bb76384) this method resulted in
 >22 layers
 
-$min(max(Puck(crit index)))$
-----------------------------
+$min(Puck(crit index))$
+-----------------------
 
 This approach minimizes the puck value at the very exact peak of the
 last iteration.
 
-|lay3| |lay4| |lay5|
+|lay3_minmaxcritpuck| |lay4_minmaxcritpuck| |lay5_minmaxcritpuck|
 
 con: the next peak may be right next to the last one. So a target
 function that incorporates the total maximum or the neighborhood of the
@@ -47,8 +47,8 @@ last critial location might be beneficial
 In example "conicalTankDesign" (commit bb76384) this method resulted in
 >22 layers
 
-Weighted $min(max(Puck))$ and $min(max(Puck(crit index)))$
-----------------------------------------------------------
+Weighted $min(max(Puck))$ and $min(Puck(crit index))$
+-----------------------------------------------------
 
 see `issue 60 <https://github.com/sfreund-DLR/tankoh2/issues/60>`__
 
@@ -59,11 +59,13 @@ as side kick ;-)
 
 These Weights $\omega$ are used:
 
--  1 Min(Max(Puck))
--  0.5 Min(Max(Puck(crit index)))
+-  1 $max(puck)$
+-  0.5 puck(crit index)$
+-  0 $\sum puck$
 -  0.1 next Layer Mass
 
-|lay4| |lay5| |lay6|
+|lay4_minmaxweightedpuck| |lay5_minmaxweightedpuck|
+|lay6_minmaxweightedpuck|
 
 It improves the above behavior as seen in third image but still does
 very local changes as seen in the first and second image
@@ -74,9 +76,9 @@ In example "conicalTankDesign" (commit bb76384) this method resulted in
 Integral func $min(\sum puck)$
 ------------------------------
 
-When using $min(\sum puck)$ instead of $min(max(Puck))$, the whole
-material utilization is taken into account for minimization. This might
-be a good combination with $min(max(Puck(crit index)))$.
+When using $min(\sum puck)$ instead/besides of $min(max(Puck))$, the
+whole material utilization is taken into account for minimization. This
+might be a good combination with $min(Puck(crit index))$.
 
 **Weights Calculation** The initial weights $\omega$ and the target
 function values of the last iteration $\bar{y}$ are used to derive
@@ -87,6 +89,13 @@ $\lambda = \\omega / \\bar{y} \\cdot y_{i, y_i \\neq 0}$
 $y_{i, y_i \\neq 0}$ is used to scale the values to the amount of the
 first quantity, which is not zero. With this, $\omega[0] == 1$ lead to
 comparable puck values of $min(max(Puck))$.
+
+$\omega$ describes these weights:
+
+-  $max(puck)$
+-  $max(puck(crit index))$
+-  $\sum puck$
+-  next Layer Mass
 
 **Results**
 
@@ -101,9 +110,17 @@ Iteration 3
 
 The result after 3 layers is nearly equal:
 
-3 layers done: $\omega_{old} = [1,1,0,0.1]$ |lay3| 3 layers done:
-$\omega_{V1} = [1,1,1,0.1]$ |lay3| 3 layers done: $\omega_{V2} =
-[1,0.5,2,0.1]$ |lay3|
+3 layers done: $\omega_{old} = [1,1,0,0.1]$
+
+|lay3_omega_1_1_0_.1|
+
+3 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
+|lay3_omega_1_1_1_.1|
+
+3 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
+|lay3_omega_1_.5_2_.1|
 
 Iteration 4
 ~~~~~~~~~~~
@@ -113,18 +130,34 @@ offset between max value and next angle polar opening. The new approach
 minimizes a larger range between maximum utilization and next angle
 polar opening.
 
-4 layers done: $\omega_{old} = [1,1,0,0.1]$ |lay4| 4 layers done:
-$\omega_{V1} = [1,1,1,0.1]$ |lay4| 4 layers done: $\omega_{V2} =
-[1,0.5,2,0.1]$ |lay4|
+4 layers done: $\omega_{old} = [1,1,0,0.1]$
+
+|lay4_omega_1_1_0_.1|
+
+4 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
+|lay4_omega_1_1_1_.1|
+
+4 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
+|lay4_omega_1_.5_2_.1|
 
 Iteration 5
 ~~~~~~~~~~~
 
 Same observation as in previous iteration
 
-5 layers done: $\omega_{old} = [1,1,0,0.1]$ |lay5| 5 layers done:
-$\omega_{V1} = [1,1,1,0.1]$ |lay5| 5 layers done: $\omega_{V2} =
-[1,0.5,2,0.1]$ |lay5|
+5 layers done: $\omega_{old} = [1,1,0,0.1]$
+
+|lay5_omega_1_1_0_.1|
+
+5 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
+|lay5_omega_1_1_1_.1|
+
+5 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
+|lay5_omega_1_.5_2_.1|
 
 Final result
 ~~~~~~~~~~~~
@@ -141,28 +174,33 @@ emphasis on $sum(puck)$ and less on $max(Puck(crit index))$ is more
 beneficial because $sum(puck)$ has much less variation between min and
 max than $max(Puck(crit index))$.
 
-12 layers done: $\omega_{V1} = [1,1,1,0.1]$ |lay12| 12 layers done:
-$\omega_{V2} = [1,0.5,2,0.1]$ |lay12|
+12 layers done: $\omega_{V1} = [1,1,1,0.1]$
+
+|lay12_omega_1_1_1_.1|
+
+12 layers done: $\omega_{V2} = [1,0.5,2,0.1]$
+
+|lay12_omega_1_.5_2_.1|
 
 .. |contour| image:: images/optimization/contour.png
-.. |lay4| image:: images/optimization/minmaxpuck_4.png
-.. |lay5| image:: images/optimization/minmaxpuck_5.png
-.. |lay6| image:: images/optimization/minmaxpuck_6.png
-.. |lay7| image:: images/optimization/minmaxpuck_7.png
-.. |lay3| image:: images/optimization/minmaxcritpuck_3.png
-.. |lay4| image:: images/optimization/minmaxcritpuck_4.png
-.. |lay5| image:: images/optimization/minmaxcritpuck_5.png
-.. |lay4| image:: images/optimization/minmaxweightedpuck_4.png
-.. |lay5| image:: images/optimization/minmaxweightedpuck_5.png
-.. |lay6| image:: images/optimization/minmaxweightedpuck_6.png
-.. |lay3| image:: images/optimization/puck_3_omega_1_1_0_.1.png
-.. |lay3| image:: images/optimization/puck_3_omega_1_1_1_.1.png
-.. |lay3| image:: images/optimization/puck_3_omega_1_.5_2_.1.png
-.. |lay4| image:: images/optimization/puck_4_omega_1_1_0_.1.png
-.. |lay4| image:: images/optimization/puck_4_omega_1_1_1_.1.png
-.. |lay4| image:: images/optimization/puck_4_omega_1_.5_2_.1.png
-.. |lay5| image:: images/optimization/puck_5_omega_1_1_0_.1.png
-.. |lay5| image:: images/optimization/puck_5_omega_1_1_1_.1.png
-.. |lay5| image:: images/optimization/puck_5_omega_1_.5_2_.1.png
-.. |lay12| image:: images/optimization/puck_12_omega_1_1_1_.1.png
-.. |lay12| image:: images/optimization/puck_12_omega_1_.5_2_.1.png
+.. |lay4_minmaxpuck| image:: images/optimization/minmaxpuck_4.png
+.. |lay5_minmaxpuck| image:: images/optimization/minmaxpuck_5.png
+.. |lay6_minmaxpuck| image:: images/optimization/minmaxpuck_6.png
+.. |lay7_minmaxpuck| image:: images/optimization/minmaxpuck_7.png
+.. |lay3_minmaxcritpuck| image:: images/optimization/minmaxcritpuck_3.png
+.. |lay4_minmaxcritpuck| image:: images/optimization/minmaxcritpuck_4.png
+.. |lay5_minmaxcritpuck| image:: images/optimization/minmaxcritpuck_5.png
+.. |lay4_minmaxweightedpuck| image:: images/optimization/minmaxweightedpuck_4.png
+.. |lay5_minmaxweightedpuck| image:: images/optimization/minmaxweightedpuck_5.png
+.. |lay6_minmaxweightedpuck| image:: images/optimization/minmaxweightedpuck_6.png
+.. |lay3_omega_1_1_0_.1| image:: images/optimization/puck_3_omega_1_1_0_.1.png
+.. |lay3_omega_1_1_1_.1| image:: images/optimization/puck_3_omega_1_1_1_.1.png
+.. |lay3_omega_1_.5_2_.1| image:: images/optimization/puck_3_omega_1_.5_2_.1.png
+.. |lay4_omega_1_1_0_.1| image:: images/optimization/puck_4_omega_1_1_0_.1.png
+.. |lay4_omega_1_1_1_.1| image:: images/optimization/puck_4_omega_1_1_1_.1.png
+.. |lay4_omega_1_.5_2_.1| image:: images/optimization/puck_4_omega_1_.5_2_.1.png
+.. |lay5_omega_1_1_0_.1| image:: images/optimization/puck_5_omega_1_1_0_.1.png
+.. |lay5_omega_1_1_1_.1| image:: images/optimization/puck_5_omega_1_1_1_.1.png
+.. |lay5_omega_1_.5_2_.1| image:: images/optimization/puck_5_omega_1_.5_2_.1.png
+.. |lay12_omega_1_1_1_.1| image:: images/optimization/puck_12_omega_1_1_1_.1.png
+.. |lay12_omega_1_.5_2_.1| image:: images/optimization/puck_12_omega_1_.5_2_.1.png
