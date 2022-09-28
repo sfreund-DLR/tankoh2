@@ -13,9 +13,9 @@ from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput
 
 resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'length axial', 'numberOfLayers', 'iterations', 'duration', 'angles',
+                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'iterations', 'duration', 'angles',
                   'hoopLayerShifts']
-resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', 's', '°', 'mm']
+resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', 's', '°', 'mm']
 
 resultNamesMetal = ['Output Name', 'metalMass', 'insultaion mass', 'fairing mass', 'total mass',  'volume', 'area',
                     'length axial', 'wallThickness', 'duration']
@@ -163,8 +163,8 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             designArgs['lcyl'] = 150
             log.warning('dCyl was adapted in order to fit volume requirement')
 
-            while(abs(designArgs['volume'] - domeVolumes[-2] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * designArgs['volume']:
-
+            while(abs(designArgs['volume'] - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * designArgs['volume']:
+                domeVolumes = []
                 adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
                 #domeVolumes.append(adaptGeometry[0])
                 designArgs['dcyl'] = 2 * adaptGeometry[-1]

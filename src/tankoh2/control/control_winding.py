@@ -124,7 +124,9 @@ def createDesign(**kwargs):
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights)
 
-    frpMass, area, iterations, angles, hoopLayerShifts = results
+    frpMass, area, iterations, reserveFac, angles, hoopLayerShifts = results
+    angles = np.around(angles, decimals=3)
+    hoopLayerShifts = np.around(hoopLayerShifts, decimals=3)
     duration = datetime.now() - startTime
 
     # #############################################################################
@@ -146,7 +148,7 @@ def createDesign(**kwargs):
     linerInnerTankoh = linerTankoh.getLinerResizedByThickness(-1*linerThk)
     volume = linerInnerTankoh.volume / 1e6
     results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
-        vessel.getNumberOfLayers(), iterations, duration, angles, hoopLayerShifts
+        vessel.getNumberOfLayers(), reserveFac, iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -185,8 +187,9 @@ if __name__ == '__main__':
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
-        params = parameters.hytazer
-        createDesign(**params.copy())
+        params = parameters.atheat3.copy()
+        params['verbosePlot'] = True
+        createDesign(**params)
     elif 0:
         createDesign(pressure=5)
     elif 1:

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import os
 from matplotlib import pylab as plt
 from itertools import zip_longest
 
@@ -98,14 +99,17 @@ def addVerticalLines(ax, vlines, vlineColors=[]):
         ax.plot([vline, vline], (ymin, ymax), color=color, linestyle='dashed')
 
 
-def saveShowClose(filename = '', show=False, fig=None):
+def saveShowClose(filename = '', show=False, fig=None, verbosePlot = False):
     """saves and shows the actual plot and closes it afterwards
     :param filename: filename to save the plot. Not saved if not given
     :param show: shows the plot
     :param fig: figure object to be closed
+    :param verbosePlot: also save as svg
     """
     if filename:
         plt.savefig(filename)
+        if verbosePlot:
+            plt.savefig(os.path.splitext(filename)[0] + '.svg')
     if show:
         plt.show()
     if fig is not None:

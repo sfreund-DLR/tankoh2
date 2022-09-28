@@ -22,12 +22,13 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
     else:
         ax = axs  # if only one subplot is used, axs is no iterable
     plotDataFrame(False, '', puck, ax,
-                  vlines=[elemIdxmax + 0.5, hoopStart, hoopEnd] + newDesignIndexes,
-                  vlineColors=['red', 'black', 'black'] + ['green'] * len(newDesignIndexes),
+                  vlines=[hoopStart, hoopEnd, elemIdxmax + 0.5] + newDesignIndexes,
+                  vlineColors=['black', 'black', 'red'] + ['green'] * len(newDesignIndexes),
                   yLabel=puckLabelName, xLabel='Contour index',
                   plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}})
     fig.tight_layout()
-    saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '', show=show, fig=fig)
+    saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '',
+                  show=show, fig=fig, verbosePlot=verbosePlot)
 
 
 def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling, runDir, layerNumber, show):
@@ -43,10 +44,10 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     tfValues = tfValues[1:-1]
     weights, scaling = targetFuncScaling
     labelNames = [puckLabelName, f'{puckLabelName[4:]} at last crit location', 'puck sum', 'mass']
-    labelNames = [f'{labelName}, weight: {weight:.4f}, scaleFac: {scale:.4f}' for labelName, weight, scale
-                  in zip(labelNames, weights, scaling)]
+    labelNames = [f'{labelName}, weight: {round(weight,4)}, scaleFac: {round(scale,4)}'
+                  for labelName, weight, scale in zip(labelNames, weights, scaling)]
     for values, labelName in zip(tfValues, labelNames):
-        if np.all(values < 1e-8):
+        if np.all(values < 1e-8): 
             continue
         ax.plot(tfX, values, label=labelName)
     if tfValues.shape[0] == 4:  # plot weighted sum

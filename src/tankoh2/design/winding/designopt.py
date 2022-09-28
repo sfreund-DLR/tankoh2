@@ -326,8 +326,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         printLayer(layerNumber, '- initial helical layer')
         windLayer(vessel, layerNumber, minAngle)
         anglesShifts = [(minAngle,0)]
-
-    composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
+        composite = windAnglesAndShifts(anglesShifts, vessel, compositeArgs)
 
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
@@ -371,7 +370,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             resHoop = optimizeHoop(maxHoopShift, optArgs)
             resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
             if not add90DegLay1FF:
-                log.info(f'Max Puck in hoop region. Min Puck hoop {resHoop[1]}, min puck helical {resHelical[1]}')
+                log.info(f'Max Puck in hoop region. Min targetFuc hoop {resHoop[1]}, min targetFuc helical {resHelical[1]}')
             if add90DegLay1FF or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]
@@ -434,6 +433,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
     area *= 1e-6  # [m**2]
-    return frpMass, area, iterations, *(np.array(anglesShifts).T)
+    reserveFac = 1 / puckMax
+    return frpMass, area, iterations, reserveFac, *(np.array(anglesShifts).T)
 
 

@@ -186,7 +186,7 @@ def wrap_npstr(text):
     np-arrays are returned as string without newline symbols that are usually returned by np.ndarray.__str__()
     """
     if isinstance(text, np.ndarray):
-        text = str(text).replace('\n', '').replace('  -', ', -')
+        text = np.array2string(text, separator=',').replace('\n', '')
     return text
 
 

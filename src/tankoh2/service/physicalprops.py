@@ -20,6 +20,8 @@ pressureGh2Saturation = lambda T: PropsSI('P', 'T', arrayOrScalar(T), 'Q', 1, fl
 rhoGh2 = lambda p, T: PropsSI('D', 'T', arrayOrScalar(T), 'P', arrayOrScalar(p) * 1e6, fluid)
 
 if __name__ == '__main__':
+    rho700bar = rhoGh2ByPSaturation(70)
+    print(rho700bar)
     rhoLh2Saturation(21)
     rhoLh2Saturation([21])
     print(rhoLh2ByPSaturation(0.2), rhoLh2ByPSaturation(0.25))

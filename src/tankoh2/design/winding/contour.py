@@ -49,7 +49,7 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
                   f'{(cylinderRadius, polarOpening, domeType)}')
         raise
 
-    if x is not None and r is not None:
+    if x is not None and r is not None and domeType not in ['isotensoid_MuWind', 'circle']:
         if not np.allclose(r[0], cylinderRadius):
             print(r[0], cylinderRadius)
             raise Tankoh2Error('cylinderRadius and r-vector do not fit')

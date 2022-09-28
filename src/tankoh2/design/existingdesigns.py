@@ -413,6 +413,7 @@ atheat3.pop('domeContour')
 atheat3.update([
     ('domeType', 'isotensoid'),
     ('dcyl', 370),  # mm
+    ('rovingWidth', 1),
 ])
 
 atheatAlu = atheat.copy()
@@ -494,17 +495,28 @@ DomeTest = OrderedDict([
     ('nodeNumber', 1000),
 ])
 
+
 hytazerSMR1 = OrderedDict([ # short/medium range single aisle aircraft, tank #1
-    ('tankname', 'hytazer_smr'),
+    ('tankname', 'hytazer_smr_ff_10bar'),
     ('polarOpeningRadius', 100),
     ('dcyl', 2 * (1716 + defaultDesign['linerThickness'])),  # mm
-    ('safetyFactor', 1.33),
     ('pressure', .2),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
-    ('volume', 23.252)
+    ('volume', 23.252),
+    ('failureMode', 'interFibreFailure'),
+    ('safetyFactor', 1.33),
+    #('failureMode', 'fibreFailure'),
+    #('safetyFactor', 2.),
+    ('nodeNumber', 1000),
+    ('materialName', 'CFRP_T700SC_LY556'),
+    ('valveReleaseFactor', 1.1),
+    ('verbosePlot', True),
+    ('numberOfRovings', 12),
 ])
+hytazerSMR1['tankname'] = f'hytazer_smr_{"ff" if hytazerSMR1["failureMode"] == "fibreFailure" else "iff"}_' \
+                          f'{hytazerSMR1["pressure"]}bar'
+
 
 hytazerSMR2 = hytazerSMR1.copy()
 hytazerSMR2.update([
@@ -515,7 +527,7 @@ hytazerSMR2.update([
     # TODO: beta etc.
 ])
 
-hytazerSmall = OrderedDict([
+hytazerD400 = OrderedDict([
     ('tankname', 'hytazer_small'),
     ('polarOpeningRadius', NGTBITDesign['polarOpeningRadius']),
     ('dcyl', 400),  # mm
@@ -530,6 +542,27 @@ hytazerSmall = OrderedDict([
     ('numberOfRovings', 2),
     ('nodeNumber', 500),
 ])
+
+
+
+dLightConventional = OrderedDict([
+    ('tankname', 'dLight_conventional'),
+    ('polarOpeningRadius', 50),
+    ('dcyl', 1820 - 2 * (2 + 50 + 50)),  # mm, 1820 is fuselage outer d
+    #('lcyl', 500),  # mm
+    ('volume', 3 * 2/3),  # m**3,  use 2/3 of required volume for front tank to utilize full diameter
+    ('safetyFactor', 2),
+    ('valveReleaseFactor', 1.1),
+    ('pressure', 7),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 4),
+    ('nodeNumber', 1000),
+    ('maxLayers', 500),
+])
+
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
