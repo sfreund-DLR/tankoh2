@@ -109,7 +109,9 @@ def saveShowClose(filename = '', show=False, fig=None, verbosePlot = False):
     if filename:
         plt.savefig(filename)
         if verbosePlot:
-            plt.savefig(os.path.splitext(filename)[0] + '.svg')
+            os.makedirs(os.path.join(os.path.split(filename)[0], 'plots'), exist_ok=True)
+            filePath, fileNameOnly = os.path.split(filename)
+            plt.savefig(os.path.join(filePath, 'plots', os.path.splitext(fileNameOnly)[0] + '.svg'))
     if show:
         plt.show()
     if fig is not None:
