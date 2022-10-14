@@ -191,10 +191,15 @@ NGTBITDesign = OrderedDict([
     ('fibreDensity', 1.8),
     # optimizer settings
     ('maxlayers', 200),
-    ('verbose', True),
+    ('verbose', False),
     ])
 
-NGTBITDesignNewThk = NGTBITDesign.copy()
+NGTBIT_Invent = NGTBITDesign.copy()
+NGTBIT_Invent.update([
+    ('dcyl', 412.3),
+])
+
+NGTBITDesignNewThk = NGTBITDesign.copy()  # use new thickness for kuempers material and winding at FVT
 NGTBITDesignNewThk.pop('burstPressure')
 NGTBITDesignNewThk.update([
     ('pressure', 70), # MPa
