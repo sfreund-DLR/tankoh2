@@ -104,7 +104,7 @@ def main():
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.125
     hoopLayerThickness = 0.125
-    helixLayerThickenss = 0.129
+    layerThkHelical = 0.129
     bandWidth = 3.175
     numberOfRovings = 1
     rovingWidth = bandWidth / numberOfRovings
@@ -233,7 +233,7 @@ def main():
             composite.getOrthotropLayer(i).windingProperties.numberOfRovings = numberOfRovings
             composite.getOrthotropLayer(i).windingProperties.texNumber = tex
             composite.getOrthotropLayer(i).windingProperties.coverage = 1.
-            composite.getOrthotropLayer(i).windingProperties.cylinderThickness = helixLayerThickenss
+            composite.getOrthotropLayer(i).windingProperties.cylinderThickness = layerThkHelical
 
     composite.updateThicknessFromWindingProperties()
     composite.saveToFile(tankname + ".design")

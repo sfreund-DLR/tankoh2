@@ -81,7 +81,7 @@ allArgs = pd.DataFrame(
         # Fiber roving parameters
         ['hoopLayerThickness', 'Fiber roving parameters', 'thk', 0.125, float,
          'Thickness of hoop (circumferential) layers [mm]', ''],
-        ['helixLayerThickenss', 'Fiber roving parameters', 'thk', 0.129, float,
+        ['layerThkHelical', 'Fiber roving parameters', 'thk', 0.129, float,
          'Thickness of helical layers [mm]', ''],
         ['rovingWidth', 'Fiber roving parameters', 'witdh', 3.175, float, 'Width of one roving [mm]', ''],
         ['numberOfRovings', 'Fiber roving parameters', '#', 4, int,
@@ -128,7 +128,7 @@ plotDesign = defaultDesign.copy()
 plotDesign.update([
     ('dcyl', plotDesign['dcyl']/4),
     ('lcyl', plotDesign['lcyl']/5),
-    ('helixLayerThickenss', plotDesign['helixLayerThickenss']*2),
+    ('layerThkHelical', plotDesign['layerThkHelical']*2),
     ('hoopLayerThickness', plotDesign['hoopLayerThickness']*2),
     #('rovingWidth', plotDesign['rovingWidth']/1.5),
     ('burstPressure', 42.),
@@ -178,13 +178,13 @@ NGTBITDesign = OrderedDict([
     # fibre roving parameter
     # single ply thickness with 62% FVG
     ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
-    ('helixLayerThickenss', 0.089605735), # thickness for 62% FVG
+    ('layerThkHelical', 0.089605735), # thickness for 62% FVG
     # single ply thickness with 55% FVG
     #('hoopLayerThickness', 0.101010101), # thickness for 55% FVG
-    #('helixLayerThickenss', 0.101010101), # thickness for 55% FVG
+    #('layerThkHelical', 0.101010101), # thickness for 55% FVG
     # single ply thickness with 60% FVG
     #('hoopLayerThickness', 0.092592593), # thickness for 60% FVG
-    #('helixLayerThickenss', 0.092592593), # thickness for 60% FVG
+    #('layerThkHelical', 0.092592593), # thickness for 60% FVG
     ('rovingWidth', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
@@ -210,7 +210,7 @@ NGTBITDesignNewThk.update([
     ('dcyl', 400.), # due to shrinkage
     #('materialName', 'kuempers_k-preg-002-012-65-00'),
     ('hoopLayerThickness', 0.191), # thickness for 61% FVG
-    ('helixLayerThickenss', 0.191), # thickness for 61% FVG
+    ('layerThkHelical', 0.191), # thickness for 61% FVG
     ('rovingWidth', 4.00),
     ('numberOfRovings', 1), # number of used spools at FVT
     ('tex', 830),
@@ -266,7 +266,7 @@ NGTBITDesign_old = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     ('hoopLayerThickness', 0.125),
-    ('helixLayerThickenss', 0.129),
+    ('layerThkHelical', 0.129),
     ('rovingWidth', 3.175),
     ('numberOfRovings', 4), # number of spools usabale at INVENT
     ('tex', 446),
@@ -289,7 +289,7 @@ NGTBITDesign_small = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     ('hoopLayerThickness', 0.125),
-    ('helixLayerThickenss', 0.129),
+    ('layerThkHelical', 0.129),
     ('rovingWidth', 3.175),
     ('numberOfRovings', 12),
     ('tex', 800),
@@ -344,7 +344,7 @@ kautextDesign = OrderedDict([
 
                              # Fiber roving parameter
                              ('hoopLayerThickness', 0.125),
-                             ('helixLayerThickenss', 0.129),
+                             ('layerThkHelical', 0.129),
                              ('rovingWidth', 3.175),
                              ('numberOfRovings', 12),
                              # bandWidth = rovingWidth * numberOfRovings

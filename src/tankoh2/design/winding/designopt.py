@@ -67,9 +67,9 @@ def getOptScalingFactors(targetFuncWeights, puck, args):
 
 def windAnglesAndShifts(anglesShifts, vessel, compositeArgs):
     layerNumber = len(anglesShifts)
-    hoopLayerThickness, helixLayerThickenss = compositeArgs[1:3]
+    hoopLayerThickness, layerThkHelical = compositeArgs[1:3]
     angles = [a for a, _ in anglesShifts]
-    thicknesses = [helixLayerThickenss if angle < 90 else hoopLayerThickness for angle in angles]
+    thicknesses = [layerThkHelical if angle < 90 else hoopLayerThickness for angle in angles]
     composite = getComposite(angles, thicknesses, *compositeArgs[3:])
     log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
     vessel.setComposite(composite)
@@ -253,7 +253,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     :param symmetricContour: Flag if the contour is symmetric
     :param runDir: directory where to store results
     :param compositeArgs: properties defining the composite:
-        thicknesses, hoopLayerThickness, helixLayerThickenss, material,
+        thicknesses, hoopLayerThickness, layerThkHelical, material,
         sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
     :param verbosePlot: flag if more plots should be created
     :param useFibreFailure: flag, use fibre failure or inter fibre failure

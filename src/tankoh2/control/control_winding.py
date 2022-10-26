@@ -68,8 +68,8 @@ def createDesign(**kwargs):
     materialName = designArgs['materialName']
 
     # Fiber roving parameter
-    hoopLayerThickness = designArgs['hoopLayerThickness']
-    helixLayerThickenss = designArgs['helixLayerThickenss']
+    layerThkHoop = designArgs['layerThkHoop']
+    layerThkHelical = designArgs['layerThkHelical']
     rovingWidth = designArgs['rovingWidth']
     numberOfRovings = designArgs['numberOfRovings']
     bandWidth = rovingWidth * numberOfRovings
@@ -106,8 +106,8 @@ def createDesign(**kwargs):
     material = getMaterial(materialFilename)
     puckProperties = material.puckProperties
 
-    angles, thicknesses, = [90.], [helixLayerThickenss]
-    compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
+    angles, thicknesses, = [90.], [layerThkHelical]
+    compositeArgs = [thicknesses, layerThkHoop, layerThkHelical, material,
                      sectionAreaFibre, rovingWidth, numberOfRovings, numberOfRovings, tex, designFilename, tankname]
     composite = getComposite(angles, thicknesses, *compositeArgs[3:])
     # create vessel and set liner and composite

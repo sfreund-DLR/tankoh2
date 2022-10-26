@@ -27,7 +27,7 @@ import tankoh2.design.existingdesigns
 
 def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind, optimizeWindingHelical,
                        optimizeWindingHoop, tankname, dataDir, dcyl, polarOpening, lcylinder, dpoints,
-                       defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth,
+                       defaultLayerthickness, layerThkHoop, layerThkHelical, rovingWidth,
                        numberOfRovingsHelical, numberOfRovingsHoop, tex, rho, hoopStart, hoopRisePerBandwidth,
                        minThicknessValue, hoopLayerCompressionStart, domeContourFilename):
     # #########################################################################################
@@ -347,8 +347,8 @@ def main():
     lcylinder = 500.  # mm    
     dpoints = 4  # data points for liner contour
     defaultLayerthickness = 0.17921146953405018 
-    hoopLayerThickness = 0.17921146953405018 
-    helixLayerThickenss = 0.17921146953405018  
+    layerThkHoop = 0.17921146953405018 
+    layerThkHelical = 0.17921146953405018  
     
     
     rovingWidth = 8
@@ -397,7 +397,7 @@ def main():
     if AsBuilt: 
         builtVesselAsBuilt(symmetricTank, servicepressure, safetyFactor, layersToWind, optimizeWindingHelical,
                            optimizeWindingHoop, tankname, dataDir, dcyl, polarOpening, lcylinder, dpoints,
-                           defaultLayerthickness, hoopLayerThickness, helixLayerThickenss, rovingWidth,
+                           defaultLayerthickness, layerThkHoop, layerThkHelical, rovingWidth,
                            numberOfRovingsHelical, numberOfRovingsHoop, tex, rho, hoopStart,
                            hoopRisePerBandwidth, minThicknessValue, hoopLayerCompressionStart, domeContourFilename)
     
