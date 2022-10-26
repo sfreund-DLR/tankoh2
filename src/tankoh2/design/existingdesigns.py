@@ -197,6 +197,8 @@ NGTBITDesign = OrderedDict([
 NGTBIT_Invent = NGTBITDesign.copy()
 NGTBIT_Invent.update([
     ('dcyl', 412.3),
+    ('rovingWidth', 12.5/4),
+    ('numberOfRovings', 4),
 ])
 
 NGTBITDesignNewThk = NGTBITDesign.copy()  # use new thickness for kuempers material and winding at FVT
@@ -416,9 +418,16 @@ atheat2.update([
 atheat3 = atheat2.copy()
 atheat3.pop('domeContour')
 atheat3.update([
+    ('tankname', 'atheat_He'),
     ('domeType', 'isotensoid'),
     ('dcyl', 370),  # mm
     ('rovingWidth', 1),
+])
+
+atheat4 = atheat3.copy()
+atheat4.update([
+    ('dcyl', 356),  # mm
+    ('rovingWidth', 3),
 ])
 
 atheatAlu = atheat.copy()
