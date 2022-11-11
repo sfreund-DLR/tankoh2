@@ -17,7 +17,7 @@ from tankoh2.design.winding.windingutils import updateName, \
     changeSimulationOptions
 from tankoh2.design.winding.contour import getLiner, getDome  #, getLengthContourPath
 from tankoh2.geometry.geoutils import getReducedDomePoints
-from tankoh2.design.winding.material import getMaterial, getComposite, readLayupData
+from tankoh2.design.winding.material import getMaterial, getCompositeByLists, readLayupData
 from tankoh2.design.winding.optimize import optimizeFrictionGlobal_differential_evolution, optimizeHoopShiftForPolarOpeningX,\
     optimizeNegativeFrictionGlobal_differential_evolution
 from tankoh2.control.control_winding import createDesign
@@ -88,13 +88,12 @@ def builtVesselAsBuilt(symmetricTank, servicepressure, saftyFactor, layersToWind
     log.info(f'get material')
     material = getMaterial(materialFilename)
 
-    
-
     angles, thicknesses, wendekreisradien, krempenradien, hoopShifts = readLayupData(layupDataFilename)
+    numberOfRovings = [numberOfRovingsHoop if angle > 88 else numberOfRovingsHelical for angle in angles]
     log.info(f'{angles[0:layersToWind]}')
-    composite = getComposite(angles[0:layersToWind], thicknesses[0:layersToWind], material, sectionAreaFibre,
-                             rovingWidth, numberOfRovingsHelical, numberOfRovingsHoop,
-                             tex, designFilename, tankname)
+    composite = getCompositeByLists(angles[0:layersToWind], thicknesses[0:layersToWind],
+                                    [rovingWidth] * layersToWind, numberOfRovings,
+                                    material, sectionAreaFibre, tex, designFilename, tankname)
 
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()

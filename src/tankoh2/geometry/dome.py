@@ -176,7 +176,7 @@ class DomeGeneric(AbstractDome):
         """
         AbstractDome.__init__(self)
         epsilon = 1e-8 * np.max((x,r))
-        if not np.all((x[1:] - x[:-1]) > epsilon):
+        if not np.all((x[1:] - x[:-1]) > -epsilon):
             raise Tankoh2Error(f'x is not increasing. Please check your dome contour input')
         if not np.all((r[1:] - r[:-1]) < -epsilon):
             raise Tankoh2Error(f'r is not decreasing. Please check your dome contour input')

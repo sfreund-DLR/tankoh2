@@ -51,10 +51,8 @@ def getDome(cylinderRadius, polarOpening, domeType = None, x=None, r=None):
 
     if x is not None and r is not None and domeType not in ['isotensoid_MuWind', 'circle']:
         if not np.allclose(r[0], cylinderRadius):
-            print(r[0], cylinderRadius)
-            raise Tankoh2Error('cylinderRadius and r-vector do not fit')
+            raise Tankoh2Error(f'cylinderRadius {cylinderRadius} and r-vector {r[0]} do not fit')
         if not np.allclose(r[-1], polarOpening):
-            print(r[-1])
             raise Tankoh2Error(f'polarOpening {polarOpening} and smallest given radius {r[-1]} do not fit')
         if len(r) != len(x):
             raise Tankoh2Error(f'x and r-vector do not have the same size. len(r): len(x): {len(r), len(x)}')
@@ -95,7 +93,7 @@ def getLiner(dome, length, linerFilename=None, linerName=None, dome2 = None, nod
     for fitting in [liner.getFitting(True), liner.getFitting(False)]:
         fitting.r0 = polarOpeningRadius / 2 * scaleFittingRadii
         fitting.r1 = polarOpeningRadius * scaleFittingRadii
-        fitting.rD = polarOpeningRadius + polarOpeningRadius * scaleFittingRadii
+        fitting.rD = polarOpeningRadius + polarOpeningRadius * scaleFittingRadii * 2
         fitting.dx1 = polarOpeningRadius / 2
         fitting.dxB = polarOpeningRadius * 3
         fitting.lV = polarOpeningRadius * 2

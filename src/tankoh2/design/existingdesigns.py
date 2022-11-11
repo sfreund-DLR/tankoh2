@@ -27,10 +27,15 @@ allArgs = pd.DataFrame(
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
         ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1], list,
          'Weights to the target function constituents: maxPuck, maxCritPuck, sumPuck, layerMass', ''],
-        # Geometry_Cylinder
-        ['dcyl', 'Geometry_Cylinder', 'd_cyl', 400, float, 'Diameter of the cylindrical section [mm]', ''],
-        ['lcyl', 'Geometry_Cylinder', 'l_cyl', 500, float, 'Length of the cylindrical section [mm]', ''],
-        ['lcylByR', 'Geometry_Cylinder', '', 2.5, float, 'only if lcyl is not given [-]', ''],
+        # Geometry
+        ['dcyl', 'Geometry', 'd_cyl', 400, float,
+         'Diameter of the cylindrical section [mm]. Can be automatically adapted if volume is given', ''],
+        ['lcyl', 'Geometry', 'l_cyl', 500, float,
+         'Length of the cylindrical section [mm]. Can be automatically adapted if volume is given', ''],
+        ['lcylByR', 'Geometry', '', 2.5, float, 'only if lcyl is not given [-]', ''],
+        ['volume', 'Geometry', '', None, float,
+         'Volume requirement [m**3]. If it does not fit to other geometry parameters, '
+         'l_cyl is adapted and if l_cly would be below 150mm d_cyl is adapted', ''],
         # Geometry_Dome
         ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
@@ -79,13 +84,18 @@ allArgs = pd.DataFrame(
         ['failureMode', 'Material', 'mode', 'fibreFailure', '',
          'Use pucks failure mode [fibreFailure, interFibreFailure]', ''],
         # Fiber roving parameters
-        ['hoopLayerThickness', 'Fiber roving parameters', 'thk', 0.125, float,
+        ['layerThk', 'Fiber roving parameters', 'thk', 0.125, float, 'Thickness of layers [mm]', ''],
+        ['layerThkHoop', 'Fiber roving parameters', 'thk', None, float,
          'Thickness of hoop (circumferential) layers [mm]', ''],
-        ['layerThkHelical', 'Fiber roving parameters', 'thk', 0.129, float,
-         'Thickness of helical layers [mm]', ''],
+        ['layerThkHelical', 'Fiber roving parameters', 'thk', None, float,
+         'Thickness of helical layers [mm]. If None, layerThkHoop is used', ''],
         ['rovingWidth', 'Fiber roving parameters', 'witdh', 3.175, float, 'Width of one roving [mm]', ''],
+        ['rovingWidthHoop', 'Fiber roving parameters', 'witdhHoop', None, float,
+         'Width of one roving in hoop layer [mm]', ''],
+        ['rovingWidthHelical', 'Fiber roving parameters', 'witdhHelical', None, float,
+         'Width of one roving in helical layer [mm]. If None, rovingWidthHoop is used', ''],
         ['numberOfRovings', 'Fiber roving parameters', '#', 4, int,
-         'Number of rovings (rovingWidth*numberOfRovings=bandWidth)', ''],
+         'Number of rovings (rovingWidthHoop*numberOfRovings=bandWidth)', ''],
         ['tex', 'Fiber roving parameters', '', 446, float, 'tex number [g/km]', ''],
         ['fibreDensity', 'Fiber roving parameters', '', 1.78, float, 'Fibre density [g/cm^3]', ''],
         # fatigue parameters
@@ -128,9 +138,7 @@ plotDesign = defaultDesign.copy()
 plotDesign.update([
     ('dcyl', plotDesign['dcyl']/4),
     ('lcyl', plotDesign['lcyl']/5),
-    ('layerThkHelical', plotDesign['layerThkHelical']*2),
-    ('hoopLayerThickness', plotDesign['hoopLayerThickness']*2),
-    #('rovingWidth', plotDesign['rovingWidth']/1.5),
+    ('layerThkHoop', plotDesign['layerThkHoop']*2),
     ('burstPressure', 42.),
     ('maxlayers', 3),
     ('domeType', 'isotensoid_MuWind'),
@@ -177,15 +185,15 @@ NGTBITDesign = OrderedDict([
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
     # single ply thickness with 62% FVG
-    ('hoopLayerThickness', 0.089605735), # thickness for 62% FVG
+    ('layerThkHoop', 0.089605735), # thickness for 62% FVG
     ('layerThkHelical', 0.089605735), # thickness for 62% FVG
     # single ply thickness with 55% FVG
-    #('hoopLayerThickness', 0.101010101), # thickness for 55% FVG
+    #('layerThkHoop', 0.101010101), # thickness for 55% FVG
     #('layerThkHelical', 0.101010101), # thickness for 55% FVG
     # single ply thickness with 60% FVG
-    #('hoopLayerThickness', 0.092592593), # thickness for 60% FVG
+    #('layerThkHoop', 0.092592593), # thickness for 60% FVG
     #('layerThkHelical', 0.092592593), # thickness for 60% FVG
-    ('rovingWidth', 8.00),
+    ('rovingWidthHoop', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
@@ -196,10 +204,30 @@ NGTBITDesign = OrderedDict([
 
 NGTBIT_Invent = NGTBITDesign.copy()
 NGTBIT_Invent.update([
-    ('dcyl', 412.3),
-    ('rovingWidth', 12.5/4),
+    ('tankname', 'NGT-BIT-Invent'),
+    ('dcyl', 206.205492 * 2),
+    ('rovingWidthHoop', 13.1 / 4),
+    ('rovingWidthHelical', 12.5 / 4),
+    ('layerThkHoop', 0.226),
+    ('layerThkHelical', 0.236),
     ('numberOfRovings', 4),
+    ('domeContour', getReducedDomePoints(os.path.join(programDir, 'data', 'Dome_contour_NGT-BIT-measured_modPO.txt'), 4)),
 ])
+
+NGTBIT_Invent_ReorderLay = NGTBIT_Invent.copy()
+NGTBIT_Invent_ReorderLay.update([
+    ('initialAnglesAndShifts',
+     [
+(90, 15   ),(90, 13.5 ),(8.188, 0 ),(8.188, 0 ),(90, 12   ),(90, 10.5 ),(8.1, 0),(8.1, 0),(90, 9    ),
+(90, 7.5  ),(8., 0),(8., 0),(90, 6    ),(90, 4.5  ),(8., 0),(13.491, 0),(90, 3    ),(90, 1.5  ),(14.388, 0),
+(17.427, 0),(90, 0    ),(90, -1.5 ),(17.827, 0),(18.846, 0),(90, -3   ),(90, -4.5 ),(22.75, 0 ),(24.432, 0),
+(90, -6   ),(90, -7.5 ),(24.926, 0),(29.079, 0),(30.886, 0),(90, -9   ),(90, -10.5),(90, -12  ),(90, -13.5),
+(90, -15  ),
+     ]
+     ),
+    ('maxlayers', 38),
+    ])
+
 
 NGTBITDesignNewThk = NGTBITDesign.copy()  # use new thickness for kuempers material and winding at FVT
 NGTBITDesignNewThk.pop('burstPressure')
@@ -209,9 +237,9 @@ NGTBITDesignNewThk.update([
     ('tankname', 'NGT-BIT-2022-07_new_thk'),
     ('dcyl', 400.), # due to shrinkage
     #('materialName', 'kuempers_k-preg-002-012-65-00'),
-    ('hoopLayerThickness', 0.191), # thickness for 61% FVG
+    ('layerThkHoop', 0.191), # thickness for 61% FVG
     ('layerThkHelical', 0.191), # thickness for 61% FVG
-    ('rovingWidth', 4.00),
+    ('rovingWidthHoop', 4.00),
     ('numberOfRovings', 1), # number of used spools at FVT
     ('tex', 830),
     ('fibreDensity', 1.78),
@@ -265,9 +293,9 @@ NGTBITDesign_old = OrderedDict([
     # material
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
-    ('hoopLayerThickness', 0.125),
+    ('layerThkHoop', 0.125),
     ('layerThkHelical', 0.129),
-    ('rovingWidth', 3.175),
+    ('rovingWidthHoop', 3.175),
     ('numberOfRovings', 4), # number of spools usabale at INVENT
     ('tex', 446),
     ('fibreDensity', 1.78),
@@ -288,9 +316,9 @@ NGTBITDesign_small = OrderedDict([
     # material
     ('materialName', 'CFRP_T700SC_LY556'),
     # fibre roving parameter
-    ('hoopLayerThickness', 0.125),
+    ('layerThkHoop', 0.125),
     ('layerThkHelical', 0.129),
-    ('rovingWidth', 3.175),
+    ('rovingWidthHoop', 3.175),
     ('numberOfRovings', 12),
     ('tex', 800),
     ('fibreDensity', 1.78),
@@ -343,11 +371,11 @@ kautextDesign = OrderedDict([
                              ('materialName', 'CFRP_T700SC_LY556'),
 
                              # Fiber roving parameter
-                             ('hoopLayerThickness', 0.125),
+                             ('layerThkHoop', 0.125),
                              ('layerThkHelical', 0.129),
-                             ('rovingWidth', 3.175),
+                             ('rovingWidthHoop', 3.175),
                              ('numberOfRovings', 12),
-                             # bandWidth = rovingWidth * numberOfRovings
+                             # bandWidth = rovingWidthHoop * numberOfRovings
                              ('tex', 800),  # g / km
                              ('fibreDensity', 1.78),  # g / cm^3
                              ])
@@ -421,13 +449,16 @@ atheat3.update([
     ('tankname', 'atheat_He'),
     ('domeType', 'isotensoid'),
     ('dcyl', 370),  # mm
-    ('rovingWidth', 1),
+    ('rovingWidthHoop', 1),
 ])
 
 atheat4 = atheat3.copy()
 atheat4.update([
     ('dcyl', 356),  # mm
-    ('rovingWidth', 3),
+    ('rovingWidthHoop', 3),
+    ('linerThickness', 3),
+    ('domeType', 'torispherical'),
+    ('maxlayers', 4),
 ])
 
 atheatAlu = atheat.copy()

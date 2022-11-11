@@ -67,10 +67,8 @@ def getOptScalingFactors(targetFuncWeights, puck, args):
 
 def windAnglesAndShifts(anglesShifts, vessel, compositeArgs):
     layerNumber = len(anglesShifts)
-    hoopLayerThickness, layerThkHelical = compositeArgs[1:3]
     angles = [a for a, _ in anglesShifts]
-    thicknesses = [layerThkHelical if angle < 90 else hoopLayerThickness for angle in angles]
-    composite = getComposite(angles, thicknesses, *compositeArgs[3:])
+    composite = getComposite(angles, *compositeArgs)
     log.debug(f'Layer {layerNumber}, already wound angles, shifts: {anglesShifts}')
     vessel.setComposite(composite)
     for layerNumber, (angle, shift) in enumerate(anglesShifts):
@@ -253,8 +251,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     :param symmetricContour: Flag if the contour is symmetric
     :param runDir: directory where to store results
     :param compositeArgs: properties defining the composite:
-        thicknesses, hoopLayerThickness, layerThkHelical, material,
-        sectionAreaFibre, rovingWidth, numberOfRovings, tex, designFilename, tankname
+        hoopLayerThickness, layerThkHelical, material, sectionAreaFibre, rovingWidthHoop, rovingWidthHelical,
+        numberOfRovings, tex, designFilename, tankname
     :param verbosePlot: flag if more plots should be created
     :param useFibreFailure: flag, use fibre failure or inter fibre failure
     :param relRadiusHoopLayerEnd: relative radius (to cyl radius) where hoop layers end
@@ -395,9 +393,12 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                               verbosePlot, useFibreFailure, show, elemIdxmax, hoopStart, hoopEnd,
                               newDesignIndexes, (targetFuncWeights, targetFuncScaling))
 
-        vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
+        vessel.saveToFile(os.path.join(runDir, f'backup.vessel'))  # save vessel
+        if verbosePlot:
+            vessel.saveToFile(os.path.join(runDir, 'plots', f'backup{layerNumber}.vessel'))  # save vessel
     else:
         puck = getPuck()
+        puckMax = puck.max().max()
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
         puck.columns = columns
         plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber+1}.png'), puck,
