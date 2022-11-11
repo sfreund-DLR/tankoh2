@@ -8,6 +8,7 @@ from tankoh2.service.exception import Tankoh2Error
 myCrOSettings = None
 exampleSettingsFileName = 'settings_example.json'
 useRstOutput = False
+minCylindricalLength = 150
 
 optimizerSeed = None
 """Seed for evolutionary optimization for repeatable runs. If -1, no seed is used"""

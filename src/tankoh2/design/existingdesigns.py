@@ -138,7 +138,7 @@ plotDesign = defaultDesign.copy()
 plotDesign.update([
     ('dcyl', plotDesign['dcyl']/4),
     ('lcyl', plotDesign['lcyl']/5),
-    ('layerThkHoop', plotDesign['layerThkHoop']*2),
+    ('layerThk', plotDesign['layerThk']*2),
     ('burstPressure', 42.),
     ('maxlayers', 3),
     ('domeType', 'isotensoid_MuWind'),

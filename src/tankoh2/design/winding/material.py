@@ -43,7 +43,7 @@ def getFibreVolumeContent(sectionAreaFibre, rovingWidth, plyThickness):
     """Calculates the fibre volume content"""
     fvg = sectionAreaFibre / (rovingWidth * plyThickness)
     if not (.5 < fvg < .7):
-        log.warning(f'Calculated fibre volume content of {fvg} which seems too {"high" if fvg > 70 else "low"}. '
+        log.warning(f'Calculated fibre volume content of {fvg} which seems too {"high" if fvg > .7 else "low"}. '
                     f'sectionAreaFibre, rovingWidth, plyThickness: {sectionAreaFibre, rovingWidth, plyThickness}')
     return fvg
 
@@ -53,7 +53,7 @@ def checkFibreVolumeContent(layerThkHoop, layerThkHelical, sectionAreaFibre,
     """Compares the fibre volume content between helical and hoop layers"""
     fvgHoop = getFibreVolumeContent(sectionAreaFibre, rovingWidthHoop, layerThkHoop)
     fvgHelical = getFibreVolumeContent(sectionAreaFibre, rovingWidthHelical, layerThkHelical)
-    log.info(f'fibre volume content hoop {fvgHoop} and helical {fvgHelical}')
+    log.debug(f'fibre volume content hoop {fvgHoop} and helical {fvgHelical}')
     if abs(fvgHoop - fvgHelical) > 0.05:
         log.warning('The fibre volume contents of hoop and helical layers differ by more than 5%')
 

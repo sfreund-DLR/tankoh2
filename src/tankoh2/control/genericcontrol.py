@@ -10,7 +10,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
 from tankoh2.geometry.dome import DomeGeneric, getDome
 from tankoh2.design.loads import getHydrostaticPressure
-from tankoh2.settings import useRstOutput
+from tankoh2.settings import useRstOutput, minCylindricalLength
 
 resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
                   'area', 'length axial', 'numberOfLayers', 'reserve factor', 'iterations', 'duration', 'angles',
@@ -115,12 +115,14 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
 
     if _parameterNotSet(designArgs, 'lcyl'):
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+    # width
     if _parameterNotSet(designArgs, 'rovingWidthHoop'):
         designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
-    if _parameterNotSet(designArgs, 'rovingWidthHoop'):
-        designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
-    if _parameterNotSet(designArgs, 'layerThkHelical'):
-        designArgs['layerThkHelical'] = designArgs['layerThk']
+    if _parameterNotSet(designArgs, 'rovingWidthHelical'):
+        designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
+    # thickness
+    if _parameterNotSet(designArgs, 'layerThkHoop'):
+        designArgs['layerThkHoop'] = designArgs['layerThk']
     if _parameterNotSet(designArgs, 'layerThkHelical'):
         designArgs['layerThkHelical'] = designArgs['layerThk']
 
@@ -160,22 +162,26 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
-    if _parameterNotSet(designArgs, 'volume'):
+    if not _parameterNotSet(designArgs, 'volume'):
         volumeReq = designArgs['volume']
         # use volume in order to scale tank length → resets lcyl
         requiredCylVol = volumeReq * 1e9 - domeVolumes[0] - domeVolumes[-1]
         designArgs['lcyl'] = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
 
-        if designArgs['lcyl'] > 150:
+        if designArgs['lcyl'] > minCylindricalLength:
             log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
                      f'was reduced to {designArgs["lcyl"]}.')
         else:
+            if not hasattr(dome, 'adaptGeometry'):
+                raise NotImplementedError(f'Adjusting the dome diameter is not supported for the dome of type'
+                                          f'{dome.__class__}. Please contact the developer and/or ')
+            # if the tank volume given in the designArgs is so low that is already fits into the domes,
+            # the tank diameter is scaled down to achieve a minimum of minCylindricalLength
+            # cylindrical length needed to run
+            # simulation with muWind. The parameters alpha, beta, gamma and delta are kept constant while the
+            # cylindrical diameter is changed
 
-            # if the tank volume given in the designArgs is too low to fulfill geometrical properties defined, the tank contour
-            # is scaled down to achieve a minimum of 150 mm cylindrical length needed to run simulation with muWind.
-            # The parameters alpha, beta, gamma and delta are kept constant while the cylindrical diameter is changed
-
-            designArgs['lcyl'] = 150
+            designArgs['lcyl'] = minCylindricalLength
             while(abs(volumeReq - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * volumeReq:
                 domeVolumes = []
                 adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])

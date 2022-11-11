@@ -12,6 +12,10 @@ The third digit is only for regressions.
 ## [2.5.0] - Unreleased
 ### Added
 
+## [2.4.1] - 11.11.2022
+### Modified
+- bugfix for width/height parameter input
+
 ## [2.4.0] - 11.11.2022
 ### Added
 - handle varying roving width/thickness between hoop and helical layers #64
