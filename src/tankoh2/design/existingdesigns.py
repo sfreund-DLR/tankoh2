@@ -193,12 +193,12 @@ NGTBITDesign = OrderedDict([
     # single ply thickness with 60% FVG
     #('layerThkHoop', 0.092592593), # thickness for 60% FVG
     #('layerThkHelical', 0.092592593), # thickness for 60% FVG
-    ('rovingWidthHoop', 8.00),
+    ('rovingWidth', 8.00),
     ('numberOfRovings', 6), # number of spools usabale at INVENT
     ('tex', 800),
     ('fibreDensity', 1.8),
     # optimizer settings
-    ('maxlayers', 200),
+    ('maxlayers', 3),
     ('verbose', False),
     ])
 
