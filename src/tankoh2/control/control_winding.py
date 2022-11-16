@@ -139,11 +139,11 @@ def createDesign(**kwargs):
     linerThk, insThk, fairThk = designArgs['linerThickness'], designArgs['insulationThickness'], designArgs['fairingThickness'],
     if burstPressure > 5:
         # compressed gas vessel
-        auxMasses = [getLinerMass(linerTankoh, linerThk), 0., 0.]
+        auxMasses = [getLinerMass(linerTankoh, linerThickness=linerThk), 0., 0.]
     else:
         # liquid, cryo vessel
-        auxMasses = [getLinerMass(linerTankoh, linerThk), getInsulationMass(linerTankoh, insThk),
-                     getFairingMass(linerTankoh, fairThk)]
+        auxMasses = [getLinerMass(linerTankoh, linerThickness=linerThk), getInsulationMass(linerTankoh, insulationThickness=insThk),
+                     getFairingMass(linerTankoh, fairingThickness=fairThk)]
     totalMass = np.sum([frpMass]+auxMasses)
     linerInnerTankoh = linerTankoh.getLinerResizedByThickness(-1*linerThk)
     volume = linerInnerTankoh.volume / 1e6
