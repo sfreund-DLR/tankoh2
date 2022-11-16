@@ -10,7 +10,7 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKeywords, metalOnlyKeywords
 from tankoh2.geometry.dome import DomeGeneric, getDome
 from tankoh2.design.loads import getHydrostaticPressure
-from tankoh2.settings import useRstOutput
+from tankoh2.settings import useRstOutput, minCylindricalLength
 
 resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
                   'area', 'length axial', 'numberOfLayers', 'reserve factor', 'iterations', 'duration', 'angles',
@@ -56,6 +56,12 @@ def saveParametersAndResults(inputKwArgs, results=None, createMessage=False):
         log.info('Inputs, Outputs:\n'+ outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
 
+
+def _parameterNotSet(inputKwArgs, paramKey):
+    """A parameter is not set, if it is not present or None"""
+    return paramKey not in inputKwArgs or inputKwArgs[paramKey] is None
+
+
 def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     """Parse keyworded arguments, add missing parameters with defaults and return a new dict.
 
@@ -75,16 +81,16 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     designArgs = defaultDesign.copy()
 
     removeIfIncluded = np.array([('lcylByR', 'lcyl'),
-                        ('pressure', 'burstPressure'),
-                        ('safetyFactor', 'burstPressure'),
-                        ('valveReleaseFactor', 'burstPressure'),
-                        ('useHydrostaticPressure', 'burstPressure'),
-                        ('tankLocation', 'burstPressure'),
-                        ])
+                                 ('pressure', 'burstPressure'),
+                                 ('safetyFactor', 'burstPressure'),
+                                 ('valveReleaseFactor', 'burstPressure'),
+                                 ('useHydrostaticPressure', 'burstPressure'),
+                                 ('tankLocation', 'burstPressure'),
+                                 ])
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
     for arg, supersedeArg in removeIfIncluded:
         if arg in inputKwArgs and supersedeArg not in inputKwArgs and supersedeArg in designArgs:
-                designArgs.pop(supersedeArg)
+            designArgs.pop(supersedeArg)
     designArgs.update(inputKwArgs)
 
     # remove args that are superseded by other args (e.g. due to inclusion of default design args)
@@ -107,12 +113,21 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     for key in removeKeys:
         designArgs.pop(key, None)
 
-    domeVolumes = []
-
-    if 'lcyl' not in designArgs and 'lcylByR' in designArgs:
+    if _parameterNotSet(designArgs, 'lcyl'):
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+    # width
+    if _parameterNotSet(designArgs, 'rovingWidthHoop'):
+        designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
+    if _parameterNotSet(designArgs, 'rovingWidthHelical'):
+        designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
+    # thickness
+    if _parameterNotSet(designArgs, 'layerThkHoop'):
+        designArgs['layerThkHoop'] = designArgs['layerThk']
+    if _parameterNotSet(designArgs, 'layerThkHelical'):
+        designArgs['layerThkHelical'] = designArgs['layerThk']
 
     linerThk = designArgs['linerThickness']
+    domeVolumes = []
     for domeName in ['dome2', 'dome']:
 
         if f'{domeName}Type' not in designArgs or designArgs[f'{domeName}Type'] is None:
@@ -139,31 +154,35 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                         raise Tankoh2Error(f'domeType == "conicalElliptical" but "{param}" is not defined')
 
             dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                            designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                            designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
+                           designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                           designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
 
         domeVolumes.append(dome.getDomeResizedByThickness(-linerThk).volume)
 
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
-    if 'volume' in designArgs:
+    if not _parameterNotSet(designArgs, 'volume'):
+        volumeReq = designArgs['volume']
         # use volume in order to scale tank length → resets lcyl
-        requiredCylVol = designArgs['volume'] * 1e9 - domeVolumes[0] - domeVolumes[-1]
+        requiredCylVol = volumeReq * 1e9 - domeVolumes[0] - domeVolumes[-1]
         designArgs['lcyl'] = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
 
-        log.info(f'Due to volume requirement ({designArgs["volume"]} m^3)')
+        if designArgs['lcyl'] > minCylindricalLength:
+            log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
+                     f'was reduced to {designArgs["lcyl"]}.')
+        else:
+            if not hasattr(dome, 'adaptGeometry'):
+                raise NotImplementedError(f'Adjusting the dome diameter is not supported for the dome of type'
+                                          f'{dome.__class__}. Please contact the developer and/or ')
+            # if the tank volume given in the designArgs is so low that is already fits into the domes,
+            # the tank diameter is scaled down to achieve a minimum of minCylindricalLength
+            # cylindrical length needed to run
+            # simulation with muWind. The parameters alpha, beta, gamma and delta are kept constant while the
+            # cylindrical diameter is changed
 
-        if designArgs['lcyl'] < 150:
-
-            # if the tank volume given in the designArgs is too low to fulfill geometrical properties defined, the tank contour
-            # is scaled down to achieve a minimum of 150 mm cylindrical length needed to run simulation with muWind.
-            # The parameters alpha, beta, gamma and delta are kept constant while the cylindrical diameter is changed
-
-            designArgs['lcyl'] = 150
-            log.warning('dCyl was adapted in order to fit volume requirement')
-
-            while(abs(designArgs['volume'] - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * designArgs['volume']:
+            designArgs['lcyl'] = minCylindricalLength
+            while(abs(volumeReq - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * volumeReq:
                 domeVolumes = []
                 adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
                 #domeVolumes.append(adaptGeometry[0])
@@ -177,14 +196,18 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                     r = designArgs['dcyl'] / 2
 
                     dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
-                               designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                               designArgs['delta1'], r - designArgs['alpha'] * r,
-                               designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                               designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
-                               designArgs['dcyl'])
+                                   designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                                   designArgs['delta1'], r - designArgs['alpha'] * r,
+                                   designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                                   designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
+                                   designArgs['dcyl'])
 
                     designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
                     designArgs[f'{domeName}'] = dome
+
+            log.warning(f'Due to volume requirement (V={designArgs["volume"]} m^3) and high cylindrical diameter, '
+                        f'the cylindrical length was reduced to {designArgs["lcyl"]} and '
+                        f'the cylindrical diameter was reduced to {designArgs["dcyl"]}.')
 
     dome, dome2 = designArgs['dome'], designArgs['dome2']
     dome2 = designArgs['dome2'] if 'dome2' in designArgs else None

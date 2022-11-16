@@ -9,8 +9,16 @@ SPDX-License-Identifier: MIT
 Versions follow [SemVer](https://semver.org/) with a strict backwards compatibility policy.
 The third digit is only for regressions.
 
-## [2.4.0] - Unreleased
+## [2.5.0] - Unreleased
 ### Added
+
+## [2.4.1] - 11.11.2022
+### Modified
+- bugfix for width/height parameter input
+
+## [2.4.0] - 11.11.2022
+### Added
+- handle varying roving width/thickness between hoop and helical layers #64
 
 
 ## [2.3.2] - 31.08.2022

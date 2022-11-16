@@ -17,10 +17,9 @@ if __name__ == '__main__':
     params = parameters.NGTBITDesignNewThk.copy()
     params = parameters.conicalTankDesign.copy()
     #params = parameters.hytazerSMR1.copy()
-    params = parameters.hytazerSMR1.copy()
-    params = parameters.defaultDesign.copy()
+    params = parameters.atheat4.copy()
 
-    params['domeType'] = 'isotensoid_MuWind'
+    #params['domeType'] = 'isotensoid_MuWind'
     #params['failureMode'] = 'interfibrefailure'
     params['verbosePlot'] = True
     #params['initialAnglesAndShifts'] = [(8,0),(90,2),(16,0)]

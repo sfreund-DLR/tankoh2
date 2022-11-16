@@ -10,7 +10,7 @@ from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
-from tankoh2.design.winding.material import getMaterial, getComposite
+from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs, getBurstPressure, \
@@ -68,14 +68,17 @@ def createDesign(**kwargs):
     materialName = designArgs['materialName']
 
     # Fiber roving parameter
-    hoopLayerThickness = designArgs['hoopLayerThickness']
-    helixLayerThickenss = designArgs['helixLayerThickenss']
-    rovingWidth = designArgs['rovingWidth']
+    layerThkHoop = designArgs['layerThkHoop']
+    layerThkHelical = designArgs['layerThkHelical']
+    rovingWidthHoop = designArgs['rovingWidthHoop']
+    rovingWidthHelical = designArgs['rovingWidthHelical']
     numberOfRovings = designArgs['numberOfRovings']
-    bandWidth = rovingWidth * numberOfRovings
+    bandWidth = rovingWidthHoop * numberOfRovings
     tex = designArgs['tex'] # g / km
     rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
+    checkFibreVolumeContent(layerThkHoop, layerThkHelical, sectionAreaFibre,
+                            rovingWidthHoop, rovingWidthHelical, tex)
 
     saveParametersAndResults(designArgs, createMessage=False)
 
@@ -106,10 +109,10 @@ def createDesign(**kwargs):
     material = getMaterial(materialFilename)
     puckProperties = material.puckProperties
 
-    angles, thicknesses, = [90.], [helixLayerThickenss]
-    compositeArgs = [thicknesses, hoopLayerThickness, helixLayerThickenss, material,
-                     sectionAreaFibre, rovingWidth, numberOfRovings, numberOfRovings, tex, designFilename, tankname]
-    composite = getComposite(angles, thicknesses, *compositeArgs[3:])
+    compositeArgs = [layerThkHoop, layerThkHelical, material, sectionAreaFibre,
+                     rovingWidthHoop, rovingWidthHelical, numberOfRovings, numberOfRovings, tex,
+                     designFilename, tankname]
+    composite = getComposite([90.], *compositeArgs)
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
