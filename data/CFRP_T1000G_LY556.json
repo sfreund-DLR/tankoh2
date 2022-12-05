@@ -1,0 +1,78 @@
+{
+    "number_of_materials": 1,
+    "materials": {
+        "1": {
+            "name": "CFRP_T1000G_LY556", 
+            "uuid": "CFRP_T1000G_LY556",
+            "failure_type": 2,
+            "phi": 0.60,
+            "elasticProperties": {
+                "E_1": 177740.0,
+                "E_2": 11924.1,
+                "E_3": 11924.1,
+                "G_23": 2850.0,
+                "G_13": 5980.12,
+                "G_12": 5980.1,
+                "nu_23": 0.41,
+                "nu_13": 0.272,
+                "nu_12": 0.272,
+                "nlShearParameter": {
+                    "isSet": 0,
+                    "C1": 0.0,
+                    "C2": 0.0,
+                    "gammaB": 0.0,
+                    "tauB": 0.0,
+                    "GTanB": 0.0
+                }                
+            },
+            "thermalProperties": {
+                "alpha_1": 0.0,
+                "alpha_2": 0.000027,
+                "alpha_3": 0.000027
+            },
+            "puckProperties": {
+                "R_1_t": 3822.0,
+                "R_1_c": 2089.0,
+                "R_2_t": 36.2,
+                "R_2_c": 164.4,
+                "R_21": 52.2,
+                "p_21_t": 0.3,
+                "p_21_c": 0.2,
+                "p_23_t": 0.15,
+                "p_23_c": 0.15,
+                "ss": 0.5,
+                "mm": 0.5
+            },
+            "fiber": {
+                "name": "T1000G",
+                "density": 1.8,
+                "E_p": 294000.0,
+                "E_s": 22900.0,
+                "G_sp": 21400.0,
+                "G_ss": 6015.0,
+                "nu_ps": 0.22,
+                "nu_ss": 0.33,
+                "type": 0,
+                "alpha_p": 0.0,
+                "alpha_s": 0.0,
+                "costsPerKilo": 0.0
+            },
+            "resin": {
+                "name": "LY556_HY917_DY070",
+                "density": 1.22,
+                "E": 3200.0,
+                "nu": 0.35,
+                "G": 1185.0,
+                "type": 0,
+                "alpha": 0.0,
+                "costsPerKilo": 0.0
+            },
+            "color": {
+                "red": 255,
+                "green": 0,
+                "blue": 0,
+                "alpha": 255
+            }
+        }
+    }
+}

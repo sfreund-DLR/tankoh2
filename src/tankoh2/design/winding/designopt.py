@@ -93,7 +93,6 @@ def checkThickness(vessel, angle, bounds, symmetricContour):
     if lastLayThick[::-1].idxmax() - lastLayThick.idxmax() > lastLayThick.shape[0] * 0.1:
         #adjust bounds
         bounds = [angle+0.1, bounds[1]]
-        raise
         return False, bounds
     return True, bounds
 
@@ -435,6 +434,10 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
     area *= 1e-6  # [m**2]
     reserveFac = 1 / puckMax
-    return frpMass, area, iterations, reserveFac, *(np.array(anglesShifts).T)
+    S11 = results[0]
+    minCylinderStress = np.min(S11[0, :])
+    maxCylinderStress = np.max(S11[0, :])
+    stressRatio = minCylinderStress/maxCylinderStress
+    return frpMass, area, iterations, reserveFac, stressRatio, *(np.array(anglesShifts).T)
 
 

@@ -22,7 +22,7 @@ allArgs = pd.DataFrame(
         ['verbosePlot', 'General', '', False, '', 'Plot the optimization target function', 'store_true'],
         ['help', 'General', '', '', '', 'show this help message and exit', 'help'],
         # Optimization
-        ['maxlayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
+        ['maxLayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
         ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1], list,
@@ -65,11 +65,16 @@ allArgs = pd.DataFrame(
         ['safetyFactor', 'Design', 'S', 2, float, 'Safety factor used in design [-]', ''],
         ['valveReleaseFactor', 'Design', 'f_pv', 1.1, float,
          'Factor defining additional pressure to account for the valve pressure inaccuracies', ''],
+        ['h2Mass', 'Geometry', '', None, float, 'H2 Mass, defines volume if given & no volume given'],
+        ['temperature', 'Design', '', 23, float,
+         'Temperature, for differentiating between cryogenic and compressed storage and finding density [K]', ''],
         ['pressure', 'Design', 'p_op', 5., float, 'Operational pressure [MPa]', ''],
         ['minPressure', 'Design', 'p_op_min', 0.1, float, 'Minimal operational pressure [MPa]', ''],
         ['burstPressure', 'Design', 'p_b', 10., float,
          'Burst pressure [MPa]. If given, pressure, useHydrostaticPressure, safetyFactor, '
          'valveReleaseFactor are not used', ''],
+        ['maxFill', 'Design', 'p_b', 0.9, float,
+         'Max fill level for liquid storage', ''],
         ['useHydrostaticPressure', 'Design', '', False, '',
          'Flag whether hydrostatic pressure according to CS 25.963 (d) should be applied', 'store_true'],
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
@@ -130,7 +135,7 @@ defaultDesign = OrderedDict(zip(allArgs['name'], allArgs['default']))
 testPostprocessing = defaultDesign.copy()
 testPostprocessing.update([
     ('initialAnglesAndShifts', [(7.862970189270743, 0), (90, 21.984637908159538)]),
-    ('maxlayers', 2),
+    ('maxLayers', 2),
     ('nodeNumber', 1000),
     #('domeType', 'isotensoid_MuWind'),
     ])
@@ -142,7 +147,7 @@ plotDesign.update([
     ('lcyl', plotDesign['lcyl']/5),
     ('layerThk', plotDesign['layerThk']*2),
     ('burstPressure', 42.),
-    ('maxlayers', 3),
+    ('maxLayers', 3),
     ('domeType', 'isotensoid_MuWind'),
     ('numberOfRovings', 4),
     ('polarOpeningRadius', 7),
@@ -200,7 +205,7 @@ NGTBITDesign = OrderedDict([
     ('tex', 800),
     ('fibreDensity', 1.8),
     # optimizer settings
-    ('maxlayers', 3),
+    ('maxLayers', 3),
     ('verbose', False),
     ])
 
@@ -262,7 +267,7 @@ NGTBITDesignNewThkCustomV2.update([
         [90,1.840909091],[23.34315396,0 ],[26.8693583,0  ],[90,1.227272727],[27.56435185,0 ],[90,0.613636364],
         [30.56698498,0 ],[90,0          ],[32.03011118,0 ],[32.67851261,0 ],]
      ),
-    ('maxlayers', 46)
+    ('maxLayers', 46)
 ])
 
 NGTBITDesignNewThkCustomV3 = NGTBITDesignNewThkCustomV2.copy()
@@ -302,7 +307,7 @@ NGTBITDesign_old = OrderedDict([
     ('tex', 446),
     ('fibreDensity', 1.78),
     # optimizer settings
-    ('maxlayers', 200)
+    ('maxLayers', 200)
     ])
 
 NGTBITDesign_small = OrderedDict([
@@ -325,7 +330,7 @@ NGTBITDesign_small = OrderedDict([
     ('tex', 800),
     ('fibreDensity', 1.78),
     # optimizer settings
-    ('maxlayers', 200)
+    ('maxLayers', 200)
     ])
 
 vphDesign1 = OrderedDict([
@@ -354,7 +359,7 @@ kautextDesign = OrderedDict([
                              ('verbose', False),
 
                              # Optimization
-                             ('maxlayers', 100),
+                             ('maxLayers', 100),
 
                              # Geometry
                              #('domeType', pychain.winding.DOME_TYPES.ISOTENSOID),  # CIRCLE; ISOTENSOID
@@ -400,7 +405,7 @@ ttDesignCh2.update([
     ('dcyl', 269.66362*2),  # mm
     ('lcyl', 674.15906),  # mm
     ('pressure', 70.),  # [MPa]
-    ('maxlayers', 200),
+    ('maxLayers', 200),
     ])
 
 atheat = OrderedDict([
@@ -460,7 +465,7 @@ atheat4.update([
     ('rovingWidthHoop', 3),
     ('linerThickness', 3),
     ('domeType', 'torispherical'),
-    ('maxlayers', 4),
+    ('maxLayers', 4),
 ])
 
 atheatAlu = atheat.copy()
@@ -625,9 +630,73 @@ dLight3tanks = OrderedDict([
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 4),
     ('nodeNumber', 1000),
-    ('maxlayers', 300),
+    ('maxLayers', 300),
     ('linerThickness', 3),
 ])
 
+dLight7tanks = OrderedDict([
+    ('tankname', 'dLight_7tanks'),
+    ('polarOpeningRadius', 50),
+    ('dcyl', 572-50),  # seven cylinders inside
+    #('lcyl', 500),  # mm
+    ('volume', 3.775/7),
+    ('safetyFactor', 2),
+    ('valveReleaseFactor', 1.1),
+    ('pressure', 70),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 4),
+    ('nodeNumber', 1000),
+    ('maxLayers', 300),
+    ('linerThickness', 3),
+])
+
+dLight7tanks_600bar = OrderedDict([
+    ('tankname', 'dLight_7tanks_600bar'),
+    ('polarOpeningRadius', 50),
+    ('dcyl', 572-50),  # seven cylinders inside
+    #('lcyl', 500),  # mm
+    ('volume', 4.234/7),
+    ('safetyFactor', 2),
+    ('valveReleaseFactor', 1.1),
+    ('pressure', 60),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 4),
+    ('nodeNumber', 1000),
+    ('maxLayers', 300),
+    ('linerThickness', 3),
+])
+
+dLight7tanks_700bar_T1000G = OrderedDict([
+    ('tankname', 'dLight_7tanks_700bar_T1000G'),
+    ('materialName', 'CFRP_T1000G_LY556'),
+    ('polarOpeningRadius', 50),
+    ('dcyl', 572-50),  # seven cylinders inside
+    ('lcyl', 2000),  # mm
+    #('h2Mass', 150/7), #storageMass
+    ('volume', 4.234 / 7),
+    ('safetyFactor', 2),
+    ('valveReleaseFactor', 1.1),
+    ('pressure', 70),  # [MPa]
+    #('burstPressure', 130),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 4),
+    ('nodeNumber', 1000),
+    ('maxLayers', 3),
+    ('linerThickness', 3),
+    ('tex', 485),
+    ('fibreDensity', 1.80),
+    ('maxFill', 0.95),
+    ('nodeNumber', 1000),
+
+])
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

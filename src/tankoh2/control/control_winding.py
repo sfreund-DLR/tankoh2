@@ -5,6 +5,7 @@ from datetime import datetime
 import numpy as np
 
 from tankoh2 import log, pychain, programDir
+from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
@@ -13,8 +14,8 @@ from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
 from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
-from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs, getBurstPressure, \
-    saveLayerBook
+from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesignArgs, getBurstPressure, \
+    saveLayerBook, _parameterNotSet
 from tankoh2.masses.massestimation import getInsulationMass, getFairingMass, getLinerMass
 from tankoh2.geometry.liner import Liner
 
@@ -33,7 +34,7 @@ def createDesign(**kwargs):
     log.info('Create frp winding design with these non-default parameters: \n'+(indent(kwargs.items())))
     log.info('='*100)
 
-    designArgs = parseDesginArgs(kwargs)
+    designArgs = parseDesignArgs(kwargs)
 
     # General
     tankname = designArgs['tankname']
@@ -43,7 +44,7 @@ def createDesign(**kwargs):
     initialAnglesAndShifts = designArgs.get('initialAnglesAndShifts', None)
 
     # Optimization
-    layersToWind = designArgs['maxlayers']
+    layersToWind = designArgs['maxLayers']
     relRadiusHoopLayerEnd = designArgs['relRadiusHoopLayerEnd']
     targetFuncWeights = designArgs['targetFuncWeights']
 
@@ -51,16 +52,12 @@ def createDesign(**kwargs):
     polarOpeningRadius = designArgs['polarOpeningRadius']  # mm
     dcyl = designArgs['dcyl']  # mm
     lcylinder = designArgs['lcyl']  # mm
-    tankLength = designArgs['tankLength']
 
     # Design Args
     pressure = None
     safetyFactor = None
 
-    if 'burstPressure' not in designArgs:
-        designArgs['burstPressure'] = getBurstPressure(designArgs, tankLength)
     burstPressure = designArgs['burstPressure']
-
     failureMode = designArgs['failureMode']
     useFibreFailure = failureMode.lower() == 'fibrefailure'
 
@@ -127,7 +124,7 @@ def createDesign(**kwargs):
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights)
 
-    frpMass, area, iterations, reserveFac, angles, hoopLayerShifts = results
+    frpMass, area, iterations, reserveFac, stressRatio, angles, hoopLayerShifts = results
     angles = np.around(angles, decimals=3)
     hoopLayerShifts = np.around(hoopLayerShifts, decimals=3)
     duration = datetime.now() - startTime
@@ -140,18 +137,27 @@ def createDesign(**kwargs):
     dome2Tankoh = designArgs['dome2']
     linerTankoh = Liner(domeTankoh, lcylinder, dome2Tankoh)
     linerThk, insThk, fairThk = designArgs['linerThickness'], designArgs['insulationThickness'], designArgs['fairingThickness'],
-    if burstPressure > 5:
-        # compressed gas vessel
-        auxMasses = [getLinerMass(linerTankoh, linerThickness=linerThk), 0., 0.]
-    else:
+    if designArgs['temperature'] < 33:
         # liquid, cryo vessel
         auxMasses = [getLinerMass(linerTankoh, linerThickness=linerThk), getInsulationMass(linerTankoh, insulationThickness=insThk),
                      getFairingMass(linerTankoh, fairingThickness=fairThk)]
+    else:
+        # compressed gas vessel
+        auxMasses = [getLinerMass(linerTankoh, linerThickness=linerThk), 0., 0.]
     totalMass = np.sum([frpMass]+auxMasses)
     linerInnerTankoh = linerTankoh.getLinerResizedByThickness(-1*linerThk)
-    volume = linerInnerTankoh.volume / 1e6
+    volume = linerInnerTankoh.volume / 1e6 # Volume considering liner
+    if not _parameterNotSet(designArgs,'h2Mass'):
+        h2Mass = designArgs['h2Mass']
+        gravimetricIndex = h2Mass / (totalMass + h2Mass)
+    elif not _parameterNotSet(designArgs, 'pressure'):
+        h2Mass = getMassByVolume(volume/1e3, designArgs['pressure'], designArgs['maxFill'],
+                                 temperature=designArgs['temperature'])
+        gravimetricIndex = h2Mass / (totalMass + h2Mass)
+    else:
+        gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
     results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
-        vessel.getNumberOfLayers(), reserveFac, iterations, duration, angles, hoopLayerShifts
+        vessel.getNumberOfLayers(), reserveFac, gravimetricIndex, stressRatio, iterations, duration, angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -190,8 +196,8 @@ if __name__ == '__main__':
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
-        params = parameters.atheat3.copy()
-        params['verbosePlot'] = True
+        params = parameters.dLight7tanks_700bar_T1000G.copy()
+        params['verbosePlot'] = False
         createDesign(**params)
     elif 0:
         createDesign(pressure=5)
