@@ -338,7 +338,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             # stop criterion reached
             columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
             puck.columns = columns
-            plotDataFrame(False, os.path.join(runDir, f'puck_{layerNumber}.png'), puck,
+            plotDataFrame(show, os.path.join(runDir, f'puck_{layerNumber}.png'), puck,
                           yLabel='puck fibre failure' if useFibreFailure else 'puck inter fibre failure')
             layerNumber -= 1
             break
