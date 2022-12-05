@@ -11,13 +11,14 @@ from tankoh2.design.existingdesigns import defaultDesign, allArgs, windingOnlyKe
 from tankoh2.geometry.dome import DomeGeneric, getDome
 from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput, minCylindricalLength
+from tankoh2.design.designutils import getRequiredVolume
 
-resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insultaion mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'iterations', 'duration', 'angles',
-                  'hoopLayerShifts']
-resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', 's', '°', 'mm']
+resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
+                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'gravimetric index', 'stress ratio',
+                  'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['Output Name', 'metalMass', 'insultaion mass', 'fairing mass', 'total mass',  'volume', 'area',
+resultNamesMetal = ['Output Name', 'metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
                     'length axial', 'wallThickness', 'duration']
 resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
@@ -33,7 +34,7 @@ def saveParametersAndResults(inputKwArgs, results=None, createMessage=False):
     """
     filename = 'all_parameters_and_results.txt'
     runDir = inputKwArgs.get('runDir')
-    np.set_printoptions(linewidth=np.inf) # to put arrays in one line
+    np.set_printoptions(linewidth=np.inf)  # to put arrays in one line
     outputStr = [
         '\nINPUTS\n\n',
         indentFunc(inputKwArgs.items())
@@ -44,16 +45,16 @@ def saveParametersAndResults(inputKwArgs, results=None, createMessage=False):
         else:
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
         outputStr += ['\n\nOUTPUTS\n\n',
-                      indentFunc(zip(resultNames, resultUnits, ['value']+list(results)))]
+                      indentFunc(zip(resultNames, resultUnits, ['value'] + list(results)))]
     log.info('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
 
     if results is not None:
-        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value']+list(results)])]
+        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value'] + list(results)])]
     outputStr = ''.join(outputStr)
     with open(os.path.join(runDir, filename), 'w') as f:
         f.write(outputStr)
     if createMessage:
-        log.info('Inputs, Outputs:\n'+ outputStr)
+        log.info('Inputs, Outputs:\n' + outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
 
 
@@ -62,7 +63,7 @@ def _parameterNotSet(inputKwArgs, paramKey):
     return paramKey not in inputKwArgs or inputKwArgs[paramKey] is None
 
 
-def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
+def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
     """Parse keyworded arguments, add missing parameters with defaults and return a new dict.
 
     :param inputKwArgs: dict with input keyworded arguments
@@ -86,6 +87,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                                  ('valveReleaseFactor', 'burstPressure'),
                                  ('useHydrostaticPressure', 'burstPressure'),
                                  ('tankLocation', 'burstPressure'),
+                                 ('h2Mass', 'burstPressure'),
                                  ])
     # cleanup default args so they don't interfere with dependent args from inputKwArgs
     for arg, supersedeArg in removeIfIncluded:
@@ -114,7 +116,7 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
         designArgs.pop(key, None)
 
     if _parameterNotSet(designArgs, 'lcyl'):
-        designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl']/2
+        designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl'] / 2
     # width
     if _parameterNotSet(designArgs, 'rovingWidthHoop'):
         designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
@@ -153,20 +155,27 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
                     if not designArgs[param]:
                         raise Tankoh2Error(f'domeType == "conicalElliptical" but "{param}" is not defined')
 
-            dome = getDome(r, designArgs['polarOpeningRadius'], domeType, designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                           designArgs['delta1'], r - designArgs['alpha'] * r, designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                           designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'])
+            dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
+                           designArgs.get(f'{domeName}LengthByR', 0.) * r,
+                           designArgs['delta1'], r - designArgs['alpha'] * r,
+                           designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
+                           designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
+                           designArgs['dcyl'])
 
         domeVolumes.append(dome.getDomeResizedByThickness(-linerThk).volume)
 
         designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
         designArgs[f'{domeName}'] = dome
 
+    # get h2 Volume from Mass and Pressure
+    if not _parameterNotSet(designArgs, 'h2Mass') and not _parameterNotSet(designArgs, 'pressure'):
+        designArgs['volume'] = getRequiredVolume(designArgs['h2Mass'], designArgs['pressure'], designArgs['maxFill'],
+                                                 temperature=designArgs['temperature'])
     if not _parameterNotSet(designArgs, 'volume'):
         volumeReq = designArgs['volume']
         # use volume in order to scale tank length → resets lcyl
         requiredCylVol = volumeReq * 1e9 - domeVolumes[0] - domeVolumes[-1]
-        designArgs['lcyl'] = requiredCylVol / (np.pi * (designArgs['dcyl'] / 2) ** 2)
+        designArgs['lcyl'] = requiredCylVol / (np.pi * ((designArgs['dcyl'] - 2 * linerThk) / 2) ** 2)
 
         if designArgs['lcyl'] > minCylindricalLength:
             log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
@@ -185,11 +194,10 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
             while(abs(volumeReq - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * volumeReq:
                 domeVolumes = []
                 adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
-                #domeVolumes.append(adaptGeometry[0])
+                # domeVolumes.append(adaptGeometry[0])
                 designArgs['dcyl'] = 2 * adaptGeometry[-1]
 
                 for domeName in ['dome2', 'dome']:
-
                     domeVolumes.append(dome.volume)
 
                     domeType = designArgs[f'{domeName}Type']
@@ -214,12 +222,17 @@ def parseDesginArgs(inputKwArgs, frpOrMetal ='frp'):
     designArgs['tankLength'] = designArgs['lcyl'] + dome.domeLength + \
                                (dome.domeLength if dome2 is None else dome2.domeLength)
 
+    # Define burstPressure if only pressure is given
+    if 'burstPressure' not in designArgs:
+        designArgs['burstPressure'] = getBurstPressure(designArgs, designArgs['tankLength'])
+
     if 'verbose' in designArgs and designArgs['verbose']:
         log.setLevel(logging.DEBUG)
         for handler in log.handlers:
             handler.setLevel(logging.DEBUG)
-    designArgs.pop('help',None)
+    designArgs.pop('help', None)
     return designArgs
+
 
 def getBurstPressure(designArgs, length):
     """Calculate burst pressure
@@ -262,7 +275,7 @@ def saveLayerBook(runDir, vesselName):
     filename = runDir + "//" + vesselName + ".design"
     composite.loadFromFile(filename)
 
-    linerOuterDiameter =  2.*vessel.getLiner().cylinderRadius
+    linerOuterDiameter = 2. * vessel.getLiner().cylinderRadius
 
     outputFileName = runDir + "//" + vesselName + "LayupBook.txt"
 
@@ -273,7 +286,9 @@ def saveLayerBook(runDir, vesselName):
         vesselDiameter = vesselDiameter + 2.*woundedPlyThickness
         outArr.append([layerNo+1, composite.getAngle(layerNo), vessel.getHoopLayerShift(layerNo, True), vessel.getHoopLayerShift(layerNo, True), woundedPlyThickness/2.,woundedPlyThickness,vessel.getPolarOpeningR(layerNo, True), vesselDiameter])
 
-    layerBookMsg = indent([["No. Layer" , "Angle in cylinder", "HoopLayerShift left", "HoopLayerShift right", "single ply thickness", "wounded layer thickness","Polar Opening Radius", "vessel cylinder thickness"]] + outArr)
+    layerBookMsg = indent([["No. Layer", "Angle in cylinder", "HoopLayerShift left", "HoopLayerShift right",
+                            "single ply thickness", "wounded layer thickness", "Polar Opening Radius",
+                            "vessel cylinder thickness"]] + outArr)
     log.debug(layerBookMsg)
 
     with open(outputFileName, "w") as file:

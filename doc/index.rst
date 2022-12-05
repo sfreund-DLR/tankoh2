@@ -28,7 +28,7 @@ Usage
 ::
 
    | usage: tankoh2 [--windingOrMetal WINDINGORMETAL] [--tankname name]
-   |                [--nodeNumber number] [--verbose] [--help] [--maxlayers layers]
+   |                [--nodeNumber number] [--verbose] [--help] [--maxLayers layers]
    |                [--relRadiusHoopLayerEnd RELRADIUSHOOPLAYEREND]
    |                [--domeType DOMETYPE] [--domeContour x,r]
    |                [--polarOpeningRadius r_po] [--dcly d_cyl] [--lcyl l_cyl]
@@ -57,7 +57,7 @@ Usage
    |   --help                show this help message and exit
    |
    | Optimization:
-   |   --maxlayers layers    Maximum number of layers to be added (default: 100)
+   |   --maxLayers layers    Maximum number of layers to be added (default: 100)
    |   --relRadiusHoopLayerEnd RELRADIUSHOOPLAYEREND
    |                         relative radius (to cyl radius) where hoop layers end
    |                         [-] (default: 0.95)

@@ -16,18 +16,19 @@ from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
 from fa_pyutils.service.systemutils import getRunDir
 
+from fa_pyutils.service.systemutils import getRunDir
+
 from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log, pychain
-from tankoh2.service.utilities import indent, getRunDir
+from tankoh2.service.utilities import indent
+from tankoh2.control.genericcontrol import resultNamesFrp
 
 
-dome = 'circle'  # isotensoid  circle
-safetyFactor = 1  # 2.25
-lb = OrderedDict([('r', 500.), ('lcylByR', 0.01), ('dp', 0.13 * safetyFactor)])  # [mm, - , MPa]
-ub = OrderedDict([('r', 1600.), ('lcylByR', 12.), ('dp', 0.5 * safetyFactor)])
-useFibreFailure = False
-
-numberOfSamples = 201
+lb = OrderedDict([('dcyl', 300.), ('lcyl', 800), ('pressure', 30)])  # [mm, mm , MPa]
+ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
+numberOfSamples = 100
+dome = 'isotensoid'
+useFibreFailure = True
 
 class TankWinder(AbstractTargetFunction):
     """"""
@@ -35,8 +36,7 @@ class TankWinder(AbstractTargetFunction):
 
     def __init__(self, lb, ub, runDir):
         """"""
-        resultNames = ['frpMass', 'volume', 'area', 'lcylinder', 'numberOfLayers', 'angles', 'hoopLayerShifts']
-        AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNames)
+        AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNamesFrp)
         self.doParallelization = []
         self.runDir = runDir
         self.allowFailedSample = True
@@ -44,12 +44,11 @@ class TankWinder(AbstractTargetFunction):
     def _call(self, parameters):
         """call function for the model"""
         runDir = getRunDir(basePath=os.path.join(self.runDir), useMilliSeconds=True)
-        r, lcyl, burstPressure = parameters
+        dcyl, lcyl, pressure = parameters
 
-        result = createDesign(dcyl=r * 2, lcylByR=lcyl, burstPressure=burstPressure,
-                              polarOpeningRadius=r / 10, runDir=runDir,
-                              domeType=pychain.winding.DOME_TYPES.ISOTENSOID if dome == 'isotensoid' else pychain.winding.DOME_TYPES.CIRCLE,
-                              useFibreFailure = useFibreFailure)
+        result = createDesign(dcyl=dcyl, lcyl=lcyl, pressure=pressure, safetyFactor=2, valveReleaseFactor=1.1,
+                              runDir=runDir,domeType='isotensoid_MuWind', failureMode='fibreFailure', maxLayers=300,
+                              useHydrostaticPressure=True,nodeNumber=1000)
         return result
 
 volumeFunc = lambda r, lcylByR: (4 / 3 * np.pi * r ** 3 + r * lcylByR * np.pi * r ** 2)
@@ -93,9 +92,9 @@ def plotGeometryRange(radii, lcylByRs, plotDir='', show=False, samples=None):
 
 
 def main():
-    sampleFile = ''   + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
+    sampleFile = '' #  + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
 
-    startTime = datetime.datetime.now()
+    startTime = datetime.now()
     names = list(lb.keys())
     runDir = getRunDir(f'doe_{dome}_{"puckff" if useFibreFailure else "puckiff"}',
                        basePath=os.path.join(programDir, 'tmp'))
@@ -107,7 +106,7 @@ def main():
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
-    plotGeometryRange([lb['r'], ub['r']],[lb['lcylByR'], ub['lcylByR']], plotDir=runDir, samples=sampleX)
+    plotGeometryRange([lb['dcyl'], ub['dcyl']],[lb['lcyl'], ub['lcyl']], plotDir=runDir, samples=sampleX)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
     sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)
@@ -125,7 +124,7 @@ def main():
     with open(os.path.join(runDir, 'full_doe.txt'), 'w') as f:
         f.write(indent(allSamples, hasHeader=True))
 
-    duration = datetime.datetime.now() - startTime
+    duration = datetime.now() - startTime
     log.info(f'runtime {duration.seconds} seconds')
 
 

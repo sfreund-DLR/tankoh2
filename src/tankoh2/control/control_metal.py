@@ -9,7 +9,7 @@ from tankoh2.geometry.liner import Liner
 from tankoh2.design.metal.mechanics import getMaxWallThickness
 from tankoh2.design.metal.material import getMaterial
 from tankoh2.design.existingdesigns import defaultDesign
-from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesginArgs, getBurstPressure
+from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesignArgs, getBurstPressure
 from tankoh2.masses.massestimation import getInsulationMass, getFairingMass
 
 
@@ -23,7 +23,7 @@ def createDesign(**kwargs):
     # SET Parameters of vessel
     # #########################################################################################
 
-    designArgs = parseDesginArgs(kwargs, 'metal')
+    designArgs = parseDesignArgs(kwargs, 'metal')
 
     # General
     tankname = designArgs['tankname']
@@ -48,8 +48,6 @@ def createDesign(**kwargs):
     length = lcylinder + dome.domeLength + (dome.domeLength if dome2 is None else dome2.domeLength)
 
     # Pressure Args
-    if 'burstPressure' not in designArgs:
-        designArgs['burstPressure'] = getBurstPressure(designArgs, length)
     burstPressure = designArgs['burstPressure']
     designPressure = designArgs['pressure']
 
@@ -71,12 +69,12 @@ def createDesign(**kwargs):
     massMetal = material['roh'] * wallVol / 1000  # [kg]
 
     duration = datetime.now() - startTime
-    if burstPressure > 5:
-        # compressed gas vessel
-        auxMasses = [0., 0.]
-    else:
+    if designArgs['temperature'] < 33:
         # liquid, cryo vessel
         auxMasses = [getInsulationMass(liner), getFairingMass(liner)]
+    else:
+        # compressed gas vessel
+        auxMasses = [0., 0.]
     totalMass = np.sum([massMetal]+auxMasses)
     results = massMetal, *auxMasses, totalMass, volume, area, linerLength, wallThickness, duration
 
