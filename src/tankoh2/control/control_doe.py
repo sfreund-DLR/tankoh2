@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
+from fa_pyutils.service.systemutils import getRunDir
 
 from fa_pyutils.service.systemutils import getRunDir
 
@@ -51,7 +52,7 @@ class TankWinder(AbstractTargetFunction):
         return result
 
 volumeFunc = lambda r, lcylByR: (4 / 3 * np.pi * r ** 3 + r * lcylByR * np.pi * r ** 2)
-"""[m**3]"""
+"""volume of a tank with circular domes [m**3]"""
 
 def plotGeometryRange(radii, lcylByRs, plotDir='', show=False, samples=None):
     """

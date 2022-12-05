@@ -18,7 +18,7 @@ def createDesign(**kwargs):
 
     For a list of possible parameters, please refer to tankoh2.design.existingdesigns.allDesignKeywords
     """
-    startTime = datetime.datetime.now()
+    startTime = datetime.now()
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
@@ -68,7 +68,7 @@ def createDesign(**kwargs):
     wallVol = liner.getWallVolume(wallThickness) / 1000 / 1000  # [dm*3]
     massMetal = material['roh'] * wallVol / 1000  # [kg]
 
-    duration = datetime.datetime.now() - startTime
+    duration = datetime.now() - startTime
     if designArgs['temperature'] < 33:
         # liquid, cryo vessel
         auxMasses = [getInsulationMass(liner), getFairingMass(liner)]

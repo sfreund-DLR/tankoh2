@@ -141,11 +141,11 @@ testPostprocessing.update([
     ])
 
 # design to make plots where the layers are visible in µWind
-plotDesign = defaultDesign.copy()
-plotDesign.update([
-    ('dcyl', plotDesign['dcyl']/4),
-    ('lcyl', plotDesign['lcyl']/5),
-    ('layerThk', plotDesign['layerThk']*2),
+plotDesign = OrderedDict([
+    ('tankname', 'plotDesign'),
+    ('dcyl', defaultDesign['dcyl']/4),
+    ('lcyl', defaultDesign['lcyl']/5),
+    ('layerThk', defaultDesign['layerThk']*2),
     ('burstPressure', 42.),
     ('maxLayers', 3),
     ('domeType', 'isotensoid_MuWind'),
