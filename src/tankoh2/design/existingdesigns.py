@@ -67,7 +67,9 @@ allArgs = pd.DataFrame(
          'Factor defining additional pressure to account for the valve pressure inaccuracies', ''],
         ['pressure', 'Design', 'p_op', 5., float, 'Operational pressure [MPa]', ''],
         ['minPressure', 'Design', 'p_op_min', 0.1, float, 'Minimal operational pressure [MPa]', ''],
-        ['burstPressure', 'Design', 'p_b', 10., float, 'Burst pressure [MPa]', ''],
+        ['burstPressure', 'Design', 'p_b', 10., float,
+         'Burst pressure [MPa]. If given, pressure, useHydrostaticPressure, safetyFactor, '
+         'valveReleaseFactor are not used', ''],
         ['useHydrostaticPressure', 'Design', '', False, '',
          'Flag whether hydrostatic pressure according to CS 25.963 (d) should be applied', 'store_true'],
         ['tankLocation', 'Design', 'loc', 'wing_at_engine', '',
@@ -608,6 +610,24 @@ dLightConventional = OrderedDict([
     ('maxLayers', 500),
 ])
 
+dLight3tanks = OrderedDict([
+    ('tankname', 'dLight_3tanks'),
+    ('polarOpeningRadius', 50),
+    ('dcyl', 796-100),  # three cylinders inside
+    #('lcyl', 500),  # mm
+    ('volume', 3.775/3),
+    ('safetyFactor', 2),
+    ('valveReleaseFactor', 1.1),
+    ('pressure', 70),  # [MPa]
+    ('domeType', 'isotensoid_MuWind'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', True),
+    ('relRadiusHoopLayerEnd', 0.98),
+    ('numberOfRovings', 4),
+    ('nodeNumber', 1000),
+    ('maxlayers', 300),
+    ('linerThickness', 3),
+])
 
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
