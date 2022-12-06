@@ -1,6 +1,6 @@
 """control a tank optimization"""
 
-import datetime
+from datetime import datetime
 import numpy as np
 
 from tankoh2 import log

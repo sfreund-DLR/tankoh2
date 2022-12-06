@@ -7,106 +7,100 @@ Please contatct the developers for these additional packages.
 
 import os
 from collections import OrderedDict
-import datetime
-import numpy as np
-import matplotlib.pyplot as plt
+from datetime import datetime
 
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
-from fa_pyutils.service.systemutils import getRunDir
 
 from fa_pyutils.service.systemutils import getRunDir
 
 from tankoh2.control.control_winding import createDesign
-from tankoh2 import programDir, log, pychain
+from tankoh2 import programDir, log
+from tankoh2.service.plot.doe import plotGeometryRange
 from tankoh2.service.utilities import indent
 from tankoh2.control.genericcontrol import resultNamesFrp
+from tankoh2.design.existingdesigns import dLightBase, vphDesign1_isotensoid
+from tankoh2.service.exception import Tankoh2Error
 
 
-lb = OrderedDict([('dcyl', 300.), ('lcyl', 800), ('pressure', 30)])  # [mm, mm , MPa]
-ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
-numberOfSamples = 100
-dome = 'isotensoid'
-useFibreFailure = True
 
 class TankWinder(AbstractTargetFunction):
     """"""
     name = 'tank winder'
 
-    def __init__(self, lb, ub, runDir):
+    def __init__(self, lb, ub, runDir, designKwargs):
         """"""
         AbstractTargetFunction.__init__(self, lb, ub, resultNames=resultNamesFrp)
         self.doParallelization = []
         self.runDir = runDir
         self.allowFailedSample = True
+        self.designKwargs = designKwargs
+        """keyword arguments defining constants for the tank design"""
 
     def _call(self, parameters):
         """call function for the model"""
         runDir = getRunDir(basePath=os.path.join(self.runDir), useMilliSeconds=True)
-        dcyl, lcyl, pressure = parameters
+        paramDict = OrderedDict(zip(self.parameterNames, parameters))
+        inputDict = OrderedDict()
+        inputDict.update(self.designKwargs)
+        inputDict.update(paramDict)
+        inputDict['runDir'] = runDir
 
-        result = createDesign(dcyl=dcyl, lcyl=lcyl, pressure=pressure, safetyFactor=2, valveReleaseFactor=1.1,
-                              runDir=runDir,domeType='isotensoid_MuWind', failureMode='fibreFailure', maxLayers=300,
-                              useHydrostaticPressure=True,nodeNumber=1000)
+        result = createDesign(**inputDict)
         return result
 
-volumeFunc = lambda r, lcylByR: (4 / 3 * np.pi * r ** 3 + r * lcylByR * np.pi * r ** 2)
-"""volume of a tank with circular domes [m**3]"""
 
-def plotGeometryRange(radii, lcylByRs, plotDir='', show=False, samples=None):
+def getDesignAndBounds(name):
+    """returns base design properties (like in existingdesigns) of a tank and upper/lower bounds for the doe
+
+    :param name: name of the design and bounds to return. Not case sensitive!
+    :return: designKwargs, lowerBoundDict, upperBoundDict, numberOfSamples
+    """
+    allowedNames = {'dlight', 'exact_cyl_isotensoid'}
+    if name not in allowedNames:
+        raise Tankoh2Error(f'Parameter name={name} unknown. Allowed names: {allowedNames}')
+    name = name.lower()
+    numberOfSamples = 101
+    if name == 'dlight':
+        lb = OrderedDict([('dcyl', 300.), ('lcyl', 800), ('pressure', 30)])  # [mm, mm , MPa]
+        ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
+        designKwargs = dLightBase
+    elif name == 'exact_cyl_isotensoid':
+        lb = OrderedDict([('dcyl', 1000.), ('lcylByR', 0.15), ('pressure', 0.1)])  # [mm, mm , MPa]
+        ub = OrderedDict([('dcyl', 4000.), ('lcylByR', 3), ('pressure', 1)])
+        designKwargs = vphDesign1_isotensoid.copy()
+        designKwargs['verbosePlot'] = True
+        designKwargs['numberOfRovings'] = 12
+        designKwargs.pop('lcyl')
+        designKwargs.pop('safetyFactor')
+        if 0:  # for testing*
+            numberOfSamples = 3
+            designKwargs['maxLayers'] = 3
+    return designKwargs, lb, ub, numberOfSamples
+
+
+def mainControl(name, sampleXFile):
     """
 
-    :param radii: tuple with min and max radius [mm]
-    :param lcylByRs: tuple with min and max lcylByR [-]
-    :return: None
+    :param name: name of the design and bounds to return. Not case sensitive!
+    :param sampleXFile: path and filename to a list with sampleX vaules
     """
-    radii = np.array(radii) / 1e3  # convert to m
-    if samples is not None:
-        samplesR, sampleslcylByR = samples[:2, :]
-        samplesR = samplesR / 1e3
-
-    fig = plt.figure(figsize=(15,6))
-    axes = [fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)]
-    axes[1].set_yscale("log")
-    for ax in axes:
-        ax.set_title("Parameter bounds")
-        ax.set_xlabel('Radius [m]')
-        ax.set_ylabel('Volume [m^3]')
-        color = 'tab:blue'
-        for lcylByR in lcylByRs:
-            x = np.linspace(*radii,11)
-            volumes = [volumeFunc(r, lcylByR) for r in x]
-            ax.plot(x, volumes, color=color, label=f'lcylByR={lcylByR}')
-            color = 'tab:orange'
-        ax.legend()
-        if samples is not None:
-            volumes = volumeFunc(samplesR, sampleslcylByR)
-            ax.scatter(samplesR, volumes, label=f'samples')
-
-    if plotDir:
-        plt.savefig(plotDir+'/geometryRange.png')
-    if show:
-        plt.show()
-
-
-
-def main():
-    sampleFile = '' #  + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
-
     startTime = datetime.now()
-    names = list(lb.keys())
-    runDir = getRunDir(f'doe_{dome}_{"puckff" if useFibreFailure else "puckiff"}',
-                       basePath=os.path.join(programDir, 'tmp'))
 
-    winder = TankWinder(lb, ub, runDir)
-    if sampleFile:
-        lcvt = DOEfromFile(sampleFile)
+    designKwargs, lb, ub, numberOfSamples = getDesignAndBounds(name)
+
+    names = list(lb.keys())
+    runDir = getRunDir(f'doe_{name}', basePath=os.path.join(programDir, 'tmp'))
+
+    winder = TankWinder(lb, ub, runDir, designKwargs)
+    if sampleXFile:
+        lcvt = DOEfromFile(sampleXFile)
     else:
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
-    plotGeometryRange([lb['dcyl'], ub['dcyl']],[lb['lcyl'], ub['lcyl']], plotDir=runDir, samples=sampleX)
+    plotGeometryRange(lb, ub, plotDir=runDir, samples=sampleX)
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
     sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)
@@ -128,8 +122,15 @@ def main():
     log.info(f'runtime {duration.seconds} seconds')
 
 
-if __name__ == '__main__':
+def main():
+    designName = 'dlight'
+    sampleXFile = ''  # + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
     if 1:
-        main()
+        mainControl(designName, sampleXFile)
     else:
-        plotGeometryRange([lb['r'], ub['r']],[lb['lcylByR'], ub['lcylByR']], show=True)
+        samples = DOEfromFile(sampleXFile) if sampleXFile else None
+        _, lb, ub, _ = getDesignAndBounds(designName)
+        plotGeometryRange(lb, ub, show=True, samples= samples)
+
+if __name__ == '__main__':
+    main()

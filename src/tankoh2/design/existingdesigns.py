@@ -116,7 +116,6 @@ allArgs = pd.DataFrame(
         ['linerThickness', 'AuxThicknesses', 'linerThk', 0., float, 'Thickness of the liner [mm]', ''],
         ['insulationThickness', 'AuxThicknesses', 'insThk', 0., float, 'Thickness of the insluation [mm]', ''],
         ['fairingThickness', 'AuxThicknesses', 'fairingThk', 0., float, 'Thickness of the fairing [mm]', ''],
-
     ],
     columns=['name', 'group', 'metavar', 'default', 'type', 'help', 'action']
 )
@@ -350,7 +349,7 @@ vphDesign1 = OrderedDict([
 vphDesign1_isotensoid = vphDesign1.copy()
 vphDesign1_isotensoid.update([
     ('lcyl', vphDesign1['lcyl'] + 546.66423),
-    ('domeType', 'isotensoid'),])
+    ('domeType', 'isotensoid_MuWind'),])
 
 kautextDesign = OrderedDict([
                              # General
@@ -595,26 +594,27 @@ hytazerD400 = OrderedDict([
     ('nodeNumber', 500),
 ])
 
-
-
-dLightConventional = OrderedDict([
-    ('tankname', 'dLight_conventional'),
+dLightBase = OrderedDict([
     ('polarOpeningRadius', 50),
     ('dcyl', 1820 - 2 * (2 + 50 + 50)),  # mm, 1820 is fuselage outer d
     #('lcyl', 500),  # mm
-    ('volume', 3 * 2/3),  # m**3,  use 2/3 of required volume for front tank to utilize full diameter
     ('safetyFactor', 2),
     ('valveReleaseFactor', 1.1),
     ('pressure', 7),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', True),
+    ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
     ('nodeNumber', 1000),
     ('maxLayers', 500),
 ])
 
+
+dLightConventional = dLightBase.copy()
+dLightConventional.update([
+    ('tankname', 'dLight_conventional'),
+    ('volume', 3 * 2/3),  # m**3,  use 2/3 of required volume for front tank to utilize full diameter
+])
 dLight3tanks = OrderedDict([
     ('tankname', 'dLight_3tanks'),
     ('polarOpeningRadius', 50),
@@ -626,7 +626,7 @@ dLight3tanks = OrderedDict([
     ('pressure', 70),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', True),
+    ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 4),
     ('nodeNumber', 1000),
@@ -645,7 +645,7 @@ dLight7tanks = OrderedDict([
     ('pressure', 70),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', True),
+    ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 4),
     ('nodeNumber', 1000),
@@ -664,7 +664,7 @@ dLight7tanks_600bar = OrderedDict([
     ('pressure', 60),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', True),
+    ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 4),
     ('nodeNumber', 1000),
@@ -686,7 +686,7 @@ dLight7tanks_700bar_T1000G = OrderedDict([
     #('burstPressure', 130),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', True),
+    ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('numberOfRovings', 4),
     ('nodeNumber', 1000),
