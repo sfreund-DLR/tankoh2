@@ -38,7 +38,7 @@ if __name__ == '__main__':
         if 1:
             mainControl(name, sampleXFile)
         else:
-            from tankoh2.service.plot.doe import plotGeometryRange
+            from tankoh2.service.plot.doeplot import plotGeometryRange
             from delismm.model.doe import DOEfromFile
             samples = DOEfromFile(sampleXFile) if sampleXFile else None
             _, lb, ub, _ = getDesignAndBounds(name)

@@ -14,16 +14,16 @@ def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, sa
     :return: None
     """
     lb, ub = lowerBoundDict, upperBoundDict
-    def volumeFunc(d, lcylByR):
-        """volume of a tank with circular domes [m**3]"""
-        return 4 / 3 * np.pi * d ** 3 + d * lcylByR * np.pi * d ** 2
+    def volumeFunc(d, lcyl):
+        """volume of a tank with circular domes [m**3]
+
+        Used as rough estimation!"""
+        return 4 / 3 * np.pi * d ** 3 + lcyl * np.pi * d ** 2
 
     diameters = (lb['dcyl'], ub['dcyl'])
     diameters = np.array(diameters) / 1e3  # convert to m
-    lcyls = (lb['lcyl'], ub['lcyl']) if 'lcyl' in lb else (np.array([lb['lcylByR'], ub['lcylByR']]) * diameters / 2)
-    if samples is not None:
-        samplesR, sampleslcylByR = samples[:2, :]
-        samplesR = samplesR / 1e3
+    lcyls = np.array([lb['lcyl'], ub['lcyl']])
+
 
     fig = plt.figure(figsize=(15,6))
     axes = [fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)]
@@ -34,12 +34,14 @@ def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, sa
         ax.set_ylabel('Volume [m^3]')
         color = 'tab:blue'
         for lcyl in lcyls:
-            x = np.linspace(*diameters, 11)
-            volumes = [volumeFunc(r, lcyl) for r in x]
+            x = np.linspace(*diameters, 51)
+            volumes = [volumeFunc(d, lcyl) for d in x]
             ax.plot(x, volumes, color=color, label=f'lcyl={lcyl}')
             color = 'tab:orange'
         ax.legend()
         if samples is not None:
+            samplesR, sampleslcylByR = samples[:2, :]
+            samplesR = samplesR / 1e3
             volumes = volumeFunc(samplesR, sampleslcylByR)
             ax.scatter(samplesR, volumes, label=f'samples')
 
