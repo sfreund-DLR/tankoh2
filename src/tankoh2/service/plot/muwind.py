@@ -12,7 +12,7 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
                           elemIdxmax, hoopStart, hoopEnd, newDesignIndexes, targetFuncScaling):
     """"""
-    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) if i >= layerNumber-25 else '_' for i, (angle, _) in enumerate(anglesShifts[:-1])]
+    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) if i >= layerNumber-10 else '_' for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
     fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
@@ -26,6 +26,8 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                   vlineColors=['black', 'black', 'red'] + ['green'] * len(newDesignIndexes),
                   yLabel=puckLabelName, xLabel='Contour index',
                   plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}})
+    for i in range(len(puck.columns)-10):
+        ax.lines[i].set_color('black')
     fig.tight_layout()
     saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '',
                   show=show, fig=fig, verbosePlot=verbosePlot)
