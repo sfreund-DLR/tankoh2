@@ -1162,11 +1162,9 @@ class DomeIsotensoid(AbstractDome):
 
     def getVolume(self):
 
-        xCoords = DomeIsotensoid.getContour(self)[0]
-        rCoords = DomeIsotensoid.getContour(self)[1]
-
-        rCoords = list(rCoords)
-        xCoords = list(xCoords)
+        Coords = DomeIsotensoid.getContour(self)
+        xCoords = list(Coords[0])
+        rCoords = list(Coords[1])
 
         volume = 0
 
