@@ -10,7 +10,7 @@ exampleSettingsFileName = 'settings_example.json'
 useRstOutput = False
 minCylindricalLength = 150
 epsilon = 1e-8
-doHoopOpt = True
+doHoopOpt = False
 """Flag if hoop shift should be optimized or a linear distribution should be assumed"""
 
 optimizerSeed = None

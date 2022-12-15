@@ -1,22 +1,21 @@
 """package with scripts controlling the execution of tankoh2 features"""
-from scipy.special.cython_special import loggamma
 
 if __name__ == '__main__':
     from tankoh2.control.control_metal import createDesign as createDesignMetal
     from tankoh2.control.control_winding import createDesign as createDesignWinding
     import tankoh2.design.existingdesigns as parameters
-    from tankoh2 import log
-    import logging
 
 
     if 1:
-        params = parameters.vph_hoopTest.copy()
+        params = parameters.atheat3.copy()
 
-        params['verbosePlot'] = True
+        params.update([
+            ('verbosePlot', True),
+            #('maxLayers', 20),
+            ('targetFuncWeights', [1., 0., 0., 0.])
+        ])
 
-        params.pop('initialAnglesAndShifts')
-        log.setLevel(logging.DEBUG)
-        log.handlers[0].setLevel(logging.DEBUG)
+        params.pop('initialAnglesAndShifts', None)
 
         runCompositCalc = True
         if runCompositCalc:

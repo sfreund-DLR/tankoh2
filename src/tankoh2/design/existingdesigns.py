@@ -170,7 +170,8 @@ hymodDesign = OrderedDict([
     ('burstPressure', 77.85),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dcyl', 300.)
+    ('dcyl', 300.),
+    ('temperature', 293),
 ])
 
 
@@ -206,6 +207,7 @@ NGTBITDesign = OrderedDict([
     # optimizer settings
     ('maxLayers', 3),
     ('verbose', False),
+    ('temperature', 293),
     ])
 
 NGTBIT_Invent = NGTBITDesign.copy()
@@ -443,6 +445,7 @@ atheat = OrderedDict([
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
     ('volume', 0.037),
+    ('temperature', 293),
 ])
 
 atheat2 = atheat.copy()
@@ -454,28 +457,14 @@ atheat2.update([
     ('lcyl', 77.75+11.55),  # mm
     ('dcyl', 400),  # mm
     ('pressure', 60),
-    #('lcyl', 79.85),  # mm
-    # ('initialAnglesAndShifts', [
-    #     (7.862970189270743   , 0                    ),
-    #     (90                  , 21.984637908159538   ),
-    #     (13.866345007970057  , 0                    ),
-    #     (13.866345007970057  , 0                    ),
-    #     (58.4334573009439    , 0                    ),
-    #     (69.01950346986695   , 0                    ),
-    #     (47.36658070728886   , 0                    ),
-    #     (9.171105727970618   , 0                    ),
-    #     (9.539139023476652   , 0                    ),
-    #     (25.001541085240873  , 0                    ),
-    #     (90                  , -2.1997272973884687  ),]),
 ])
 
 atheat3 = atheat2.copy()
 atheat3.pop('domeContour')
 atheat3.update([
     ('tankname', 'atheat_He'),
-    ('domeType', 'isotensoid'),
+    ('domeType', 'isotensoid_MuWind'),
     ('dcyl', 370),  # mm
-    ('rovingWidthHoop', 1),
 ])
 
 atheat4 = atheat3.copy()
