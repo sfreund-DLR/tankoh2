@@ -8,6 +8,8 @@ Please contatct the developers for these additional packages.
 import os
 from collections import OrderedDict
 from datetime import datetime
+from multiprocessing import cpu_count
+import numpy as np
 
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
@@ -17,12 +19,11 @@ from fa_pyutils.service.systemutils import getRunDir
 
 from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log
-from tankoh2.service.plot.doe import plotGeometryRange
+from tankoh2.service.plot.doeplot import plotGeometryRange
 from tankoh2.service.utilities import indent
 from tankoh2.control.genericcontrol import resultNamesFrp
 from tankoh2.design.existingdesigns import dLightBase, vphDesign1_isotensoid
 from tankoh2.service.exception import Tankoh2Error
-
 
 
 class TankWinder(AbstractTargetFunction):
@@ -37,6 +38,7 @@ class TankWinder(AbstractTargetFunction):
         self.allowFailedSample = True
         self.designKwargs = designKwargs
         """keyword arguments defining constants for the tank design"""
+        self.asyncMaxProcesses = int(np.ceil(cpu_count()*2/3))
 
     def _call(self, parameters):
         """call function for the model"""
@@ -50,6 +52,8 @@ class TankWinder(AbstractTargetFunction):
         result = createDesign(**inputDict)
         return result
 
+    def getNumberOfNewJobs(self):
+        return self.asyncMaxProcesses
 
 def getDesignAndBounds(name):
     """returns base design properties (like in existingdesigns) of a tank and upper/lower bounds for the doe
@@ -67,14 +71,14 @@ def getDesignAndBounds(name):
         ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
         designKwargs = dLightBase
     elif name == 'exact_cyl_isotensoid':
-        lb = OrderedDict([('dcyl', 1000.), ('lcylByR', 0.15), ('pressure', 0.1)])  # [mm, mm , MPa]
-        ub = OrderedDict([('dcyl', 4000.), ('lcylByR', 3), ('pressure', 1)])
+        lb = OrderedDict([('dcyl', 1000.), ('lcyl', 150), ('pressure', 0.1)])  # [mm, mm , MPa]
+        ub = OrderedDict([('dcyl', 4000.), ('lcyl', 3000), ('pressure', 1)])
         designKwargs = vphDesign1_isotensoid.copy()
         designKwargs['verbosePlot'] = True
         designKwargs['numberOfRovings'] = 12
         designKwargs.pop('lcyl')
         designKwargs.pop('safetyFactor')
-        if 0:  # for testing*
+        if 1:  # for testing
             numberOfSamples = 3
             designKwargs['maxLayers'] = 3
     return designKwargs, lb, ub, numberOfSamples

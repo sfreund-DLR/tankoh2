@@ -171,7 +171,8 @@ hymodDesign = OrderedDict([
     ('temperature',293),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dcyl', 300.)
+    ('dcyl', 300.),
+    ('temperature', 293),
 ])
 
 
@@ -208,6 +209,7 @@ NGTBITDesign = OrderedDict([
     # optimizer settings
     ('maxLayers', 3),
     ('verbose', False),
+    ('temperature', 293),
     ])
 
 NGTBIT_Invent = NGTBITDesign.copy()
@@ -355,6 +357,26 @@ vphDesign1_isotensoid.update([
     ('lcyl', vphDesign1['lcyl'] + 546.66423),
     ('domeType', 'isotensoid_MuWind'),])
 
+vph_hoopTest = vphDesign1_isotensoid.copy()
+vph_hoopTest.pop('lcyl')
+vph_hoopTest.pop('safetyFactor')
+vph_hoopTest.update([
+    ('dcyl', 3790.0), ('lcyl', 824.325), ('pressure', 0.478),
+    ('verbosePlot', True),
+    ('numberOfRovings', 30),
+    ('initialAnglesAndShifts',
+     [(4.202, 0   ),(90, 34.254 ),(10.248, 0  ),(90, 42.627 ),(90, 23.136 ),(12.988, 0  ),(90, 39.755 ),
+      (6.343, 0   ),(90, 42.627 ),(90, 337.686),(90, 48.631 ),(90, 83.767 ),(10.511, 0  ),(90, 48.631 ),
+      #(90, 83.767 ),(90, 48.631 ),(90, 396.533),(90, 48.631 ),(90, 48.631 ),(90, 83.767 ),(90, 48.631 ),
+      #(6.382, 0   ),(90, 48.631 ),(90, 48.631 ),(90, 83.767 ),(90, 83.767 ),(90, 48.631 ),(90, 48.631 ),
+      #(90, 48.631 ),(90, 83.767 ),(90, 83.767 ),(90, 48.631 ),(90, 49.299 ),(90, 11.789 ),(90, 11.789 ),
+      #(90, 11.789 ),(14.631, 0  ),(90, 48.631 ),(90, 48.631 ),(90, 2.568  ),
+      #(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),
+      #(90, 11.789 ),(90, 11.789 ),(7.854, 0   ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),
+      ]     ),
+    #('maxLayers', 10)
+])
+
 kautextDesign = OrderedDict([
                              # General
                              ('tankname', 'Kautext'),
@@ -428,6 +450,7 @@ atheat = OrderedDict([
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
     ('volume', 0.037),
+    ('temperature', 293),
 ])
 
 atheat2 = atheat.copy()
@@ -439,19 +462,6 @@ atheat2.update([
     ('lcyl', 77.75+11.55),  # mm
     ('dcyl', 400),  # mm
     ('pressure', 60),
-    #('lcyl', 79.85),  # mm
-    # ('initialAnglesAndShifts', [
-    #     (7.862970189270743   , 0                    ),
-    #     (90                  , 21.984637908159538   ),
-    #     (13.866345007970057  , 0                    ),
-    #     (13.866345007970057  , 0                    ),
-    #     (58.4334573009439    , 0                    ),
-    #     (69.01950346986695   , 0                    ),
-    #     (47.36658070728886   , 0                    ),
-    #     (9.171105727970618   , 0                    ),
-    #     (9.539139023476652   , 0                    ),
-    #     (25.001541085240873  , 0                    ),
-    #     (90                  , -2.1997272973884687  ),]),
 ])
 
 atheat3 = atheat2.copy()
@@ -460,7 +470,6 @@ atheat3.update([
     ('tankname', 'atheat_He'),
     ('domeType', 'isotensoid_MuWind'),
     ('dcyl', 370),  # mm
-    ('rovingWidthHoop', 1),
 ])
 
 atheat4 = atheat3.copy()
