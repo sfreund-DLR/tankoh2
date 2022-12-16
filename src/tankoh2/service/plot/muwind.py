@@ -15,8 +15,9 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
     puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
-    fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
-    if verbosePlot:
+    useTwoPlots = verbosePlot and tfValues is not None
+    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(15 / (1 if useTwoPlots else 2), 7))
+    if useTwoPlots:
         plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
     else:

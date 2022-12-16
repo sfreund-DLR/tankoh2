@@ -73,7 +73,7 @@ def createDesign(**kwargs):
     rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
     checkFibreVolumeContent(layerThkHoop, layerThkHelical, sectionAreaFibre,
-                            rovingWidthHoop, rovingWidthHelical, tex)
+                            rovingWidthHoop, rovingWidthHelical)
 
     saveParametersAndResults(designArgs, createMessage=False)
 
@@ -124,6 +124,7 @@ def createDesign(**kwargs):
 
     frpMass, area, iterations, reserveFac, stressRatio, angles, hoopLayerShifts = results
     angles = np.around(angles, decimals=3)
+    hoopByHelicalFrac = len([a for a in angles if a>89]) / len([a for a in angles if a<89])
     hoopLayerShifts = np.around(hoopLayerShifts, decimals=3)
     duration = datetime.now() - startTime
 
@@ -154,8 +155,9 @@ def createDesign(**kwargs):
         gravimetricIndex = h2Mass / (totalMass + h2Mass)
     else:
         gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
-    results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, \
-        vessel.getNumberOfLayers(), reserveFac, gravimetricIndex, stressRatio, iterations, duration, angles, hoopLayerShifts
+    results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(), \
+              reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration, \
+              angles, hoopLayerShifts
     saveParametersAndResults(designArgs, results)
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
@@ -186,8 +188,14 @@ if __name__ == '__main__':
         params = parameters.defaultUnsymmetricDesign.copy()
         createDesign(**params)
     elif 1:
-        params = parameters.dLight7tanks_700bar_T1000G.copy()
-        params['verbosePlot'] = False
+        params = parameters.atheat3.copy()
+
+        params.update([
+            ('verbosePlot', True),
+            #('maxLayers', 4),
+            ('targetFuncWeights', [1., 0., 0., 0]),
+            ('relRadiusHoopLayerEnd', 0.96),
+        ])
         createDesign(**params)
     elif 0:
         createDesign(pressure=5)

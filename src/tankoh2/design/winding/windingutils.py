@@ -8,12 +8,36 @@ import shutil
 import numpy as np
 import pandas as pd
 
+from tankoh2 import log
 from tankoh2.service.exception import Tankoh2Error
+from tankoh2.service.utilities import indent
 
 
 def getAnglesFromVessel(vessel):
     """returns a list with all angles from the vessel"""
     return [np.rad2deg(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).clairaultAngle) for layerNumber in range(vessel.getNumberOfLayers())]
+
+
+def getHoopShiftsFromVessel(vessel):
+    """Returns a list with all hoop shifts using zero for helical layers"""
+    return [vessel.getHoopLayerShift(layerNumber, True) for layerNumber in range(vessel.getNumberOfLayers())]
+
+
+def checkAnglesAndShifts(anglesAndShifts, vessel):
+    """Compares the tankoh2 "anglesAndShifts" with the ones defined in the vessel object
+    :param anglesAndShifts: list [(angle1, shift1), () ...]
+    :param vessel: µWind vessel instance
+    :raises: Tankoh2Error if angles and shifts do not match
+    """
+    anglesVessel = getAnglesFromVessel(vessel)
+    shiftsVessel = getHoopShiftsFromVessel(vessel)
+    anglesAndShiftsT = np.array(anglesAndShifts).T
+    if not np.allclose(anglesAndShiftsT, [anglesVessel, shiftsVessel], rtol=2e-2):
+        msgTable = [['tankoh2 angle', 'µWind angle', 'tankoh2 shift', 'µWind shift']]
+        msgTable += list(zip(anglesAndShiftsT[0], anglesVessel, anglesAndShiftsT[1], shiftsVessel))
+        msgTable = indent(msgTable)
+        log.error('\n'+msgTable)
+        raise Tankoh2Error(f'Angles and shifts do not match. \n{msgTable}')
 
 
 def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
