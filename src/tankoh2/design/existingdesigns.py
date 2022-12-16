@@ -37,8 +37,8 @@ allArgs = pd.DataFrame(
          'Volume requirement [m**3]. If it does not fit to other geometry parameters, '
          'l_cyl is adapted and if l_cly would be below 150mm d_cyl is adapted', ''],
         # Geometry_Dome
-        ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
-         'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
+        ['domeType', 'Geometry_Dome', '', 'isotensoid_MuWind', '',
+         'Shape of dome geometry [isotensoid, isotensoid_MuWind, circle, ellipse, custom]', ''],
         ['domeContour', 'Geometry_Dome', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
@@ -55,7 +55,7 @@ allArgs = pd.DataFrame(
          'ratio of the semi axes of the elliptical dome end', ''],
         # Geometry_Dome2
         ['dome2Type', 'Geometry_Dome2', '', None, '',
-         'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
+         'Shape of dome geometry [isotensoid, isotensoid_MuWind circle, ellipse, custom]', ''],
         ['dome2Contour', 'Geometry_Dome2', '(x,r)', (None, None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
@@ -168,6 +168,7 @@ defaultUnsymmetricDesign.update([
 hymodDesign = OrderedDict([
     ('tankname', 'hymodDesign'),
     ('burstPressure', 77.85),
+    ('temperature',293),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
     ('dcyl', 300.),
@@ -181,6 +182,7 @@ NGTBITDesign = OrderedDict([
     ('pressure', 70), # MPa
     ('burstPressure', 140.), # MPa
     ('valveReleaseFactor', 1.),
+    ('temperature',293),
     # Geometry
     ('polarOpeningRadius', 23),
     ('dcyl', 422.),
@@ -288,6 +290,7 @@ NGTBITDesignNewThkCustomV3.update([
 NGTBITDesign_old = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
     ('pressure', 70),
+    ('temperature',293),
     ('valveReleaseFactor', 1.),
     # Geometry
     ('nodeNumber', 1000),
@@ -313,6 +316,7 @@ NGTBITDesign_old = OrderedDict([
 
 NGTBITDesign_small = OrderedDict([
     ('tankname', 'NGT-BIT-small'),
+    ('temperature',293),
     ('pressure', 10),
     # Geometry
     ('polarOpeningRadius', 23),
@@ -415,7 +419,7 @@ ttDesignLh2 = OrderedDict([
     ('lcyl', 559.6572), #mm
     ('safetyFactor', 1.55),
     ('pressure', 0.25),  # [MPa]
-    ('domeType', 'isotensoid'),
+    ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
 ])
@@ -439,7 +443,8 @@ atheat = OrderedDict([
     #('lcyl', 75),  # mm
     ('safetyFactor', 2.),
     ('pressure', 60),  # [MPa]
-    ('domeType', 'isotensoid'),
+    ('temperature',293),
+    ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
@@ -489,7 +494,8 @@ tk_cgh2 = OrderedDict([
     ('lcyl', 4500),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid'),
+    ('temperature',293),
+    ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', True),
     ('verbose', False),
@@ -526,7 +532,7 @@ hytazer = OrderedDict([
     ('beta', 2.541),
     ('gamma', 0.67),
     ('safetyFactor', 1.33),
-    ('domeType', 'isotensoid'),
+    ('domeType', 'isotensoid_MuWind'),
     ('dome2Type', 'torispherical'),
     ('pressure', 0.2),  # [MPa]
     ('failureMode', 'interFiberFailure'),
@@ -609,13 +615,17 @@ dLightBase = OrderedDict([
     #('lcyl', 500),  # mm
     ('safetyFactor', 2),
     ('valveReleaseFactor', 1.1),
-    ('pressure', 7),  # [MPa]
+    ('pressure', 70),  # [MPa]
     ('domeType', 'isotensoid_MuWind'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
-    ('nodeNumber', 1000),
+    ('nodeNumber', 500),
     ('maxLayers', 500),
+    ('temperature', 293),
+    ('linerThickness', 3),
+    ('numberOfRovings', 4),
+    ('linerThickness', 3),
 ])
 
 
