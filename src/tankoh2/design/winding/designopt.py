@@ -174,7 +174,7 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
     if hoopLayerCount == 0:
         hoopShifts = [np.mean([minBound, maxBound])]
     else:
-        hoopShifts = np.linspace(maxBound, minBound, hoopLayerCount + 1)
+        hoopShifts = np.linspace(maxBound, minBound, hoopLayerCount + 1, endpoint=False)
     hoopShiftsIter = iter(hoopShifts)
     for (angle, _), index in zip(anglesShifts, range(len(anglesShifts))):
         if angle > 89:
@@ -203,6 +203,7 @@ def optimizeHoop(maxHoopShift, optArgs):
 
     vessel, layerNumber = optArgs[:2]
     symmetricContour = optArgs[7]
+    windHoopLayer(vessel, layerNumber, 0)
 
     shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds,
                                                              #getMaxPuckByShift,
@@ -417,7 +418,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 resHoop = distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs)
             if not add90DegLay1FF:
                 log.info(f'Max Puck in hoop region. Min targetFuc hoop {resHoop[1]}, '
-                         f'min targetFuc helical {resHelical[1]}*{hoopOrHelicalFac}')
+                         f'min targetFuc helical {resHelical[1]} * {hoopOrHelicalFac}')
             if add90DegLay1FF or (resHoop[1] < resHelical[1] * hoopOrHelicalFac):  # puck result with helical layer must be hoopOrHelicalFac times better
                 # add hoop layer
                 shift = resHoop[0]

@@ -7,12 +7,12 @@ if __name__ == '__main__':
 
 
     if 1:
-        params = parameters.atheat3.copy()
+        params = parameters.vph_hoopTest.copy()
 
         params.update([
             ('verbosePlot', True),
             #('maxLayers', 20),
-            ('targetFuncWeights', [1., 0., 0., 0.])
+            ('targetFuncWeights', [1., 0.25, 2., 0.])
         ])
 
         params.pop('initialAnglesAndShifts', None)

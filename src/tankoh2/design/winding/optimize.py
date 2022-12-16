@@ -128,11 +128,13 @@ def minimizeUtilization(bounds, targetFunction, optArgs, localOptimization = Fal
             popt = popt_glob
     if localOptimization == 'both':
         popt = popt_loc if popt_loc.fun < popt_glob.fun else popt_glob
+        if not popt.success:
+            popt = popt_loc if popt_loc.fun > popt_glob.fun else popt_glob
     if not popt.success:
         from tankoh2.service.plot.muwind import plotTargetFunc
         errMsg = 'Could not find optimal solution'
         log.error(errMsg)
-        plotTargetFunc(None, tfPlotVals, [(popt.x,0)], 'label Name', optArgs['TargetFuncScaling'], None, None, True)
+        plotTargetFunc(None, tfPlotVals, [(popt.x,0)], 'label Name', ([0]*4, optArgs[9]), None, None, True)
         raise Tankoh2Error(errMsg)
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
     if hasattr(x, '__iter__'):
