@@ -25,7 +25,7 @@ allArgs = pd.DataFrame(
         ['maxLayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1], list,
+        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1, 1.], list,
          'Weights to the target function constituents: maxPuck, maxCritPuck, sumPuck, layerMass', ''],
         # Geometry
         ['dcyl', 'Geometry', 'd_cyl', 400, float,
@@ -505,7 +505,7 @@ conicalTankDesign = OrderedDict([
     ('minPressure', 0.12),
     ('verbosePlot', True),
     ('nodeNumber', 1000),
-    ('targetFuncWeights', [1.,.25,2.,.1])
+    ('targetFuncWeights', [1.,.25,2.,.1, 0])
 ])
 
 hytazer = OrderedDict([

@@ -7,12 +7,10 @@ import numpy as np
 from tankoh2 import log, pychain, programDir
 from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
-from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
-from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesignArgs, getBurstPressure, \
     saveLayerBook, _parameterNotSet
@@ -174,14 +172,6 @@ def createDesign(**kwargs):
     copyAsJson(windingResultFilename, 'wresults')
 
     saveLayerBook(runDir, tankname)
-
-    # #############################################################################
-    # run Evaluation
-    # #############################################################################
-    if 0:
-        results = getLinearResults(vessel, puckProperties, layersToWind - 1, burstPressure)
-        plotStressEpsPuck(True, None, *results)
-
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')

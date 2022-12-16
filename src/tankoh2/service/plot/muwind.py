@@ -4,7 +4,7 @@ from matplotlib import pylab as plt
 import numpy as np
 import os
 
-
+from tankoh2.design.winding.solver import targetFuncNames
 from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
 
 
@@ -43,7 +43,7 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     tfMaxIndexes = tfValues[-1]
     tfValues = tfValues[1:-1]
     weights, scaling = targetFuncScaling
-    labelNames = [puckLabelName, f'{puckLabelName[4:]} at last crit location', 'puck sum', 'mass']
+    labelNames = targetFuncNames(puckLabelName)
     labelNames = [f'{labelName}, weight: {round(weight,4)}, scaleFac: {round(scale,4)}'
                   for labelName, weight, scale in zip(labelNames, weights, scaling)]
     for values, labelName in zip(tfValues, labelNames):

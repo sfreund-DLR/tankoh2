@@ -10,7 +10,7 @@ from tankoh2.service.utilities import indent
 from tankoh2.design.winding.material import getComposite
 from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.design.winding.solver import getLinearResults, getMaxPuckLocalPuckMass, \
-    getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle
+    getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle, getPuckStrainDiff
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
 from tankoh2.design.winding.windingutils import getLayerThicknesses, getLinearResultsAsDataFrame, \
     getCriticalElementIdx
@@ -27,7 +27,7 @@ def printLayer(layerNumber, postfix = ''):
     log.info((sep if verbose else '') + f'\nLayer {layerNumber} {postfix}' + (sep if verbose else ''))
 
 
-def getOptScalingFactors(targetFuncWeights, puck, args):
+def getOptScalingFactors(targetFuncWeights, puck, strainDiff, args):
     r"""Adapt mass scaling since puck values are reduced over time and mass slightly increased.
 
     As result, the scaling between mass and puck must be adapted for each iteration to keep the proposed
@@ -43,6 +43,7 @@ def getOptScalingFactors(targetFuncWeights, puck, args):
 
     :param targetFuncWeights: initial weights of the target functions constituents
     :param puck: puck values
+    :param strainDiff: difference of the strains (top, bot) for each element
     :param args: list of arguments. See tankoh2.design.winding.optimize.minimizeUtilization for a description
     :return: vector to scale the optimization values
         (used in tankoh2.design.winding.solver._getMaxPuckLocalPuckMass) for the next iteration.
@@ -52,16 +53,16 @@ def getOptScalingFactors(targetFuncWeights, puck, args):
         - scale mass
 
     """
-    yBar = np.array(getMaxPuckLocalPuckMass(args, puck, False)[:-1])
+    lastTargetFucValues = np.array(getMaxPuckLocalPuckMass(args, (puck, strainDiff), False)[:-2])
     vessel, layerNumberTotal = args[:2]
     lastLayersMass = np.sum([vessel.getVesselLayer(layerNumber).getVesselLayerPropertiesSolver().getWindingLayerResults().fiberMass
                       for layerNumber in range(layerNumberTotal)])
     meanLayerMass = lastLayersMass / layerNumberTotal
-    yBar[-1] = meanLayerMass
+    lastTargetFucValues[-2] = meanLayerMass
     omega = targetFuncWeights
-    scaling = [y for weight, y in zip(targetFuncWeights, yBar) if weight > 1e-8][0]
+    scaling = [y for weight, y in zip(targetFuncWeights, lastTargetFucValues) if weight > 1e-8][0]
 
-    targetFuncScaling = omega / yBar * scaling
+    targetFuncScaling = omega / lastTargetFucValues * scaling
     return targetFuncScaling
 
 
@@ -285,10 +286,12 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             #. next iteration step
     #. postprocessing: plot stresses, strains, puck, thickness
     """
-    def getPuck():
-        puckFF, puckIFF = getLinearResults(vessel, puckProperties, burstPressure,
-                                           puckOnly=True, symmetricContour=symmetricContour)
-        return puckFF if useFibreFailure else puckIFF
+    def getPuckAndStrainDiff():
+
+        puck, strainDiff = getPuckStrainDiff(vessel, puckProperties, burstPressure,
+                                             symmetricContour=symmetricContour,
+                                             useFibreFailure=useFibreFailure, useMeridianStrain=True)
+        return puck, strainDiff
 
     vessel.resetWindingSimulation()
 
@@ -328,7 +331,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     # create other layers
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     for layerNumber in range(layerNumber + 1, maxLayers):
-        puck = getPuck()
+        puck, strainDiff = getPuckAndStrainDiff()
         elemIdxmax, layermax = getCriticalElementIdx(puck)
         puckMax = puck.max().max()
 
@@ -362,7 +365,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                    useFibreFailure, verbosePlot, symmetricContour, elemIdxmax, None]
         if optHoopRegion:
             optArgs[4] = useHoopIndices
-            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, optArgs)
+            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
             optArgs[9] = targetFuncScaling
             resHoop = optimizeHoop(maxHoopShift, optArgs)
             resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
@@ -380,7 +383,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 anglesShifts.append((optResult[0], 0))
                 optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
         else:
-            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, optArgs)
+            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
             optArgs[9] = targetFuncScaling
             optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
             anglesShifts.append((optResult[0],0))
@@ -396,7 +399,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         if verbosePlot:
             vessel.saveToFile(os.path.join(runDir, 'plots', f'backup{layerNumber}.vessel'))  # save vessel
     else:
-        puck = getPuck()
+        puck, strainDiff = getPuckAndStrainDiff()
         puckMax = puck.max().max()
         columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts)]
         puck.columns = columns
