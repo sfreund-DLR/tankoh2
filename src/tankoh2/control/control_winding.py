@@ -75,7 +75,7 @@ def createDesign(**kwargs):
     rho = designArgs['fibreDensity']  # g / cm^3
     sectionAreaFibre = tex / (1000. * rho)
     checkFibreVolumeContent(layerThkHoop, layerThkHelical, sectionAreaFibre,
-                            rovingWidthHoop, rovingWidthHelical, tex)
+                            rovingWidthHoop, rovingWidthHelical)
 
     saveParametersAndResults(designArgs, createMessage=False)
 
