@@ -95,7 +95,7 @@ def getMaxPuckLocalPuckMass(args, puckAndStrainDiff=None, scaleTf=True):
     maxPuckIndex = maxPerElement.idxmax()
 
     maxStrainDiff = strainDiff.max()
-    maxStrainDiffIndex = strainDiff.idxmax()
+    maxStrainDiffIndex = np.argmax(strainDiff)
     maxPuck = maxPerElement.max()
     puckAtCritIdx = maxPerElement[critIdx]
     puckSum = np.sum(maxPerElement)
@@ -149,9 +149,9 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None,
     stressVec = pychain.utility.StressVector()
     puckFF, puckIFF = [], []
     if useIndices is not None:
-        useIndices = set(useIndices)
+        useIndicesSet = set(useIndices)
     for elemIdx, elemStresses in enumerate(stresses):
-        if useIndices is not None and elemIdx not in useIndices:
+        if useIndices is not None and elemIdx not in useIndicesSet:
             failures = np.zeros((numberOfLayers,2))
         else:
             failures = []
@@ -179,6 +179,12 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None,
         epsAxialTop = np.append(epsAxialTop[::-1], shellModel2.getEpsAxialTop(0))
         epsCircBot = np.append(epsCircBot[::-1], shellModel2.getEpsCircBottom(0))
         epsCircTop = np.append(epsCircTop[::-1], shellModel2.getEpsCircTop(0))
+    if useIndices is not None:
+        zeroIndices = np.array([idx not in useIndicesSet for idx in range(len(epsAxialBot))])
+        epsAxialBot[zeroIndices] = 0.
+        epsAxialTop[zeroIndices] = 0.
+        epsCircBot[zeroIndices] = 0.
+        epsCircTop[zeroIndices] = 0.
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
 
 

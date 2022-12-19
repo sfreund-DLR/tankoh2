@@ -168,7 +168,6 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
         - tfPlotVals
     """
     vessel = optArgs[0]
-    targetFuncScaling = optArgs[9]
     hoopLayerCount = len([angle for angle,s in anglesShifts if angle > 89])
     minBound = 0.
     maxBound = np.min([maxHoopShift, 240]) # 250 is the maximum defined in µWind at the moment
@@ -182,8 +181,8 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
             anglesShifts[index] = (angle, next(hoopShiftsIter))
     windAnglesAndShifts(anglesShifts + [(90,next(hoopShiftsIter))], vessel, compositeArgs)
     checkAnglesAndShifts(anglesShifts + [(90,hoopShifts[-1])], vessel)
-    maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex = getMaxPuckLocalPuckMassIndexByShift(hoopShifts[-1], optArgs)
-    tfValue = np.sum(np.array([maxPuck, puckAtCritIdx, puckSum, layMass]) * targetFuncScaling)
+    results = getMaxPuckLocalPuckMassIndexByShift(hoopShifts[-1], optArgs)
+    tfValue = np.sum(results[:-2])
     return hoopShifts[-1], tfValue, 1, [], None
 
 
@@ -411,10 +410,11 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         optArgs = [vessel, layerNumber, puckProperties, burstPressure, useHelicalIndices,
                    useFibreFailure, verbosePlot, symmetricContour, elemIdxmax, None]
         if optHoopRegion:
-            optArgs[4] = useHoopIndices
             targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
             optArgs[9] = targetFuncScaling
+            optArgs[4] = None
             resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
+            optArgs[4] = useHoopIndices
             if doHoopOpt:
                 resHoop = optimizeHoop(maxHoopShift, optArgs)
             else:
@@ -440,7 +440,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         else:
             if maxInHoopRegion:
                 # case FF: if an helical angle in the hoop region has the maximum, check at hoop indices
-                optArgs[4] = useHoopIndices
+                optArgs[4] = None
             targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
             optArgs[9] = targetFuncScaling
             optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)

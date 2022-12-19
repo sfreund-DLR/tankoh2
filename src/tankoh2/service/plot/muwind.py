@@ -41,17 +41,18 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     xLabel = 'angle' if anglesShifts[-1][0] < 89 else 'hoop shift'
     angleOrHoopShift = anglesShifts[-1][0] if anglesShifts[-1][0] < 89 else anglesShifts[-1][1]
     tfX = tfValues[0]
-    tfMaxIndexes = tfValues[-1]
-    tfValues = tfValues[1:-1]
+    tfMaxPuckIndexes = tfValues[-2]
+    tfMaxStrainIndexes = tfValues[-1]
+    tfValues = tfValues[1:-2]
     weights, scaling = targetFuncScaling
-    labelNames = targetFuncNames(puckLabelName)
+    labelNames = targetFuncNames
     labelNames = [f'{labelName}, weight: {round(weight,4)}, scaleFac: {round(scale,4)}'
                   for labelName, weight, scale in zip(labelNames, weights, scaling)]
     for values, labelName in zip(tfValues, labelNames):
         if np.all(values < 1e-8): 
             continue
         ax.plot(tfX, values, label=labelName)
-    if tfValues.shape[0] == 4:  # plot weighted sum
+    if tfValues.shape[0] > 1:  # plot weighted sum
         ax.plot(tfX, tfValues.sum(axis=0), label='target function: weighted sum')
 
     # plot optimal angle or shift as vertical line
@@ -61,7 +62,8 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     ax.set_xlabel(xLabel)
     ax2 = ax.twinx()  # plot on secondary axes
     ax2.set_ylabel('Contour index of highest Puck value')
-    ax2.scatter(tfX, tfMaxIndexes, label='Contour index of highest Puck value', s=2, color='orange')
+    ax2.scatter(tfX, tfMaxPuckIndexes, label='Contour index of highest Puck value', s=2, color='blue')
+    ax2.scatter(tfX, tfMaxStrainIndexes, label='Contour index of highest strain value', s=2, color='orange')
     lines, labels = ax.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc='lower center', bbox_to_anchor=(0.5, 1.01))
