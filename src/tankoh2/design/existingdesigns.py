@@ -633,83 +633,35 @@ dLightConventional.update([
     ('tankname', 'dLight_conventional'),
     ('volume', 3 * 2/3),  # m**3,  use 2/3 of required volume for front tank to utilize full diameter
 ])
-dLight3tanks = OrderedDict([
+dLight3tanks = dLightBase.copy()
+dLight3tanks.update([
     ('tankname', 'dLight_3tanks'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 796-100),  # three cylinders inside
-    #('lcyl', 500),  # mm
     ('volume', 3.775/3),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
-    ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks = OrderedDict([
+dLight7tanks = dLightBase.copy()
+dLight7tanks.update([
     ('tankname', 'dLight_7tanks'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    #('lcyl', 500),  # mm
     ('volume', 3.775/7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
-    ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks_600bar = OrderedDict([
+dLight7tanks_600bar = dLightBase.copy()
+dLight7tanks_600bar.update([
     ('tankname', 'dLight_7tanks_600bar'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    #('lcyl', 500),  # mm
-    ('volume', 4.234/7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
+    ('h2Mass', 150/7),
     ('pressure', 60),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks_700bar_T1000G = OrderedDict([
+dLight7tanks_700bar_T1000G = dLightBase.copy()
+dLight7tanks_700bar_T1000G.update([
     ('tankname', 'dLight_7tanks_700bar_T1000G'),
     ('materialName', 'CFRP_T1000G_LY556'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    ('lcyl', 2000),  # mm
-    #('h2Mass', 150/7), #storageMass
-    ('volume', 4.234 / 7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
+    ('h2Mass', 150/7), #storageMass
     ('pressure', 70),  # [MPa]
-    #('burstPressure', 130),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 3),
-    ('linerThickness', 3),
     ('tex', 485),
     ('fibreDensity', 1.80),
     ('maxFill', 0.95),
