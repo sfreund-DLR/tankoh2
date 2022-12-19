@@ -37,7 +37,7 @@ allArgs = pd.DataFrame(
          'Volume requirement [m**3]. If it does not fit to other geometry parameters, '
          'l_cyl is adapted and if l_cly would be below 150mm d_cyl is adapted', ''],
         # Geometry_Dome
-        ['domeType', 'Geometry_Dome', '', 'isotensoid_MuWind', '',
+        ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
          'Shape of dome geometry [isotensoid, isotensoid_MuWind, circle, ellipse, custom]', ''],
         ['domeContour', 'Geometry_Dome', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
@@ -136,7 +136,7 @@ testPostprocessing.update([
     ('initialAnglesAndShifts', [(7.862970189270743, 0), (90, 21.984637908159538)]),
     ('maxLayers', 2),
     ('nodeNumber', 1000),
-    #('domeType', 'isotensoid_MuWind'),
+    #('domeType', 'isotensoid'),
     ])
 
 # design to make plots where the layers are visible in µWind
@@ -147,7 +147,7 @@ plotDesign = OrderedDict([
     ('layerThk', defaultDesign['layerThk']*2),
     ('burstPressure', 42.),
     ('maxLayers', 3),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('numberOfRovings', 4),
     ('polarOpeningRadius', 7),
     ])
@@ -355,7 +355,7 @@ vphDesign1 = OrderedDict([
 vphDesign1_isotensoid = vphDesign1.copy()
 vphDesign1_isotensoid.update([
     ('lcyl', vphDesign1['lcyl'] + 546.66423),
-    ('domeType', 'isotensoid_MuWind'),])
+    ('domeType', 'isotensoid'),])
 
 vph_hoopTest = vphDesign1_isotensoid.copy()
 vph_hoopTest.pop('lcyl')
@@ -419,7 +419,7 @@ ttDesignLh2 = OrderedDict([
     ('lcyl', 559.6572), #mm
     ('safetyFactor', 1.55),
     ('pressure', 0.25),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('failureMode', 'interFibreFailure'),
     ('useHydrostaticPressure', True),
 ])
@@ -444,7 +444,7 @@ atheat = OrderedDict([
     ('safetyFactor', 2.),
     ('pressure', 60),  # [MPa]
     ('temperature',293),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
@@ -468,7 +468,7 @@ atheat3 = atheat2.copy()
 atheat3.pop('domeContour')
 atheat3.update([
     ('tankname', 'atheat_He'),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('dcyl', 370),  # mm
 ])
 
@@ -495,7 +495,7 @@ tk_cgh2 = OrderedDict([
     ('safetyFactor', 1.5),
     ('pressure', 70),  # [MPa]
     ('temperature',293),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', True),
     ('verbose', False),
@@ -532,7 +532,7 @@ hytazer = OrderedDict([
     ('beta', 2.541),
     ('gamma', 0.67),
     ('safetyFactor', 1.33),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('dome2Type', 'torispherical'),
     ('pressure', 0.2),  # [MPa]
     ('failureMode', 'interFiberFailure'),
@@ -567,7 +567,7 @@ hytazerSMR1 = OrderedDict([ # short/medium range single aisle aircraft, tank #1
     ('polarOpeningRadius', 100),
     ('dcyl', 2 * (1716 + defaultDesign['linerThickness'])),  # mm
     ('pressure', .2),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('useHydrostaticPressure', True),
     ('volume', 23.252),
     ('failureMode', 'interFibreFailure'),
@@ -612,11 +612,10 @@ hytazerD400 = OrderedDict([
 dLightBase = OrderedDict([
     ('polarOpeningRadius', 50),
     ('dcyl', 1820 - 2 * (2 + 50 + 50)),  # mm, 1820 is fuselage outer d
-    #('lcyl', 500),  # mm
     ('safetyFactor', 2),
     ('valveReleaseFactor', 1.1),
     ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
