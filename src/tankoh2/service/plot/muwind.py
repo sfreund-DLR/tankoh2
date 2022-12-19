@@ -16,7 +16,7 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
     useTwoPlots = verbosePlot and tfValues is not None
-    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(18 if verbosePlot else 10, 7))
+    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(16 if useTwoPlots else 10, 7))
     if useTwoPlots:
         plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
@@ -28,9 +28,10 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                   yLabel=puckLabelName, xLabel='Contour index',
                   plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}, 'linewidth':1.0})
     ax.lines[0].set_color('maroon')
-    ax.lines[1].set_color('darkolivegreen')
     ax.get_legend().legendHandles[0].set_color('maroon')
-    ax.get_legend().legendHandles[1].set_color('darkolivegreen')
+    if layerNumber > 1:
+        ax.lines[1].set_color('darkolivegreen')
+        ax.get_legend().legendHandles[1].set_color('darkolivegreen')
     for i in range(2,len(puck.columns)-10):
         ax.lines[i].set_color('black')
     fig.tight_layout()
