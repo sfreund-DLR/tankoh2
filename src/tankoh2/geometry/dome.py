@@ -1131,13 +1131,10 @@ class DomeIsotensoid(AbstractDome):
         xListKonv.append(x)
 
         slopeList = []
-
-        while alpha < np.arctan(np.sqrt(2)):
+        while r > self._rPolarOpening*1.22:
             phi = phi + dPhi
 
-            if r > self._rPolarOpening:
-                alpha = np.arcsin(self._rPolarOpening / r)
-
+            alpha = np.arcsin(self._rPolarOpening / r)
             rm = r / (np.cos(phi) * (2 - np.tan(alpha) ** 2))
 
             dr = rm * dPhi * np.sin(phi)
@@ -1165,11 +1162,9 @@ class DomeIsotensoid(AbstractDome):
 
     def getVolume(self):
 
-        xCoords = DomeIsotensoid.getContour(self)[0]
-        rCoords = DomeIsotensoid.getContour(self)[1]
-
-        rCoords = list(rCoords)
-        xCoords = list(xCoords)
+        Coords = self.getContour()
+        xCoords = list(Coords[0])
+        rCoords = list(Coords[1])
 
         volume = 0
 
