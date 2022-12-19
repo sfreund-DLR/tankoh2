@@ -12,11 +12,11 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
                           elemIdxmax, hoopStart, hoopEnd, newDesignIndexes, targetFuncScaling):
     """"""
-    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
+    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) if i >= layerNumber-10 or i < 2 else '_' for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
     useTwoPlots = verbosePlot and tfValues is not None
-    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(15 / (1 if useTwoPlots else 2), 7))
+    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(18 if verbosePlot else 10, 7))
     if useTwoPlots:
         plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
@@ -26,7 +26,13 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                   vlines=[hoopStart, hoopEnd, elemIdxmax + 0.5] + newDesignIndexes,
                   vlineColors=['black', 'black', 'red'] + ['green'] * len(newDesignIndexes),
                   yLabel=puckLabelName, xLabel='Contour index',
-                  plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}})
+                  plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}, 'linewidth':1.0})
+    ax.lines[0].set_color('maroon')
+    ax.lines[1].set_color('darkolivegreen')
+    ax.get_legend().legendHandles[0].set_color('maroon')
+    ax.get_legend().legendHandles[1].set_color('darkolivegreen')
+    for i in range(2,len(puck.columns)-10):
+        ax.lines[i].set_color('black')
     fig.tight_layout()
     saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '',
                   show=show, fig=fig, verbosePlot=verbosePlot)
