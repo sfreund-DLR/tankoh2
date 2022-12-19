@@ -207,4 +207,3 @@ OUTPUTS
 .. |probconf_stress_strain_small_last_angle| image:: images/bending/probconf_stress_strain_small_last_angle.png
 .. |testconf6| image:: images/bending/testconf6.png
 .. |testconf8| image:: images/bending/testconf8.png
-.. |probconf_stress_strain_small_last_angle| image:: images/bending/probconf_stress_strain_small_last_angle.png

@@ -221,11 +221,11 @@ def wrap_always(text, width):
 
 if __name__ == '__main__':
     input = [
-        ['Material', 'Density (lb / ft**2)', 'Density (kg / m**2)', 'Thermal conductivity (Btu / h ft °F)', 'Thermal conductivity (W / (m*K))'],
-        ['Polymethacrylimide - rigid, closed cell (Rohacell® 41S)', '2.2', '0.018 (at 43°F)'],
-        ['Polyurethane - rigid, open cell', '2.0', '0.021 (at 39°F)'],
-        ['Polyurethane + 10 % chopped - glass fibers, rigid, closed cell(A.D.Little Co.)', '4.0', '0.012 (at - 20°F)'],
-        ['Polyvinylchloride - rigid, closed cell (Klegecell H917)', '3.1', '0.0087 (at - 110°F)'],
+        ['Puck Weight', 'bending weight', 'number of layers'],
+        [0,1,70],
+        [],
+        [],
+        [],
     ]
     densFac = 0.0421401101
     thcondFac = 0.293071 / 0.3048 / 5/9
