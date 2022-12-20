@@ -127,7 +127,7 @@ def minimizeUtilization(bounds, targetFunction, optArgs, localOptimization = Fal
         if localOptimization is False:
             popt = popt_glob
     if localOptimization == 'both':
-        popt = popt_loc if popt_loc.fun < popt_glob.fun else popt_glob
+        popt = popt_loc if popt_loc.fun < popt_glob.fun and popt_loc.success else popt_glob
         if not popt.success:
             popt = popt_loc if popt_loc.fun > popt_glob.fun else popt_glob
     if not popt.success:
