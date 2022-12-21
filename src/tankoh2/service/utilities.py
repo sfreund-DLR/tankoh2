@@ -221,16 +221,13 @@ def wrap_always(text, width):
 
 if __name__ == '__main__':
     input = [
-        ['Puck Weight', 'bending weight', 'number of layers'],
-        [0,1,70],
-        [],
-        [],
-        [],
+        ['Configuration', 'Puck Weight', 'Bending weight', 'Number of layers'],
+        ['Test Conf', 1,0,71],
+        ['Test Conf', 0,1,70],
+        ['Test Conf', 1,0.5,70],
+        ['Problem Conf', 1,0,31],
+        ['Problem Conf', 0,1,33],
+        ['Problem Conf', 1,0.5,31],
     ]
-    densFac = 0.0421401101
-    thcondFac = 0.293071 / 0.3048 / 5/9
-    for it in input[1:]:
-        it.insert(2, float(it[1])*densFac)
-        it.insert(4, float(it[3].split()[0])*thcondFac)
     print(createRstTable(input))
 

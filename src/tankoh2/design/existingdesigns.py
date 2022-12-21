@@ -377,6 +377,15 @@ vph_hoopTest.update([
     #('maxLayers', 10)
 ])
 
+vph_helicalTest = vphDesign1_isotensoid.copy()
+vph_helicalTest.pop('lcyl')
+vph_helicalTest.pop('safetyFactor')
+vph_helicalTest.update([
+    ('dcyl', 2620.0), ('lcyl', 3257.97), ('pressure', 0.874  ),
+    ('verbosePlot', True),
+    ('numberOfRovings', 30),
+])
+
 kautextDesign = OrderedDict([
                              # General
                              ('tankname', 'Kautext'),

@@ -7,12 +7,13 @@ if __name__ == '__main__':
 
 
     if 1:
-        params = parameters.vph_hoopTest.copy()
+        params = parameters.atheat3.copy()
 
         params.update([
+            ('tankname', params['tankname'] + '_hoopShiftOpt'),
             ('verbosePlot', True),
             #('maxLayers', 20),
-            ('targetFuncWeights', [1., 0.25, 2., 0.])
+            ('targetFuncWeights', [1., 0., 0., 0., .25])
         ])
 
         params.pop('initialAnglesAndShifts', None)

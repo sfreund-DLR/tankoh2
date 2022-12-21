@@ -30,7 +30,8 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
     ax.lines[0].set_color('maroon')
     ax.lines[1].set_color('darkolivegreen')
     ax.get_legend().legendHandles[0].set_color('maroon')
-    ax.get_legend().legendHandles[1].set_color('darkolivegreen')
+    if len(ax.get_legend().legendHandles) > 1:
+        ax.get_legend().legendHandles[1].set_color('darkolivegreen')
     for i in range(2,len(puck.columns)-10):
         ax.lines[i].set_color('black')
     fig.tight_layout()
