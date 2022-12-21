@@ -23,6 +23,7 @@ from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses, plot
 
 maxHelicalAngle = 70
 
+
 def printLayer(layerNumber, postfix = ''):
     sep = '\n' + '=' * 80
     verbose = log.level < logging.INFO
@@ -87,7 +88,7 @@ def windAnglesAndShifts(anglesShifts, vessel, compositeArgs):
 
 
 def checkThickness(vessel, angle, bounds, symmetricContour):
-    """when angle is close to fitting radius, sometimes the thickness of a layer is corrupt
+    """When angle is close to fitting radius, sometimes the thickness of a layer is corrupt
 
     will be resolved by increasing the angle a little
     """
@@ -159,7 +160,8 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
     :param anglesShifts: Existing angles and hoop shifts
     :param compositeArgs: composite properties as required by tankoh2.design.winding.material.getComposite()
     :param optArgs: args to the optimizer callback function.
-        See tankoh2.design.optimize.minimizeUtilization() for a detailed description
+    See tankoh2.design.optimize.minimizeUtilization() for a detailed description
+
     :return: tuple:
         - hoop shift,
         - funcVal,
@@ -310,6 +312,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     #. Start with helical layer:
         #. Maximize layer angle that still attaches to the fitting
         #. add layer with this angle
+
     #. If puck FF is used, add hoop layer
     #. Iteratively perform the following
         #. Get puck fibre failures
@@ -317,18 +320,23 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         #. Reduce relevant locations to
             #. 1 element at cylindrical section and
             #. every element between polar opening radii of 0 and of 70° angle layers
+
         #. identify critical element
         #. if critical element is in cylindrical section
             #. add hoop layer
             #. next iteration step
+
         #. if most loaded element is in dome area:
             #. Define Optimization bounds [minAngle, 70°] and puck result bounds
+
         #. Minimize puck fibre failure:
                 #. Set angle
                 #. Use analytical linear solver
                 #. return max puck fibre failure
+
             #. Apply optimal angle to actual layer
             #. next iteration step
+
     #. postprocessing: plot stresses, strains, puck, thickness
     """
     def getPuckAndStrainDiff():

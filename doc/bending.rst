@@ -31,6 +31,47 @@ In this example, the puck criterion tends to include min angles
 Comparison of different target function weights
 -----------------------------------------------
 
++---------------+-------------+----------------+------------------+
+| Configuration | Puck Weight | Bending weight | Number of layers |
++===============+=============+================+==================+
+| Test Conf     | 1           | 0              | 71               |
++---------------+-------------+----------------+------------------+
+| Test Conf     | 0           | 1              | 70               |
++---------------+-------------+----------------+------------------+
+| Test Conf     | 1           | 0.5            | 70               |
++---------------+-------------+----------------+------------------+
+| Problem Conf  | 1           | 0              | 31               |
++---------------+-------------+----------------+------------------+
+| Problem Conf  | 0           | 1              | 33               |
++---------------+-------------+----------------+------------------+
+| Problem Conf  | 1           | 0.5            | 31               |
++---------------+-------------+----------------+------------------+
+
+
+
+Test Conf     , puck 1           , bending 0
+
+|layuptestconf_p1_b0|
+
+Test Conf     , puck 0           , bending 1
+
+|layuptestconf_p0_b1|
+
+Test Conf     , puck 1           , bending 0.5
+
+|layuptestconf_p1_b05|
+
+Problem Conf  , puck 1           , bending 0
+
+|layupprobconf_p1_b0|
+
+Problem Conf  , puck 0           , bending 1
+
+|layupprobconf_p0_b1|
+
+Problem Conf  , puck 1           , bending 0.5
+
+|layupprobconf_p1_b05|
 
 
 
@@ -204,6 +245,20 @@ OUTPUTS
 
 .. |probconfpuck| image:: images/bending/probconfpuck.png
 .. |probconf_stress_strain_large_last_angle| image:: images/bending/probconf_stress_strain_large_last_angle.png
+  :width: 400
 .. |probconf_stress_strain_small_last_angle| image:: images/bending/probconf_stress_strain_small_last_angle.png
+  :width: 400
 .. |testconf6| image:: images/bending/testconf6.png
 .. |testconf8| image:: images/bending/testconf8.png
+.. |layuptestconf_p1_b0| image:: images/bending/atheat_puck1_bend0.png
+  :height: 200
+.. |layuptestconf_p1_b05| image:: images/bending/atheat_puck1_bend05.png
+  :height: 200
+.. |layuptestconf_p0_b1| image:: images/bending/atheat_puck0_bend1.png
+  :height: 200
+.. |layupprobconf_p1_b0| image:: images/bending/probConf_puck1_bend0.png
+  :height: 200
+.. |layupprobconf_p1_b05| image:: images/bending/probConf_puck1_bend05.png
+  :height: 200
+.. |layupprobconf_p0_b1| image:: images/bending/probConf_puck0_bend1.png
+  :height: 200
