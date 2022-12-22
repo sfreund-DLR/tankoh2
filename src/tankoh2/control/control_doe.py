@@ -78,7 +78,7 @@ def getDesignAndBounds(name):
         designKwargs['numberOfRovings'] = 12
         designKwargs.pop('lcyl')
         designKwargs.pop('safetyFactor')
-        if 1:  # for testing
+        if 0:  # for testing
             numberOfSamples = 3
             designKwargs['maxLayers'] = 3
     return designKwargs, lb, ub, numberOfSamples
@@ -127,8 +127,9 @@ def mainControl(name, sampleXFile):
 
 
 def main():
-    designName = 'dlight'
-    sampleXFile = ''  # + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
+    #designName = 'dlight'
+    designName = 'exact_cyl_isotensoid'
+    sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20221221_175354/sampleX.txt'
     if 1:
         mainControl(designName, sampleXFile)
     else:

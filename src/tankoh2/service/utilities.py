@@ -221,13 +221,24 @@ def wrap_always(text, width):
 
 if __name__ == '__main__':
     input = [
-        ['Configuration', 'Puck Weight', 'Bending weight', 'Number of layers'],
-        ['Test Conf', 1,0,71],
-        ['Test Conf', 0,1,70],
-        ['Test Conf', 1,0.5,70],
-        ['Problem Conf', 1,0,31],
-        ['Problem Conf', 0,1,33],
-        ['Problem Conf', 1,0.5,31],
+        ['Configuration', 'Puck Weight', 'Bending weight', 'Hoop shift opt', 'Number of layers', 'Remark/Addition'],
+        # ['Test Conf', 1,0,71],
+        # ['Test Conf', 0,1,70],
+        # ['Test Conf', 1,0.5,70],
+        # ['Test Conf', 1, 0.25, 66, 'Use hoop shift opt'],
+        # ['Problem Conf', 1,0,31],
+        # ['Problem Conf', 0,1,33],
+        # ['Problem Conf', 1,0.5,31],
+        ['Test Conf', 1, 0, 'no hoop shift opt', 65, ''],
+        ['Test Conf', 0, 1, 'no hoop shift opt', 88, ''],
+        ['Test Conf', 1, 0.4, 'no hoop shift opt', 67, ''],
+        ['Test Conf', 1, 0, 'hoop shift opt', 65, ''],
+        ['Test Conf', 0, 1, 'hoop shift opt', 88, ''],
+        ['Test Conf', 1, 0.4, 'hoop shift opt', 67, ''],
+        ['Problem Conf', 1, 0, 'no hoop shift opt', 30, ''],
+        ['Problem Conf', 0, 1, 'no hoop shift opt', 100, 'reached max layers'],
+        ['Problem Conf', 1, 0.4, 'no hoop shift opt', 100, 'reached max layers'],
+
     ]
     print(createRstTable(input))
 

@@ -3,6 +3,7 @@ import os
 import numpy as np
 import logging
 import pandas as pd
+from collections import OrderedDict
 
 from tankoh2 import log
 from tankoh2.settings import doHoopOpt
@@ -15,7 +16,7 @@ from tankoh2.design.winding.solver import getLinearResults, getMaxPuckLocalPuckM
     getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle, getPuckStrainDiff
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
 from tankoh2.design.winding.windingutils import getLayerThicknesses, getLinearResultsAsDataFrame, \
-    getCriticalElementIdx, checkAnglesAndShifts
+    getMostCriticalElementIdxPuck, checkAnglesAndShifts
 from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses, plotPuckAndTargetFunc
@@ -30,7 +31,7 @@ def printLayer(layerNumber, postfix = ''):
     log.info((sep if verbose else '') + f'\nLayer {layerNumber} {postfix}' + (sep if verbose else ''))
 
 
-def getOptScalingFactors(targetFuncWeights, puck, strainDiff, args):
+def getOptScalingFactors(targetFuncWeights, puck, strainDiff, optKwargs):
     r"""Adapt mass scaling since puck values are reduced over time and mass slightly increased.
 
     As result, the scaling between mass and puck must be adapted for each iteration to keep the proposed
@@ -47,7 +48,7 @@ def getOptScalingFactors(targetFuncWeights, puck, strainDiff, args):
     :param targetFuncWeights: initial weights of the target functions constituents
     :param puck: puck values
     :param strainDiff: difference of the strains (top, bot) for each element
-    :param args: list of arguments. See tankoh2.design.winding.optimize.minimizeUtilization for a description
+    :param optKwargs: list of arguments. See tankoh2.design.winding.optimize.minimizeUtilization for a description
     :return: vector to scale the optimization values
         (used in tankoh2.design.winding.solver._getMaxPuckLocalPuckMass) for the next iteration.
         - scale puckMax
@@ -56,12 +57,12 @@ def getOptScalingFactors(targetFuncWeights, puck, strainDiff, args):
         - scale mass
 
     """
-    lastTargetFucValues = np.array(getMaxPuckLocalPuckMass(args, (puck, strainDiff), False)[:-2])
-    vessel, layerNumberTotal = args[:2]
+    vessel, layerNumberTotal = optKwargs['vessel'], optKwargs['layerNumber']
+    lastTargetFucValues = np.array(getMaxPuckLocalPuckMass(optKwargs, (puck, strainDiff), False)[:-2])
     lastLayersMass = np.sum([vessel.getVesselLayer(layerNumber).getVesselLayerPropertiesSolver().getWindingLayerResults().fiberMass
-                      for layerNumber in range(layerNumberTotal)])
+                             for layerNumber in range(layerNumberTotal)])
     meanLayerMass = lastLayersMass / layerNumberTotal
-    lastTargetFucValues[-2] = meanLayerMass
+    lastTargetFucValues[3] = meanLayerMass
     omega = targetFuncWeights
     scaling = [y for weight, y in zip(targetFuncWeights, lastTargetFucValues) if weight > 1e-8][0]
 
@@ -101,19 +102,19 @@ def checkThickness(vessel, angle, bounds, symmetricContour):
     return True, bounds
 
 
-def optimizeHelical(polarOpeningRadius, bandWidth, optArgs):
+def optimizeHelical(polarOpeningRadius, bandWidth, optKwArgs):
     """Optimize the angle of helical layers
 
     :param polarOpeningRadius: polar opening radius of tank
     :param bandWidth: width of the band
-    :param optArgs: list with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
+    :param optKwArgs: dict with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
          for a description
     :return:
     """
     log.debug('Optimize helical layer')
     # get location of critical element
-    vessel, layerNumber = optArgs[:2]
-    symmetricContour = optArgs[7]
+    vessel, layerNumber = optKwArgs['vessel'], optKwArgs['layerNumber']
+    symmetricContour = optKwArgs['symmetricContour']
     windLayer(vessel, layerNumber, maxHelicalAngle)
     minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), bandWidth,
                                    targetFunction=getPolarOpeningDiffByAngleBandMid)
@@ -123,7 +124,7 @@ def optimizeHelical(polarOpeningRadius, bandWidth, optArgs):
         angle, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds,
                                                                  #getMaxPuckByAngle,
                                                                  getWeightedTargetFuncByAngle,
-                                                                 optArgs, localOptimization='both')
+                                                                 optKwArgs, localOptimization='both')
 
         layerOk, bounds = checkThickness(vessel, angle, bounds, symmetricContour)
         if layerOk:
@@ -169,10 +170,10 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
         - newDesignIndexes,
         - tfPlotVals
     """
-    vessel = optArgs[0]
+    vessel = optArgs['vessel']
     hoopLayerCount = len([angle for angle,s in anglesShifts if angle > 89])
-    minBound = 0.
-    maxBound = np.min([maxHoopShift, 240]) # 250 is the maximum defined in µWind at the moment
+    maxBound = np.min([maxHoopShift, 150]) # 250 is the maximum defined in µWind at the moment
+    minBound = -maxBound / 2
     if hoopLayerCount == 0:
         hoopShifts = [np.mean([minBound, maxBound])]
     else:
@@ -188,10 +189,10 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
     return hoopShifts[-1], tfValue, 1, [], None
 
 
-def optimizeHoop(maxHoopShift, optArgs):
+def optimizeHoop(maxHoopShift, optKwArgs):
     """
     :param maxHoopShift: maximum hoop shift
-    :param optArgs: list with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
+    :param optKwArgs: dcit with optimization arguments. See tankoh2.design.winding.optimize.minimizeUtilization
          for a description
     :return: tuple:
         - hoop shift,
@@ -203,14 +204,14 @@ def optimizeHoop(maxHoopShift, optArgs):
     log.debug('Optimize hoop layer')
     bounds = [0, maxHoopShift]
 
-    vessel, layerNumber = optArgs[:2]
-    symmetricContour = optArgs[7]
+    vessel, layerNumber = optKwArgs['vessel'], optKwArgs['layerNumber']
+    symmetricContour = optKwArgs['symmetricContour']
     windHoopLayer(vessel, layerNumber, 0)
 
     shift, funcVal, loopIt, tfPlotVals = minimizeUtilization(bounds,
                                                              #getMaxPuckByShift,
                                                              getWeightedTargetFuncByShift,
-                                                             optArgs)
+                                                             optKwArgs)
 
     # calculate border indices of the new layer
     mandrel1 = vessel.getVesselLayer(layerNumber).getOuterMandrel1()
@@ -385,7 +386,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     vessel.saveToFile(os.path.join(runDir, 'backup.vessel'))  # save vessel
     for layerNumber in range(layerNumber + 1, maxLayers):
         puck, strainDiff = getPuckAndStrainDiff()
-        elemIdxmax, layermax = getCriticalElementIdx(puck)
+        elemIdxPuckMax, layermax = getMostCriticalElementIdxPuck(puck)
+        elemIdxBendMax = np.argmax(strainDiff)
         puckMax = puck.max().max()
 
         if puckMax < 1:
@@ -405,7 +407,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
         # check zone of highest puck values
         add90DegLay1FF = layerNumber == 1 and useFibreFailure
-        maxInHoopRegion = hoopStart <= elemIdxmax <= hoopEnd
+        maxInHoopRegion = hoopStart <= elemIdxPuckMax <= hoopEnd
         if add90DegLay1FF:
             optHoopRegion = True  # this layer should be a hoop layer
         elif useFibreFailure:
@@ -413,20 +415,31 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
             optHoopRegion = anglesShifts[layermax][0] > 89
         else:
             optHoopRegion = maxInHoopRegion
-            log.info(f'{hoopStart} <= {elemIdxmax} <= {hoopEnd}')
+            log.info(f'{hoopStart} <= {elemIdxPuckMax} <= {hoopEnd}')
 
-        optArgs = [vessel, layerNumber, puckProperties, burstPressure, useHelicalIndices,
-                   useFibreFailure, verbosePlot, symmetricContour, elemIdxmax, None]
+        optKwargs = OrderedDict([
+            ('vessel', vessel),
+            ('layerNumber', layerNumber),
+            ('puckProperties', puckProperties),
+            ('burstPressure', burstPressure),
+            ('useIndices', useHelicalIndices),
+            ('useFibreFailure', useFibreFailure),
+            ('verbosePlot', verbosePlot),
+            ('symmetricContour', symmetricContour),
+            ('elemIdxPuckMax', elemIdxPuckMax),
+            ('elemIdxBendMax', elemIdxBendMax),
+            ('targetFuncScaling',None),
+        ])
         if optHoopRegion:
-            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
-            optArgs[9] = targetFuncScaling
-            optArgs[4] = None
-            resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
-            optArgs[4] = useHoopIndices
+            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optKwargs)
+            optKwargs['targetFuncScaling'] = targetFuncScaling
+            optKwargs['useIndices'] = None
+            resHelical = optimizeHelical(polarOpeningRadius, bandWidth, optKwargs)
+            optKwargs['useIndices'] = useHoopIndices
             if doHoopOpt:
-                resHoop = optimizeHoop(maxHoopShift, optArgs)
+                resHoop = optimizeHoop(maxHoopShift, optKwargs)
             else:
-                resHoop = distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs)
+                resHoop = distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optKwargs)
             if not add90DegLay1FF:
                 log.info(f'Max Puck in hoop region. Min targetFuc hoop {resHoop[1]}, '
                          f'min targetFuc helical {resHelical[1]} * {hoopOrHelicalFac}')
@@ -444,14 +457,14 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 windLayer(vessel, layerNumber, angle)  # must be run since optimizeHoop ran last time
                 anglesShifts.append((angle, 0))
                 checkAnglesAndShifts(anglesShifts, vessel)
-                optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
+                optResult = optimizeHelical(polarOpeningRadius, bandWidth, optKwargs)
         else:
             if maxInHoopRegion:
                 # case FF: if an helical angle in the hoop region has the maximum, check at hoop indices
-                optArgs[4] = None
-            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optArgs)
-            optArgs[9] = targetFuncScaling
-            optResult = optimizeHelical(polarOpeningRadius, bandWidth, optArgs)
+                optKwargs['useIndices'] = None
+            targetFuncScaling = getOptScalingFactors(targetFuncWeights, puck, strainDiff, optKwargs)
+            optKwargs['targetFuncScaling'] = targetFuncScaling
+            optResult = optimizeHelical(polarOpeningRadius, bandWidth, optKwargs)
             anglesShifts.append((optResult[0],0))
             checkAnglesAndShifts(anglesShifts, vessel)
 
@@ -459,7 +472,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         _, _, loopIt, newDesignIndexes, tfValues = optResult
         iterations += loopIt
         plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
-                              verbosePlot, useFibreFailure, show, elemIdxmax, hoopStart, hoopEnd,
+                              verbosePlot, useFibreFailure, show, elemIdxPuckMax, hoopStart, hoopEnd,
                               newDesignIndexes, (targetFuncWeights, targetFuncScaling))
 
         vessel.saveToFile(os.path.join(runDir, f'backup.vessel'))  # save vessel
@@ -484,13 +497,15 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     thicknesses = getLayerThicknesses(vessel, symmetricContour)
     if show or save:
-        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '',
-                          *results)
+        plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '', *results)
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
 
     thicknesses.columns = ['thk_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
     mechResults = getLinearResultsAsDataFrame(results)
-    elementalResults = pd.concat([thicknesses, mechResults], join='outer', axis=1)
+
+    mandrel = liner.getMandrel1()
+    elementLengths = pd.DataFrame(np.array([mandrel.getLArray()]).T, columns=['elementLength'])
+    elementalResults = pd.concat([elementLengths, thicknesses, mechResults], join='outer', axis=1)
     elementalResults.to_csv(os.path.join(runDir, 'elementalResults.csv'), sep=';')
 
     if log.level == logging.DEBUG:

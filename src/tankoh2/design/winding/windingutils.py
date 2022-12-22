@@ -158,11 +158,11 @@ def getLinearResultsAsDataFrame(results = None):
     return df
 
 
-def getCriticalElementIdx(puck):
+def getMostCriticalElementIdxPuck(puck):
     """Returns the index of the most critical element
 
     :param puck: 2d array defining puckFF or puckIFF for each element and layer
     """
-    # identify critical element
     layermax = puck.max().argmax()
-    return puck.idxmax()[layermax], layermax
+    elemIdxPuckMax = puck.idxmax()[layermax]
+    return elemIdxPuckMax, layermax

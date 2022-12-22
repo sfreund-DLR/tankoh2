@@ -25,7 +25,7 @@ allArgs = pd.DataFrame(
         ['maxLayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1, 1.], list,
+        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.2,1.,0, .25, 0.1], list,
          'Weights to the target function constituents: maxPuck, maxCritPuck, sumPuck, layerMass', ''],
         # Geometry
         ['dcyl', 'Geometry', 'd_cyl', 400, float,
@@ -383,7 +383,7 @@ vph_helicalTest.pop('safetyFactor')
 vph_helicalTest.update([
     ('dcyl', 2620.0), ('lcyl', 3257.97), ('pressure', 0.874  ),
     ('verbosePlot', True),
-    ('numberOfRovings', 30),
+    ('numberOfRovings', 12),
 ])
 
 kautextDesign = OrderedDict([
@@ -529,7 +529,7 @@ conicalTankDesign = OrderedDict([
     ('minPressure', 0.12),
     ('verbosePlot', True),
     ('nodeNumber', 1000),
-    ('targetFuncWeights', [1.,.25,2.,.1, 0])
+    ('targetFuncWeights', [1.,.25,2.,.1, 0, 0])
 ])
 
 hytazer = OrderedDict([
