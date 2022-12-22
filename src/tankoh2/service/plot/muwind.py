@@ -55,9 +55,15 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     labelNames = targetFuncNames
     labelNames = [f'{labelName}, weight: {round(weight,4)}, scaleFac: {round(scale,4)}'
                   for labelName, weight, scale in zip(labelNames, weights, scaling)]
-    for values, labelName in zip(tfValues, labelNames):
-        if np.all(values < 1e-8): 
+    puckIndex, bendIndex, linesIndex = None, None, 0 # index of puck line and bending line
+    for values, labelName, index in zip(tfValues, labelNames, range(len(labelNames))):
+        if np.all(values < 1e-8):
             continue
+        if index == 0:
+            puckIndex = linesIndex
+        if index == 4:
+            bendIndex = linesIndex
+        linesIndex += 1
         ax.plot(tfX, values, label=labelName)
     if tfValues.shape[0] > 1:  # plot weighted sum
         ax.plot(tfX, tfValues.sum(axis=0), label='target function: weighted sum')
@@ -69,9 +75,13 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     ax.set_xlabel(xLabel)
     ax2 = ax.twinx()  # plot on secondary axes
     ax2.set_ylabel('Contour index of highest Puck value')
-    ax2.scatter(tfX, tfMaxPuckIndexes, label='Contour index of highest Puck value', s=2, color='blue')
-    ax2.scatter(tfX, tfMaxStrainIndexes, label='Contour index of highest strain value', s=2, color='orange')
     lines, labels = ax.get_legend_handles_labels()
+    if puckIndex is not None:
+        ax2.scatter(tfX, tfMaxPuckIndexes, label='Contour index of highest Puck value', s=3,
+                    color=lines[puckIndex].get_color())
+    if bendIndex is not None:
+        ax2.scatter(tfX, tfMaxStrainIndexes, label='Contour index of highest strain value', s=3,
+                    color=lines[bendIndex].get_color())
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc='lower center', bbox_to_anchor=(0.5, 1.01))
     if fig:
