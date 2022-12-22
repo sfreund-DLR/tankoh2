@@ -1,6 +1,7 @@
 """control a tank optimization"""
 
 import os
+import pandas as pd
 from datetime import datetime
 import numpy as np
 
@@ -27,12 +28,8 @@ def createDesign(**kwargs):
     # #########################################################################################
     # SET Parameters of vessel
     # #########################################################################################
-
-    log.info('='*100)
-    log.info('Create frp winding design with these non-default parameters: \n'+(indent(kwargs.items())))
-    log.info('='*100)
-
     designArgs = parseDesignArgs(kwargs)
+    saveParametersAndResults(designArgs['runDir'], kwargs, designArgs)
 
     # General
     tankname = designArgs['tankname']
@@ -75,8 +72,6 @@ def createDesign(**kwargs):
     checkFibreVolumeContent(layerThkHoop, layerThkHelical, sectionAreaFibre,
                             rovingWidthHoop, rovingWidthHelical)
 
-    saveParametersAndResults(designArgs, createMessage=False)
-
     # input files
     materialName = materialName if materialName.endswith('.json') else materialName+'.json'
     materialFilename = materialName
@@ -111,6 +106,11 @@ def createDesign(**kwargs):
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
+    mandrel = liner.getMandrel1()
+    df = pd.DataFrame(np.array([mandrel.getXArray(),mandrel.getRArray(),mandrel.getLArray()]).T,
+                      columns=['x','r','l'])
+    df.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';')
+
     vessel.setComposite(composite)
 
     # #############################################################################
@@ -155,10 +155,11 @@ def createDesign(**kwargs):
         gravimetricIndex = h2Mass / (totalMass + h2Mass)
     else:
         gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
-    results = frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(), \
-              reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration, \
-              angles, hoopLayerShifts
-    saveParametersAndResults(designArgs, results)
+    results = [
+        frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(),
+        reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration,
+        angles, hoopLayerShifts]
+    saveParametersAndResults(designArgs['runDir'], results=results)
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:
@@ -191,11 +192,12 @@ if __name__ == '__main__':
         params = parameters.atheat3.copy()
 
         params.update([
+            ('tankname', params['tankname'] + '_hoopShiftOpt_maxCritBend'),
             ('verbosePlot', True),
-            #('maxLayers', 4),
-            ('targetFuncWeights', [1., 0., 0., 0]),
-            ('relRadiusHoopLayerEnd', 0.96),
+            #('maxLayers', 20),
+            ('targetFuncWeights', [1., 0., 0., 0., .25, 0.2])
         ])
+
         createDesign(**params)
     elif 0:
         createDesign(pressure=5)

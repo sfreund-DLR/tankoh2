@@ -13,48 +13,51 @@ from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput, minCylindricalLength
 from tankoh2.design.designutils import getRequiredVolume
 
-resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
+resultNamesFrp = ['shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
                   'area', 'length axial', 'numberOfLayers', 'reserve factor', 'gravimetric index',
                   'stress ratio', 'hoop helical ratio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
-resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', '', 's', '°', 'mm']
+resultUnitsFrp = ['kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['Output Name', 'metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
+resultNamesMetal = ['metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
                     'length axial', 'wallThickness', 'duration']
-resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
+resultUnitsMetal = ['kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
 
 
-def saveParametersAndResults(inputKwArgs, results=None, createMessage=False):
+def saveParametersAndResults(runDir, specificInputs=None, allInputKwArgs=None, results=None):
     """saves all input parameters and results to a file
 
-    :param inputKwArgs: dict with input keys and values
+    :param specificInputs: dict with non-default input keys and values
+    :param allInputKwArgs: dict with all input keys and values
     :param results: list with result values as returned by createDesign() in control_winding and control_metal
     :param createMessage: flag if a log message should be created
     """
-    filename = 'all_parameters_and_results.txt'
-    runDir = inputKwArgs.get('runDir')
+
     np.set_printoptions(linewidth=np.inf)  # to put arrays in one line
-    outputStr = [
-        '\nINPUTS\n\n',
-        indentFunc(inputKwArgs.items())
-    ]
+    outputStr = ''
+
+    if specificInputs is not None:
+        outputStr += '\n\nNON-DEFAULT INPUTS\n\n' + indentFunc(specificInputs.items()) + '\n'
+        if allInputKwArgs is None:
+            log.info(outputStr)
+    if allInputKwArgs is not None:
+        outputStr += '\nALL INPUTS\n\n' + indentFunc(allInputKwArgs.items()) + '\n'
+        if results is None:
+            log.info(outputStr)
     if results is not None:
-        if len(results) == len(resultNamesFrp) - 1:
+        if len(results) == len(resultNamesFrp):
             resultNames, resultUnits = resultNamesFrp, resultUnitsFrp
         else:
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
-        outputStr += ['\n\nOUTPUTS\n\n',
-                      indentFunc(zip(resultNames, resultUnits, ['value'] + list(results)))]
-    log.info('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
+        resultNames = ['Output Name'] + resultNames
+        resultUnits = ['Unit'] + resultUnits
+        outputStr += '\nOUTPUTS\n\n' + indentFunc(zip(resultNames, resultUnits, ['value'] + list(results)))
+        log.info(outputStr)
 
-    if results is not None:
-        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value'] + list(results)])]
-    outputStr = ''.join(outputStr)
-    with open(os.path.join(runDir, filename), 'w') as f:
+    filename = os.path.join(runDir, 'all_parameters_and_results.txt')
+    with open(filename, 'a') as f:
         f.write(outputStr)
-    if createMessage:
-        log.info('Inputs, Outputs:\n' + outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
 
 
