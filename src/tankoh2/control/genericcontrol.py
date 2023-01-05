@@ -14,9 +14,9 @@ from tankoh2.settings import useRstOutput, minCylindricalLength
 from tankoh2.design.designutils import getRequiredVolume
 
 resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'gravimetric index',
-                  'stress ratio', 'hoop helical ratio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
-resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', '', 's', '°', 'mm']
+                  'area', 'length axial', 'number of layers', 'cylinder thickness', 'max thickness', 'reserve factor',
+                  'gravimetric index', 'stress ratio', 'hoop helical ratio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', 'mm', 'mm', '', '', '', '', '', 's', '°', 'mm']
 
 resultNamesMetal = ['Output Name', 'metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
                     'length axial', 'wallThickness', 'duration']
