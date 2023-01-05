@@ -157,10 +157,7 @@ class AbstractDome(metaclass=ABCMeta):
 
     def plotContour(self, nodeNumber = 1000, ax = None, **mplKwargs):
         """creates a plot of the outer liner contour. For more details see tankoh2..service.plot.generic"""
-        if 0:
-            points = self.getContourTank(nodeNumber)
-        else:
-            points = self.getContour(nodeNumber)
+        points = self.getContour(nodeNumber)
 
         if ax:
             plotContour(False, '', points[0,:], points[1,:], ax=ax, plotContourCoordinates=False, **mplKwargs)
@@ -237,7 +234,7 @@ class DomeConicalElliptical(AbstractDome):
         |   /                              \    ↓
         |  :                                :   ↑   lRadius
         | |←---------------→                |   ↓
-        |       rLarge
+        |       rCyl
     """
 
     def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
@@ -451,27 +448,6 @@ class DomeConicalElliptical(AbstractDome):
 
         return lCyl
 
-    def getContourTank(self, nodeNumber = 500):
-
-        points = DomeConicalElliptical.getContour(self)
-        lCyl = DomeConicalElliptical.getCylLength(self)
-
-        x = points[0,:] + lCyl + self._lDome2
-        r = points[1,:]
-
-        xCyl = np.linspace(self._lDome2, lCyl + self._lDome2, nodeNumber)
-        rCyl = [self._rCyl for i in range(nodeNumber)]
-
-        xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
-
-        rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
-
-        xTotal = np.concatenate([xDome2, xCyl, x])
-        rTotal = np.concatenate([rDome2, rCyl, r])
-
-        points = np.array([xTotal, rTotal])
-
-        return points
 
     def adaptGeometry(self, lengthDiff, beta):
 
@@ -511,7 +487,7 @@ class DomeConicalTorispherical(DomeConicalElliptical):
         |   /                              \    ↓
         |  :                                :   ↑   lRadius
         | |←---------------→                |   ↓
-        |       rLarge
+        |       rCyl
     """
 
     def __init__(self, rCyl, rPolarOpening, rSmall, lRad, lCone):
@@ -621,26 +597,6 @@ class DomeConicalTorispherical(DomeConicalElliptical):
 
         return volume
 
-    def getContourTank(self, nodeNumber = 500):
-
-        points = DomeConicalTorispherical.getContour(self)
-        lCyl = DomeConicalTorispherical.getCylLength(self)
-
-        x = points[0,:] + lCyl + self._lDome2
-        r = points[1,:]
-
-        xCyl = np.linspace(self._lDome2, lCyl + self._lDome2, nodeNumber)
-        rCyl = [self._rCyl for i in range(nodeNumber)]
-
-        xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
-        rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
-
-        xTotal = np.concatenate([xDome2, xCyl, x])
-        rTotal = np.concatenate([rDome2, rCyl, r])
-
-        points = np.array([xTotal, rTotal])
-
-        return points
 
     def adaptGeometry(self, lengthDiff, beta):
 
@@ -680,7 +636,7 @@ class DomeConicalIsotensoid(DomeConicalElliptical):
             |   /                              \    ↓
             |  :                                :   ↑   lRadius
             | |←---------------→                |   ↓
-            |       rLarge
+            |       rCyl
         """
 
     def __init__(self, rCyl, rPolarOpening, rSmall, lRad, lCone):
