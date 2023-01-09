@@ -13,13 +13,13 @@ from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput, minCylindricalLength
 from tankoh2.design.designutils import getRequiredVolume
 
-resultNamesFrp = ['shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'gravimetric index',
-                  'stress ratio', 'hoop helical ratio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultNamesFrp = ['shellMass', 'linerMass', 'insulationMass', 'fairingMass', 'totalMass', 'volume',
+                  'area', 'lengthAxial', 'numberOfLayers', 'reserveFactor', 'gravimetricIndex',
+                  'stressRatio', 'hoopHelicalRatio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
 resultUnitsFrp = ['kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
-                    'length axial', 'wallThickness', 'duration']
+resultNamesMetal = ['metalMass', 'insulationMass', 'fairingMass', 'totalMass', 'volume', 'area',
+                    'lengthAxial', 'wallThickness', 'duration']
 resultUnitsMetal = ['kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
