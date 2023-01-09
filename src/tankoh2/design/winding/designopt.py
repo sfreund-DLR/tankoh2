@@ -6,7 +6,7 @@ import pandas as pd
 from collections import OrderedDict
 
 from tankoh2 import log
-from tankoh2.settings import doHoopOpt
+from tankoh2.settings import doHoopOpt, maxHoopShiftMuWind
 from tankoh2.design.winding.solver import getMaxPuckLocalPuckMassIndexByShift
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
@@ -172,7 +172,7 @@ def distributeHoop(maxHoopShift, anglesShifts, compositeArgs, optArgs):
     """
     vessel = optArgs['vessel']
     hoopLayerCount = len([angle for angle,s in anglesShifts if angle > 89])
-    maxBound = np.min([maxHoopShift, 150]) # 250 is the maximum defined in µWind at the moment
+    maxBound = np.min([maxHoopShift, maxHoopShiftMuWind])  # 250 is the maximum defined in µWind at the moment
     minBound = -maxBound / 2
     if hoopLayerCount == 0:
         hoopShifts = [np.mean([minBound, maxBound])]
@@ -202,7 +202,7 @@ def optimizeHoop(maxHoopShift, optKwArgs):
         - tfPlotVals
     """
     log.debug('Optimize hoop layer')
-    bounds = [0, maxHoopShift]
+    bounds = [0, min(maxHoopShift, maxHoopShiftMuWind)]
 
     vessel, layerNumber = optKwArgs['vessel'], optKwArgs['layerNumber']
     symmetricContour = optKwArgs['symmetricContour']
@@ -353,7 +353,7 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     save = True
     layerNumber = 0
     iterations = 0
-    hoopOrHelicalFac = 1.1
+    hoopOrHelicalFac = 1.
 
     liner = vessel.getLiner()
     indiciesAndShifts = _getHoopAndHelicalIndices(vessel, symmetricContour, relRadiusHoopLayerEnd)
