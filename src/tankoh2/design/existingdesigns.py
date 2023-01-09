@@ -511,7 +511,7 @@ conicalTankDesign = OrderedDict([
     ('gamma', 0.796),
     ('safetyFactor', 2),
     ('domeType', 'conicalTorispherical'),
-    ('dome2Type', 'isotensoid_MuWind'),
+    ('dome2Type', 'isotensoid'),
     ('pressure', 0.172),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('tankLocation', 'fuselage'),
