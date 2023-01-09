@@ -39,10 +39,20 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidt
         args = [vessel, layerNumber, targetPolarOpening, bandWidth]
     else:
         args = [vessel, layerNumber, targetPolarOpening]
-    popt = minimize_scalar(targetFunction, method='bounded',
-                           bounds=angleBounds,
-                           args=args,
-                           options={"maxiter": 1000, 'disp': 1, "xatol": tol})
+    while angleBounds[0] < 20:
+        try:
+            popt = minimize_scalar(targetFunction, method='bounded',
+                                   bounds=angleBounds,
+                                   args=args,
+                                   options={"maxiter": 1000, 'disp': 1, "xatol": tol})
+            break
+        except RuntimeError as e:
+            # if minBound too small, µWind may raise an error "Polar Opening too small - Thickness Error!"
+            if str(e) == 'Polar Opening too small - Thickness Error!':
+                angleBounds = angleBounds[0] + 1, angleBounds[1]
+                log.info('Min angle bound of optimization was too low - increased by one deg.')
+            else:
+                raise
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
     plotTargetFun = False
