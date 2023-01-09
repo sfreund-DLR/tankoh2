@@ -6,7 +6,7 @@ if __name__ == '__main__':
     import tankoh2.design.existingdesigns as parameters
 
 
-    if 1:
+    if 0:
         params = parameters.atheat3.copy()
 
         params.update([
@@ -28,20 +28,18 @@ if __name__ == '__main__':
             #params['materialName'] = 'alu2219Brewer'
             #params['materialName'] = 'alu2219'
             createDesignMetal(**params.copy())
-    elif 0:
+    elif 1:
 
         params = parameters.vph_helicalTest.copy()
 
         params.update([
-            ('tankname', params['tankname'] + '_test_frist_sample_today'),
+            ('tankname', params['tankname'] + '_PO_too_small'),
             ('verbosePlot', True),
-            #('maxLayers', 20),
-            ('targetFuncWeights', [1.0, 0.2, 1.0, 0, 0.25, 0.1]),
+            ('targetFuncWeights', [1.0, 0.2, 0.0, 0.0, 0, 0] ),
             ('dcyl'                , 2890.0),
             ('pressure'            , 0.397),
             ('lcyl'                , 862.5        ),
-            ('nodeNumber', 1000),
-            ("numberOfRovings", 6,),
+            ("numberOfRovings", 12,),
         ])
         createDesignWinding(**params.copy())
     else:

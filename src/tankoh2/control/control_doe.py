@@ -74,6 +74,7 @@ def getDesignAndBounds(name):
         lb = OrderedDict([('dcyl', 1000.), ('lcyl', 150), ('pressure', 0.1)])  # [mm, mm , MPa]
         ub = OrderedDict([('dcyl', 4000.), ('lcyl', 3000), ('pressure', 1)])
         designKwargs = vphDesign1_isotensoid.copy()
+        designKwargs['targetFuncWeights'] = [1.,.2,0.,.0, 0, 0]
         designKwargs['verbosePlot'] = True
         designKwargs['numberOfRovings'] = 12
         designKwargs.pop('lcyl')
@@ -127,10 +128,12 @@ def mainControl(name, sampleXFile):
 
 
 def main():
-    #designName = 'dlight'
-    designName = 'exact_cyl_isotensoid'
-    sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20221221_175354/sampleX.txt'
     if 1:
+        if 1:
+            designName = 'exact_cyl_isotensoid'
+            sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20230106_230150/sampleX.txt'
+        else:
+            designName = 'dlight'
         mainControl(designName, sampleXFile)
     else:
         samples = DOEfromFile(sampleXFile) if sampleXFile else None
