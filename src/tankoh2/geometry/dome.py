@@ -231,7 +231,120 @@ class DomeGeneric(AbstractDome):
         return np.array([self._x, self._r])
 
 
-class DomeConicalElliptical(AbstractDome):
+class AbstractConicalDome(AbstractDome):
+
+    def __init__(self, rCyl, rPolarOpening, rSmall, lRad, lCone):
+        AbstractDome.__init__(self)
+
+        self._rSmall = rSmall
+        self._rCyl = rCyl
+        self._lCone = lCone
+        self._rPolarOpening = rPolarOpening
+        self._lRad = lRad
+
+    @property
+    def rPolarOpening(self):
+        return self._rPolarOpening
+
+    @property
+    def rCyl(self):
+        return self._rCyl
+
+    @property
+    def rSmall(self):
+        return self._rSmall
+
+    @property
+    def volume(self):
+        return self.getVolume()
+
+    def getDomeResizedByThickness(self, thickness):
+        """return a dome that has a resized geometry by given thickness"""
+        return type(self)(self._rCyl + thickness, self._rPolarOpening, self._rSmall + thickness, self._lRad, self._lCone)
+
+    def getDomeResizedByRCyl(self, deltaRCyl):
+        """return a dome that has a resized geometry by changing the cylinder radius
+        (for non-conical domes, it redirects to getDomeResizedByThickness)
+
+        :param deltaRCyl: change in radius [mm]. Positive values increase radius"""
+
+        alpha = (self._rCyl - self._rSmall) / self._rCyl
+        beta = (self._lRad + self._lCone) / (2 * self._rCyl)
+        gamma = self._lRad / (self._lRad + self._lCone)
+
+        rCyl = self._rCyl + deltaRCyl
+        rSmall = rCyl - alpha * rCyl
+        lRad = beta * gamma * 2 * rCyl
+        lCone = beta * 2 * rCyl - lRad
+
+        return type(self)(rCyl, self._rPolarOpening, rSmall, lRad, lCone)
+
+    def getContourLength(self):
+
+        geometry = self.getGeometry()
+
+        radiusArcLength = np.arcsin(geometry[0].StartPoint[0] / geometry[0].Radius) * geometry[0].Radius
+        coneArcLength = np.sqrt((geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) ** 2 + (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) ** 2)
+
+        angle1 = np.arctan(geometry[2].EndPoint[1] / (geometry[2].EndPoint[0] - geometry[2].Center[0]))
+        angle2 = np.arctan(geometry[2].StartPoint[1] / (geometry[2].StartPoint[0] - geometry[2].Center[0]))
+        t = np.linspace(angle1, angle2, 100)
+        def fun(t):
+            return np.sqrt(geometry[2].MinorRadius ** 2 * np.cos(t) ** 2 + geometry[2].MajorRadius ** 2 * np.sin(t) ** 2)
+        domeArcLength = quad(fun, angle1, angle2)[0]
+
+        totalArcLength = radiusArcLength + coneArcLength + domeArcLength
+
+        return totalArcLength
+
+    def getCylLength(self):
+
+        geometry = self.getGeometry()
+
+        def rRadiusFun(xRadius):
+            return (np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[
+                1]) ** 2
+
+        def rConeFun(xCone):
+            return ((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0])) ** 2
+
+        def rDome1Fun(xDome):
+            return (np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)) ** 2
+
+        xDome2 = np.linspace(0, np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), 1000)
+
+        def rDome2Fun(xDome2):
+            return np.sqrt((1 - ((xDome2 ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
+
+        volumeConeAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], np.sqrt((1 - (self._rPolarOpening ** 2 / geometry[2].MajorRadius ** 2)) * geometry[2].MinorRadius ** 2) + geometry[2].Center[0])[0] + quad(rDome2Fun, 0, self._lDome2)[0])
+
+        lCyl = (self._volume * 1e9 - volumeConeAndDomes) / (np.pi * self._rCyl ** 2)
+
+        return lCyl
+
+    def getContourTank(self, nodeNumber = 500):
+
+        points = self.getContour()
+        lCyl = self.getCylLength()
+
+        x = points[0,:] + lCyl + self._lDome2
+        r = points[1,:]
+
+        xCyl = np.linspace(self._lDome2, lCyl + self._lDome2, nodeNumber)
+        rCyl = [self._rCyl for i in range(nodeNumber)]
+
+        xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
+
+        rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
+
+        xTotal = np.concatenate([xDome2, xCyl, x])
+        rTotal = np.concatenate([rDome2, rCyl, r])
+
+        points = np.array([xTotal, rTotal])
+
+        return points
+
+class DomeConicalElliptical(AbstractConicalDome):
     """Calculcate elliptical dome with conical tank
 
     :param rSmall: small radius of conical tank section
@@ -266,22 +379,6 @@ class DomeConicalElliptical(AbstractDome):
         self._rPolarOpening = rPolarOpening
         self._delta1 = delta1
         self._lRad = lRad
-
-    @property
-    def rPolarOpening(self):
-        return self._rPolarOpening
-
-    @property
-    def rCyl(self):
-        return self._rCyl
-
-    @property
-    def rSmall(self):
-        return self._rSmall
-
-    @property
-    def volume(self):
-        return self.getVolume()
 
     def getDomeResizedByThickness(self, thickness):
         """return a dome that has a resized geometry by given thickness"""
@@ -364,24 +461,6 @@ class DomeConicalElliptical(AbstractDome):
 
         return geometry
 
-    def getContourLength(self):
-
-        geometry = DomeConicalElliptical.getGeometry(self)
-
-        radiusArcLength = np.arcsin(geometry[0].StartPoint[0] / geometry[0].Radius) * geometry[0].Radius
-        coneArcLength = np.sqrt((geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) ** 2 + (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) ** 2)
-
-        angle1 = np.arctan(geometry[2].EndPoint[1] / (geometry[2].EndPoint[0] - geometry[2].Center[0]))
-        angle2 = np.arctan(geometry[2].StartPoint[1] / (geometry[2].StartPoint[0] - geometry[2].Center[0]))
-        t = np.linspace(angle1, angle2, 100)
-        def fun(t):
-            return np.sqrt(geometry[2].MinorRadius ** 2 * np.cos(t) ** 2 + geometry[2].MajorRadius ** 2 * np.sin(t) ** 2)
-        domeArcLength = quad(fun, angle1, angle2)[0]
-
-        totalArcLength = radiusArcLength + coneArcLength + domeArcLength
-
-        return totalArcLength
-
     def getContour(self, nodeNumber = 1000):
 
         geometry = DomeConicalElliptical.getGeometry(self)
@@ -445,55 +524,8 @@ class DomeConicalElliptical(AbstractDome):
 
         return volume
 
-    def getCylLength(self):
 
-        geometry = DomeConicalElliptical.getGeometry(self)
-
-        def rRadiusFun(xRadius):
-            return (np.sqrt(geometry[0].Radius ** 2 - (xRadius - geometry[0].Center[0]) ** 2) + geometry[0].Center[
-                1]) ** 2
-
-        def rConeFun(xCone):
-            return (((geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * xCone + (geometry[1].StartPoint[1] - (geometry[1].EndPoint[1] - geometry[1].StartPoint[1]) / (geometry[1].EndPoint[0] - geometry[1].StartPoint[0]) * geometry[1].StartPoint[0]))) ** 2
-
-        def rDome1Fun(xDome):
-            return (np.sqrt((1 - ((xDome - geometry[2].Center[0]) ** 2 / geometry[2].MinorRadius ** 2)) * geometry[2].MajorRadius ** 2)) ** 2
-
-        xDome2 = np.linspace(0, np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), 1000)
-
-        def rDome2Fun(xDome2):
-            return np.sqrt((1 - ((xDome2 ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
-
-        volumeConeAndDomes = np.pi * (quad(rRadiusFun, 0, geometry[0].StartPoint[0])[0] + quad(rConeFun, geometry[1].StartPoint[0], geometry[1].EndPoint[0])[0] + quad(rDome1Fun, geometry[2].StartPoint[0], np.sqrt((1 - (self._rPolarOpening ** 2 / geometry[2].MajorRadius ** 2)) * geometry[2].MinorRadius ** 2) + geometry[2].Center[0])[0] + quad(rDome2Fun, 0, self._lDome2)[0])
-
-        lCyl = (self._volume * 1e9 - volumeConeAndDomes) / (np.pi * self._rCyl ** 2)
-
-        return lCyl
-
-    def getContourTank(self, nodeNumber = 500):
-
-        points = DomeConicalElliptical.getContour(self)
-        lCyl = DomeConicalElliptical.getCylLength(self)
-
-        x = points[0,:] + lCyl + self._lDome2
-        r = points[1,:]
-
-        xCyl = np.linspace(self._lDome2, lCyl + self._lDome2, nodeNumber)
-        rCyl = [self._rCyl for i in range(nodeNumber)]
-
-        xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
-
-        rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
-
-        xTotal = np.concatenate([xDome2, xCyl, x])
-        rTotal = np.concatenate([rDome2, rCyl, r])
-
-        points = np.array([xTotal, rTotal])
-
-        return points
-
-
-class DomeConicalTorispherical(DomeConicalElliptical):
+class DomeConicalTorispherical(AbstractConicalDome):
     """Calculcate torispherical dome with conical tank
 
     :param rSmall: small radius of conical tank section
@@ -518,53 +550,6 @@ class DomeConicalTorispherical(DomeConicalElliptical):
         | |←---------------→                |   ↓
         |       rLarge
     """
-
-    def __init__(self, rCyl, rPolarOpening, rSmall, lRad, lCone):
-        AbstractDome.__init__(self)
-
-        self._rSmall = rSmall
-        self._rCyl = rCyl
-        self._lCone = lCone
-        self._rPolarOpening = rPolarOpening
-        self._lRad = lRad
-
-    @property
-    def rPolarOpening(self):
-        return self._rPolarOpening
-
-    @property
-    def rCyl(self):
-        return self._rCyl
-
-    @property
-    def rSmall(self):
-        return self._rSmall
-
-    @property
-    def volume(self):
-        return self.getVolume()
-
-    def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
-        return DomeConicalTorispherical(self._rCyl + thickness, self._rPolarOpening, self._rSmall + thickness, self._lRad, self._lCone)
-
-    def getDomeResizedByRCyl(self, deltaRCyl):
-        """return a dome that has a resized geometry by changing the cylinder radius
-        (for non-conical domes, it redirects to getDomeResizedByThickness)
-
-        :param deltaRCyl: change in radius [mm]. Positive values increase radius"""
-
-        alpha = (self._rCyl - self._rSmall) / self._rCyl
-        beta = (self._lRad + self._lCone) / (2 * self._rCyl)
-        gamma = self._lRad / (self._lRad + self._lCone)
-
-        rCyl = self._rCyl + deltaRCyl
-        rSmall = rCyl - alpha * rCyl
-        lRad = beta * gamma * 2 * rCyl
-        lCone = beta * 2 * rCyl - lRad
-
-        return DomeConicalTorispherical(rCyl, self._rPolarOpening, rSmall, lRad, lCone)
-
     def getGeometry(self):
 
         tank = FreeCAD.newDocument()
@@ -643,29 +628,8 @@ class DomeConicalTorispherical(DomeConicalElliptical):
 
         return volume
 
-    def getContourTank(self, nodeNumber = 500):
 
-        points = DomeConicalTorispherical.getContour(self)
-        lCyl = DomeConicalTorispherical.getCylLength(self)
-
-        x = points[0,:] + lCyl + self._lDome2
-        r = points[1,:]
-
-        xCyl = np.linspace(self._lDome2, lCyl + self._lDome2, nodeNumber)
-        rCyl = [self._rCyl for i in range(nodeNumber)]
-
-        xDome2 = np.linspace(self._lDome2 - np.sqrt((1 - self._rPolarOpening ** 2 / self._rCyl ** 2) * self._lDome2 ** 2), self._lDome2, nodeNumber)
-        rDome2 = np.sqrt((1 - (((xDome2 - self._lDome2) ** 2) / (self._lDome2 ** 2))) * self._rCyl ** 2)
-
-        xTotal = np.concatenate([xDome2, xCyl, x])
-        rTotal = np.concatenate([rDome2, rCyl, r])
-
-        points = np.array([xTotal, rTotal])
-
-        return points
-
-
-class DomeConicalIsotensoid(DomeConicalElliptical):
+class DomeConicalIsotensoid(AbstractConicalDome):
     """Calculcate isotensoid dome with conical tank
 
         :param rSmall: small radius of conical tank section
@@ -690,52 +654,6 @@ class DomeConicalIsotensoid(DomeConicalElliptical):
             | |←---------------→                |   ↓
             |       rLarge
         """
-
-    def __init__(self, rCyl, rPolarOpening, rSmall, lRad, lCone):
-        AbstractDome.__init__(self)
-
-        self._rSmall = rSmall
-        self._rCyl = rCyl
-        self._lCone = lCone
-        self._rPolarOpening = rPolarOpening
-        self._lRad = lRad
-
-    @property
-    def rPolarOpening(self):
-        return self._rPolarOpening
-
-    @property
-    def rCyl(self):
-        return self._rCyl
-
-    @property
-    def rSmall(self):
-        return self._rSmall
-
-    @property
-    def volume(self):
-        return self.getVolume()
-
-    def getDomeResizedByThickness(self, thickness):
-        """return a dome that has a resized geometry by given thickness"""
-        return DomeConicalIsotensoid(self._rCyl + thickness, self._rPolarOpening, self._rSmall + thickness, self._lRad, self._lCone)
-
-    def getDomeResizedByRCyl(self, deltaRCyl):
-        """return a dome that has a resized geometry by changing the cylinder radius
-        (for non-conical domes, it redirects to getDomeResizedByThickness)
-
-        :param deltaRCyl: change in radius [mm]. Positive values increase radius"""
-
-        alpha = (self._rCyl - self._rSmall) / self._rCyl
-        beta = (self._lRad + self._lCone) / (2 * self._rCyl)
-        gamma = self._lRad / (self._lRad + self._lCone)
-
-        rCyl = self._rCyl + deltaRCyl
-        rSmall = rCyl - alpha * rCyl
-        lRad = beta * gamma * 2 * rCyl
-        lCone = beta * 2 * rCyl - lRad
-
-        return DomeConicalIsotensoid(rCyl, self._rPolarOpening, rSmall, lRad, lCone)
 
     def getGeometry(self):
 

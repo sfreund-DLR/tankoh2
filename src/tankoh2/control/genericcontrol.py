@@ -181,17 +181,16 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
             log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
                      f' was set to {designArgs["lcyl"]}.')
         else:
-            if not hasattr(dome, 'getDomeResizedByRCyl'):
-                raise NotImplementedError(f'Adjusting the dome diameter is not supported for the dome of type'
-                                          f'{dome.__class__}. Please contact the developer and/or ')
             # if the tank volume given in the designArgs is so low that is already fits into the domes,
             # the tank diameter is scaled down to achieve a minimum of minCylindricalLength
-            # cylindrical length needed to run
-            # simulation with muWind. The parameters alpha, beta, gamma and delta are kept constant while the
-            # cylindrical diameter is changed
+            # cylindrical length needed to run simulation with muWind.
+            # For conical domes, the parameters alpha, beta, gamma and delta are kept constant while the
+            # cylindrical diameter is changed.
 
             designArgs['lcyl'] = minCylindricalLength
 
+            # The diameter is reduced first in 10 mm steps until the volume falls below the requirement.
+            # The loop continues in 1 mm steps from the previous design values until the requirement is again reached.
             for step in [10, 1]:
                 while True:
                     domeVolumes = []
@@ -200,7 +199,9 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
                     if not _parameterNotSet(designArgs, 'dome2'):
                             dome2 = designArgs['dome2'].getDomeResizedByRCyl(-step)
                             domeVolumes.append(dome2.getDomeResizedByThickness(-linerThk).volume)
-                    if domeVolumes[0] * 1e-9 + domeVolumes[-1] * 1e-9 + np.pi * (dome.rCyl - linerThk) ** 2 * designArgs['lcyl'] * 1e-9 < volumeReq:
+                    newVolume = domeVolumes[0] * 1e-9 + domeVolumes[-1] * 1e-9 \
+                                + np.pi * (dome.rCyl - linerThk) ** 2 * designArgs['lcyl'] * 1e-9
+                    if newVolume < volumeReq:
                         break
                     designArgs['dome'] = dome
                     designArgs['domeContour'] = dome.getContour(designArgs['nodeNumber'] // 2)
