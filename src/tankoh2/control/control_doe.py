@@ -14,9 +14,11 @@ import numpy as np
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
+from delismm.control.tank import getKrigings
 
 from fa_pyutils.service.systemutils import getRunDir
 
+import tankoh2
 from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log
 from tankoh2.service.plot.doeplot import plotGeometryRange
@@ -71,8 +73,8 @@ def getDesignAndBounds(name):
         ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
         designKwargs = dLightBase
     elif name == 'exact_cyl_isotensoid':
-        lb = OrderedDict([('dcyl', 1000.), ('lcyl', 150), ('pressure', 0.1)])  # [mm, mm , MPa]
-        ub = OrderedDict([('dcyl', 4000.), ('lcyl', 3000), ('pressure', 1)])
+        lb = OrderedDict([('dcyl[mm]', 1000.), ('lcyl[mm]', 150), ('pressure[MPa]', 0.1)])  # [mm, mm , MPa]
+        ub = OrderedDict([('dcyl[mm]', 4000.), ('lcyl[mm]', 3000), ('pressure[MPa]', 1)])
         designKwargs = vphDesign1_isotensoid.copy()
         designKwargs['targetFuncWeights'] = [1.,.2,0.,.0, 0, 0]
         designKwargs['verbosePlot'] = True
@@ -128,17 +130,34 @@ def mainControl(name, sampleXFile):
 
 
 def main():
+    createDoe = False
+    plotDoe = False
+    createSurrogate = True
     if 1:
-        if 1:
-            designName = 'exact_cyl_isotensoid'
-            sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20230106_230150/sampleX.txt'
-        else:
-            designName = 'dlight'
-        mainControl(designName, sampleXFile)
+        designName = 'exact_cyl_isotensoid'
+        sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20230106_230150/sampleX.txt'
+        mmRunDir = getRunDir('tank_surrogates', basePath=os.path.join(tankoh2.programDir, 'tmp'))
+        resultNamesIndexesLog10 = [
+            ('totalMass[kg]',        4, True),
+            ('volume[dm^3]',         5, True),
+            ('area[m^2]',            6, False),
+            ('lengthAxial[mm]',      7, False),
+            ('gravimetricIndex[-]', 10, False),
+        ]
+        surrogateDir = '' + r'C:\PycharmProjects\tankoh2\tmp\tank_surrogates_20230109_180336'
     else:
+        designName = 'dlight'
+    if createDoe:
+        mainControl(designName, sampleXFile)
+    if plotDoe:
         samples = DOEfromFile(sampleXFile) if sampleXFile else None
         _, lb, ub, _ = getDesignAndBounds(designName)
         plotGeometryRange(lb, ub, show=True, samples= samples)
+    if createSurrogate:
+        designKwargs, lb, ub, numberOfSamples = getDesignAndBounds(designName)
+        parameterNames = list(lb.keys())
+        krigings = getKrigings(surrogateDir, mmRunDir, parameterNames, resultNamesIndexesLog10)
+
 
 if __name__ == '__main__':
     main()

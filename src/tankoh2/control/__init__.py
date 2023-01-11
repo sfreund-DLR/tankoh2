@@ -30,7 +30,7 @@ if __name__ == '__main__':
             createDesignMetal(**params.copy())
     elif 1:
 
-        params = parameters.vph_helicalTest.copy()
+        params = parameters.vphDesign1_isotensoid.copy()
 
         params.update([
             ('tankname', params['tankname'] + '_PO_too_small'),
