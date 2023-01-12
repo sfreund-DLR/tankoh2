@@ -50,8 +50,8 @@ def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
     thicknesses = []
     if layerNumbers is None:
         layerNumbers = range(vessel.getNumberOfLayers())
-    angles = getAnglesFromVessel(vessel)
-    columns = ['lay{}_{:04.1f}'.format(layNum, angles[layNum]) for layNum in layerNumbers]
+    DesignAngles = getAnglesFromVessel(vessel)
+    columns = ['lay{}_{:04.1f}'.format(layNum, DesignAngles[layNum]) for layNum in layerNumbers]
 
     liner = vessel.getLiner()
     numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
@@ -78,6 +78,40 @@ def getElementThicknesses(vessel):
     """returns a vector with thicknesses of each element along the whole vessel"""
     thicknesses = getLayerThicknesses(vessel).T
     return thicknesses.sum()
+
+
+def getLayerAngles(vessel, symmetricContour, layerNumbers=None):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param vessel: vessel obj
+    :param symmetricContour: flag if symmetric contour is used
+    :param layerNumbers: list of layers that should be evaluated. If None, all layers are used
+    :return:
+    """
+    angles = []
+    if layerNumbers is None:
+        layerNumbers = range(vessel.getNumberOfLayers())
+    DesignAngles = getAnglesFromVessel(vessel)
+    columns = ['lay{}_{:04.1f}'.format(layNum, DesignAngles[layNum]) for layNum in layerNumbers]
+
+    liner = vessel.getLiner()
+    numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
+    numberOfElements2 = liner.getMandrel2().numberOfNodes - 1
+    for layerNumber in layerNumbers:
+        vesselLayer = vessel.getVesselLayer(layerNumber)
+        layerAngles = []
+        elemsMandrels =  [(numberOfElements1, True)]
+        if not symmetricContour:
+            elemsMandrels.append((numberOfElements2, False))
+        for numberOfElements, isMandrel1 in elemsMandrels:
+            for elementNumber in range(numberOfElements):
+                layerElement = vesselLayer.getVesselLayerElement(elementNumber, isMandrel1)
+                layerAngles.append(np.rad2deg(layerElement.clairaultAngle))
+            if not symmetricContour and isMandrel1:
+                layerAngles= layerAngles[::-1] # reverse order of mandrel 1
+        angles.append(layerAngles)
+    angles = pd.DataFrame(angles).T
+    angles.columns = columns
+    return angles
 
 
 def copyAsJson(filename, typename):
