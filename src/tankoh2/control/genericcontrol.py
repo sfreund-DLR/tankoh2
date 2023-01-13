@@ -179,39 +179,36 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
 
         if designArgs['lcyl'] > minCylindricalLength:
             log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
-                     f'was reduced to {designArgs["lcyl"]}.')
+                     f' was set to {designArgs["lcyl"]}.')
         else:
-            if not hasattr(dome, 'adaptGeometry'):
-                raise NotImplementedError(f'Adjusting the dome diameter is not supported for the dome of type'
-                                          f'{dome.__class__}. Please contact the developer and/or ')
             # if the tank volume given in the designArgs is so low that is already fits into the domes,
             # the tank diameter is scaled down to achieve a minimum of minCylindricalLength
-            # cylindrical length needed to run
-            # simulation with muWind. The parameters alpha, beta, gamma and delta are kept constant while the
-            # cylindrical diameter is changed
+            # cylindrical length needed to run simulation with muWind.
+            # For conical domes, the parameters alpha, beta, gamma and delta are kept constant while the
+            # cylindrical diameter is changed.
 
             designArgs['lcyl'] = minCylindricalLength
-            while(abs(volumeReq - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * volumeReq:
-                domeVolumes = []
-                adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
-                # domeVolumes.append(adaptGeometry[0])
-                designArgs['dcyl'] = 2 * adaptGeometry[-1]
 
-                for domeName in ['dome2', 'dome']:
-                    domeVolumes.append(dome.volume)
-
-                    domeType = designArgs[f'{domeName}Type']
-                    r = designArgs['dcyl'] / 2
-
-                    dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
-                                   designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                                   designArgs['delta1'], r - designArgs['alpha'] * r,
-                                   designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                                   designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
-                                   designArgs['dcyl'])
-
-                    designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
-                    designArgs[f'{domeName}'] = dome
+            # The diameter is reduced first in 10 mm steps until the volume falls below the requirement.
+            # The loop continues in 1 mm steps from the previous design values until the requirement is again reached.
+            for step in [10, 1]:
+                while True:
+                    domeVolumes = []
+                    dome = designArgs['dome'].getDomeResizedByRCyl(-step)
+                    domeVolumes.append(dome.getDomeResizedByThickness(-linerThk).volume)
+                    if not _parameterNotSet(designArgs, 'dome2'):
+                            dome2 = designArgs['dome2'].getDomeResizedByRCyl(-step)
+                            domeVolumes.append(dome2.getDomeResizedByThickness(-linerThk).volume)
+                    newVolume = domeVolumes[0] * 1e-9 + domeVolumes[-1] * 1e-9 \
+                                + np.pi * (dome.rCyl - linerThk) ** 2 * designArgs['lcyl'] * 1e-9
+                    if newVolume < volumeReq:
+                        break
+                    designArgs['dome'] = dome
+                    designArgs['domeContour'] = dome.getContour(designArgs['nodeNumber'] // 2)
+                    if not _parameterNotSet(designArgs, 'dome2'):
+                        designArgs['dome2'] = dome2
+                        designArgs['dome2Contour'] = dome2.getContour(designArgs['nodeNumber'] // 2)
+                    designArgs['dcyl'] = 2 * dome.rCyl
 
             log.warning(f'Due to volume requirement (V={designArgs["volume"]} m^3) and high cylindrical diameter, '
                         f'the cylindrical length was reduced to {designArgs["lcyl"]} and '
