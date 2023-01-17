@@ -119,7 +119,7 @@ def createDesign(**kwargs):
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights)
 
-    frpMass, area, iterations, reserveFac, stressRatio, angles, hoopLayerShifts = results
+    frpMass, area, iterations, reserveFac, stressRatio, cylinderThickness, maxThickness, angles, hoopLayerShifts = results
     angles = np.around(angles, decimals=3)
     hoopByHelicalFrac = len([a for a in angles if a>89]) / len([a for a in angles if a<89])
     hoopLayerShifts = np.around(hoopLayerShifts, decimals=3)
@@ -152,11 +152,11 @@ def createDesign(**kwargs):
         gravimetricIndex = h2Mass / (totalMass + h2Mass)
     else:
         gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
-    results = [
-        frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(),
-        reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration,
-        angles, hoopLayerShifts]
+    results = [frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(), \
+              cylinderThickness, maxThickness, reserveFac, gravimetricIndex, stressRatio,  hoopByHelicalFrac, iterations, duration, \
+              angles, hoopLayerShifts]
     saveParametersAndResults(designArgs['runDir'], results=results)
+
     vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:

@@ -489,9 +489,12 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
         # vessel.printSimulationStatus()
         composite.info()
 
-    # get volume and surface area
+    # get vessel results
     stats = vessel.calculateVesselStatistics()
     frpMass = stats.overallFRPMass  # in [kg]
+    summedThicknesses = thicknesses.sum(1)
+    cylinderThickness = summedThicknesses[0]
+    maxThickness = summedThicknesses.values.max()
     dome = liner.getDome1()
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
@@ -501,6 +504,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     minCylinderStress = np.min(S11[0, :])
     maxCylinderStress = np.max(S11[0, :])
     stressRatio = minCylinderStress/maxCylinderStress
-    return frpMass, area, iterations, reserveFac, stressRatio, *(np.array(anglesShifts).T)
+    return frpMass, area, iterations, reserveFac, stressRatio, cylinderThickness, maxThickness, *(np.array(anglesShifts).T)
 
 
