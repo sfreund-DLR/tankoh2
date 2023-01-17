@@ -10,7 +10,7 @@ from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
-from tankoh2.design.winding.windingutils import copyAsJson, updateName
+from tankoh2.design.winding.windingutils import copyAsJson, updateName, getLayerNodalCoordinates, getMandrelNodalCoordinates
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
 from tankoh2.design.winding.solver import getLinearResults
@@ -108,11 +108,6 @@ def createDesign(**kwargs):
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
-    mandrel = liner.getMandrel1()
-    df = pd.DataFrame(np.array([mandrel.getXArray(),mandrel.getRArray(),mandrel.getLArray()]).T,
-                      columns=['x','r','l'])
-    df.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';')
-
     vessel.setComposite(composite)
 
     # #############################################################################
@@ -175,6 +170,12 @@ def createDesign(**kwargs):
     windingResults.buildFromVessel(vessel)
     windingResults.saveToFile(windingResultFilename)
     copyAsJson(windingResultFilename, 'wresults')
+
+    # write nodal layer results dataframe to csv
+    mandrelCoordinatesDataframe = getMandrelNodalCoordinates(liner, dome2 is None)
+    layerCoordinatesDataframe = getLayerNodalCoordinates(windingResults, dome2 is None)
+    nodalResultsDataframe = pd.concat([mandrelCoordinatesDataframe, layerCoordinatesDataframe], join='outer', axis=1)
+    nodalResultsDataframe.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';',)
 
     saveLayerBook(runDir, tankname)
 

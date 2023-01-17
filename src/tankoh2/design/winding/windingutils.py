@@ -114,6 +114,66 @@ def getLayerAngles(vessel, symmetricContour, layerNumbers=None):
     return angles
 
 
+def getMandrelNodalCoordinates(liner, symmetricContour):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param liner: liner obj
+    :param symmetricContour: flag if symmetric contour is used
+    :return:
+    """
+    mandrel1 = liner.getMandrel1()
+    x = mandrel1.getXArray()
+    r = mandrel1.getRArray()
+    l = mandrel1.getLArray()
+    if not symmetricContour:
+        x = x[::-1]  # reverse order of mandrel 1
+        r = r[::-1]
+        l = l[::-1]
+        mandrel2 = liner.getMandrel2()
+        x2 = mandrel2.getXArray()
+        x = np.append(x, mandrel2.getXArray())
+        r = np.append(r, mandrel2.getRArray())
+        l = np.append(l, mandrel2.getLArray())
+
+    coordinatesDataframe = pd.DataFrame(np.array([x, r, l]).T, columns=['x_mandrel', 'r_mandrel', 'l_mandrel'])
+
+    return coordinatesDataframe
+
+
+def getLayerNodalCoordinates(windingResults, symmetricContour, layerNumbers=None):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param windingResults: windingResults obj
+    :param symmetricContour: flag if symmetric contour is used
+    :param layerNumbers: list of layers that should be evaluated. If None, all layers are used
+    :return:
+    """
+    if layerNumbers is None:
+        layerNumbers = range(0, windingResults.getNumberOfLayers())
+    coordinates = []
+    columns = []
+    Mandrels = [True]
+    if not symmetricContour:
+        Mandrels.append(False)
+    for layerNumber in layerNumbers:
+        columns.append('x_lay{}'.format(layerNumber))
+        columns.append('r_lay{}'.format(layerNumber))
+        x = []
+        r = []
+        for isMandrel1 in Mandrels:
+            numberOfNodes = windingResults.getNumberOfNodesInLayer(layerNumber+1, isMandrel1)
+            for nodeNumber in range(1, numberOfNodes+1):
+                node = windingResults.getNode(layerNumber+2, nodeNumber, isMandrel1)
+                x.append(node.x)
+                r.append(node.y)
+            if not symmetricContour and isMandrel1:
+                x = x[::-1]  # reverse order of mandrel 1
+                r = r[::-1]
+        coordinates.append(x)
+        coordinates.append(r)
+    coordinatesDataframe = pd.DataFrame(coordinates).T
+    coordinatesDataframe.columns = columns
+    return coordinatesDataframe
+
+
 def copyAsJson(filename, typename):
     """copy a file creating a .json file
 
