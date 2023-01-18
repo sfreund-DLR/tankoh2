@@ -14,7 +14,7 @@ from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.design.winding.solver import getLinearResults, getMaxPuckLocalPuckMass, \
     getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
-from tankoh2.design.winding.windingutils import getLayerThicknesses, getLinearResultsAsDataFrame, \
+from tankoh2.design.winding.windingutils import getLayerThicknesses, getLayerAngles,  getLinearResultsAsDataFrame, \
     getCriticalElementIdx, checkAnglesAndShifts
 from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
@@ -472,14 +472,17 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     thicknesses = getLayerThicknesses(vessel, symmetricContour)
+    angles = getLayerAngles(vessel,symmetricContour)
     if show or save:
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '',
                           *results)
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
 
     thicknesses.columns = ['thk_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
+    angles.columns = ['ang_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
+
     mechResults = getLinearResultsAsDataFrame(results)
-    elementalResults = pd.concat([thicknesses, mechResults], join='outer', axis=1)
+    elementalResults = pd.concat([thicknesses, angles, mechResults], join='outer', axis=1)
     elementalResults.to_csv(os.path.join(runDir, 'elementalResults.csv'), sep=';')
 
     if log.level == logging.DEBUG:

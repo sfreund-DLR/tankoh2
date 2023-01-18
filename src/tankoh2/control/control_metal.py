@@ -78,7 +78,7 @@ def createDesign(**kwargs):
     totalMass = np.sum([massMetal]+auxMasses)
     results = massMetal, *auxMasses, totalMass, volume, area, linerLength, wallThickness, duration
 
-    saveParametersAndResults(designArgs, results)
+    saveParametersAndResults(runDir, kwargs, designArgs, results)
 
     log.info('FINISHED')
 
