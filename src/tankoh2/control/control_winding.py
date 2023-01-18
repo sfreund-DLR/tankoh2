@@ -9,7 +9,7 @@ from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
 from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
-from tankoh2.design.winding.windingutils import copyAsJson, updateName
+from tankoh2.design.winding.windingutils import copyAsJson, updateName, getLayerThicknessesFromVesselCylMid, getAnglesFromVessel
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
 from tankoh2.design.winding.solver import getLinearResults
@@ -18,6 +18,7 @@ from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesign
     saveLayerBook, _parameterNotSet
 from tankoh2.masses.massestimation import getInsulationMass, getFairingMass, getLinerMass
 from tankoh2.geometry.liner import Liner
+from tankoh2.design.winding.pbucklcritcyl import pBucklCritCyl
 
 
 def createDesign(**kwargs):
@@ -176,6 +177,14 @@ def createDesign(**kwargs):
     copyAsJson(windingResultFilename, 'wresults')
 
     saveLayerBook(runDir, tankname)
+
+    #evaluate buckling criteria
+    #16.01.2023 @author: lefe_je
+    orthotropMatProp = material.elasticProperties.toList()
+    resultAngles = getAnglesFromVessel(vessel)
+    resultThicknesses = getLayerThicknessesFromVesselCylMid(vessel)
+    pAllowedBuckl = pBucklCritCyl(dcyl, lcylinder, orthotropMatProp, resultThicknesses, resultAngles, safetyFactor)
+    print(pAllowedBuckl)
 
     # #############################################################################
     # run Evaluation
