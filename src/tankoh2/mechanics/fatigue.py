@@ -13,8 +13,8 @@ from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.physicalprops import MPaToPsiFac
 
 
-def getFatigueLifeAircraftTanks(material, sigMaxOperation, sigMinOperation,
-                                flightCycles, heatUpCycles, Kt=None):
+def getFatigueLifeMetalTankLevel(material, sigMaxOperation, sigMinOperation,
+                                 flightCycles, heatUpCycles, Kt=None):
     """Calculate fatigue life for aircraft applications using LH2 tanks
 
     :param material: material dict as defined in tankoh2.design.metal.material
@@ -30,10 +30,10 @@ def getFatigueLifeAircraftTanks(material, sigMaxOperation, sigMinOperation,
     sigMin = [sigMinOperation, 0.]
     occurences = [flightCycles, heatUpCycles]
 
-    return getFatigueLife(material, sigMax, sigMin, occurences, Kt)
+    return getFatigueLifeMetal(material, sigMax, sigMin, occurences, Kt)
 
 
-def getFatigueLife(material, sigMax, sigMin, occurences, Kt=None):
+def getFatigueLifeMetal(material, sigMax, sigMin, occurences, Kt=None):
     """Assess fatigue life calculating the damage for each amplitude, use miner rule for damage accumulation
 
     A1 and A4 are corrected according to the given Kt value.
@@ -72,7 +72,6 @@ def correctSnParameters(A1, A2, A4, Kt_curve, Kt):
     A1 = A1 + A2 * np.log10(Kt / Kt_curve)
     A4 = Kt_curve * A4 / Kt
     return A1, A4
-
 
 
 def stressLifeMinerRule(occurences, critCycles):
