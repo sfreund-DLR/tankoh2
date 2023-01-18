@@ -166,3 +166,7 @@ def getCriticalElementIdx(puck):
     # identify critical element
     layermax = puck.max().argmax()
     return puck.idxmax()[layermax], layermax
+
+def getLayerThicknessesFromVesselCylMid(vessel):
+    """returns a list with all layer thicknesses from the vessel"""
+    return [(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).elementThickness) for layerNumber in range(vessel.getNumberOfLayers())]
