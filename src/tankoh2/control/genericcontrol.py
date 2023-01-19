@@ -81,7 +81,12 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
         log.warning(f'These input keywords are unknown: {notDefinedArgs}')
 
     # update missing args with default design args
-    inputKwArgs['runDir'] = inputKwArgs['runDir'] if 'runDir' in inputKwArgs else getRunDir(inputKwArgs.get('tankname', ''))
+
+    if 'runDir' not in inputKwArgs:
+        if frpOrMetal == 'metal':
+            inputKwArgs['runDir'] = getRunDir(inputKwArgs.get('tankname', ''), useMilliSeconds=True)
+        else:
+            inputKwArgs['runDir'] = getRunDir(inputKwArgs.get('tankname', ''))
     designArgs = defaultDesign.copy()
 
     removeIfIncluded = np.array([('lcylByR', 'lcyl'),
@@ -120,16 +125,17 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
 
     if _parameterNotSet(designArgs, 'lcyl'):
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl'] / 2
-    # width
-    if _parameterNotSet(designArgs, 'rovingWidthHoop'):
-        designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
-    if _parameterNotSet(designArgs, 'rovingWidthHelical'):
-        designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
-    # thickness
-    if _parameterNotSet(designArgs, 'layerThkHoop'):
-        designArgs['layerThkHoop'] = designArgs['layerThk']
-    if _parameterNotSet(designArgs, 'layerThkHelical'):
-        designArgs['layerThkHelical'] = designArgs['layerThk']
+    elif frpOrMetal == 'frp':
+        # width
+        if _parameterNotSet(designArgs, 'rovingWidthHoop'):
+            designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
+        if _parameterNotSet(designArgs, 'rovingWidthHelical'):
+            designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
+        # thickness
+        if _parameterNotSet(designArgs, 'layerThkHoop'):
+            designArgs['layerThkHoop'] = designArgs['layerThk']
+        if _parameterNotSet(designArgs, 'layerThkHelical'):
+            designArgs['layerThkHelical'] = designArgs['layerThk']
 
     linerThk = designArgs['linerThickness']
     domeVolumes = []
