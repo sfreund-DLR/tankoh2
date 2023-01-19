@@ -7,15 +7,13 @@ if __name__ == '__main__':
 
 
     if 1:
-        params = parameters.vph_hoopTest.copy()
+        params = parameters.shipping.copy()
 
         params.update([
             ('verbosePlot', True),
             #('maxLayers', 20),
-            ('targetFuncWeights', [1., 0.25, 2., 0.])
+            ('targetFuncWeights', [1., 0.25, 0., 0.])
         ])
-
-        params.pop('initialAnglesAndShifts', None)
 
         runCompositCalc = True
         if runCompositCalc:

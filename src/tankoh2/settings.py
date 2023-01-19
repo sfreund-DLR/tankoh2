@@ -16,6 +16,7 @@ doHoopOpt = False
 optimizerSeed = None
 """Seed for evolutionary optimization for repeatable runs. If -1, no seed is used"""
 
+maxHelicalAngle = 70
 
 class PychainMock():
     """This class is a mock of pychain.

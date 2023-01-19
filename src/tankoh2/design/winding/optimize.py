@@ -21,28 +21,41 @@ import tankoh2.settings as settings
 from tankoh2 import log
 
 
+_lastMinAngle = None
 
-def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidth,
+def optimizeAngle(vessel, targetPolarOpening, layerNumber, bandWidth,
                   targetFunction=getPolarOpeningDiffByAngle):
     """optimizes the angle of the actual layer to realize the desired polar opening
 
     :param vessel: vessel object
     :param targetPolarOpening: polar opening radius that should be realized
     :param layerNumber: number of the actual layer
-    :param angleBounds: bounds of the angles used (min angle, max angle)
     :param bandWidth: total width of the band (only used for tf getPolarOpeningDiffByAngleBandMid)
     :param targetFunction: target function to be minimized
     :return: 3-tuple (resultAngle, polar opening, number of runs)
     """
+
+    global _lastMinAngle
+    angleBounds = (1., settings.maxHelicalAngle) if _lastMinAngle is None else (_lastMinAngle - 1, _lastMinAngle + 10)
     tol = 1e-2
     if targetFunction is getPolarOpeningDiffByAngleBandMid:
         args = [vessel, layerNumber, targetPolarOpening, bandWidth]
     else:
         args = [vessel, layerNumber, targetPolarOpening]
-    popt = minimize_scalar(targetFunction, method='bounded',
-                           bounds=angleBounds,
-                           args=args,
-                           options={"maxiter": 1000, 'disp': 1, "xatol": tol})
+    while angleBounds[0] < 30:
+        try:
+            popt = minimize_scalar(targetFunction, method='bounded',
+                                   bounds=angleBounds,
+                                   args=args,
+                                   options={"maxiter": 1000, 'disp': 1, "xatol": tol})
+            break
+        except RuntimeError as e:
+            # if minBound too small, µWind may raise an error "Polar Opening too small - Thickness Error!"
+            if str(e) == 'Polar Opening too small - Thickness Error!':
+                angleBounds = angleBounds[0] + 1, angleBounds[1]
+                log.info('Min angle bound of optimization was too low - increased by one deg.')
+            else:
+                raise
     if not popt.success:
         raise Tankoh2Error('Could not find optimal solution')
     plotTargetFun = False
@@ -56,11 +69,12 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidt
     if popt.fun > 1 and targetFunction is getPolarOpeningDiffByAngle:
         # desired polar opening not met. This happens, when polar opening is near fitting.
         # There is a discontinuity at this point. Switch target function to search from the fitting side.
-        angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds,
+        angle, funVal, iterations = optimizeAngle(vessel, targetPolarOpening, layerNumber,
                                                   getNegAngleAndPolarOpeningDiffByAngle)
     else:
         windLayer(vessel, layerNumber, angle)
     log.debug(f'Min angle {angle} at funcVal {funVal}')
+    _lastMinAngle = angle
     return angle, funVal, iterations
 
 
@@ -99,7 +113,10 @@ def minimizeUtilization(bounds, targetFunction, optArgs, localOptimization = Fal
         tfX = np.linspace(*bounds, 200)
         targetFunctionPlot = getMaxPuckLocalPuckMassIndexByAngle if targetFunction in helicalTargetFunctions else \
             getMaxPuckLocalPuckMassIndexByShift
-        tfPlotVals = np.array([targetFunctionPlot(angleParam, optArgs) for angleParam in tfX]).T
+        tfPlotVals = [targetFunctionPlot(angleParam, optArgs) for angleParam in tfX]
+        isInfArray = [val[0] == np.inf for val in tfPlotVals]
+        tfX = np.array([x for x, isInf in zip(tfX, isInfArray) if not isInf])
+        tfPlotVals = np.array([val for val, isInf in zip(tfPlotVals, isInfArray) if not isInf]).T
         if targetFunction in [getMaxPuckByAngle, getMaxPuckByShift]:
             tfPlotVals = np.append(tfPlotVals[:1], tfPlotVals[-1:], axis=0)
         tfPlotVals = np.append([tfX], tfPlotVals, axis=0)

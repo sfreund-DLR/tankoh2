@@ -5,7 +5,7 @@ import logging
 import pandas as pd
 
 from tankoh2 import log
-from tankoh2.settings import doHoopOpt
+from tankoh2.settings import doHoopOpt, maxHelicalAngle
 from tankoh2.design.winding.solver import getMaxPuckLocalPuckMassIndexByShift
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
@@ -20,8 +20,6 @@ from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses, plotPuckAndTargetFunc
 
-
-maxHelicalAngle = 70
 
 def printLayer(layerNumber, postfix = ''):
     sep = '\n' + '=' * 80
@@ -113,7 +111,7 @@ def optimizeHelical(polarOpeningRadius, bandWidth, optArgs):
     vessel, layerNumber = optArgs[:2]
     symmetricContour = optArgs[7]
     windLayer(vessel, layerNumber, maxHelicalAngle)
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), bandWidth,
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, bandWidth,
                                    targetFunction=getPolarOpeningDiffByAngleBandMid)
     bounds = [minAngle, maxHelicalAngle]
 
@@ -356,8 +354,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 vlines=[hoopStart, hoopEnd], vlineColors=['black', 'black'])
     log.debug('Find minimal possible angle')
 
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle),
-                                   bandWidth, targetFunction=getPolarOpeningDiffByAngleBandMid)
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, bandWidth,
+                                   targetFunction=getPolarOpeningDiffByAngleBandMid)
 
     if initialAnglesAndShifts is not None and len(initialAnglesAndShifts) > 0:
         # wind given angles
