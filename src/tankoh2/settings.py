@@ -16,6 +16,9 @@ doHoopOpt = False
 optimizerSeed = None
 """Seed for evolutionary optimization for repeatable runs. If -1, no seed is used"""
 
+maxHoopShiftMuWind = 800
+"""In muwind defined maximum hoop shift"""
+
 maxHelicalAngle = 70
 
 class PychainMock():

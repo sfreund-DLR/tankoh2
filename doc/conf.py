@@ -2,26 +2,28 @@
 #
 # SPDX-License-Identifier: MIT
 
-#===============================================================================
-# if sphinx should be started standalone (not via setup.py), use these variables
-#===============================================================================
-# projectName = name
-
-# # The master toctree document.
-# master_doc = name
-# authors = author name
-# 
-# # The short X.Y version.
-# version = version
-# # The full version, including alpha/beta/rc tags.
-# release = version
-#===============================================================================
-# end standalone variables
-#===============================================================================
-
 import os, sys
 here = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 sys.path.insert(0, os.path.join(here, 'src'))
+
+#===============================================================================
+# if sphinx should be started standalone (not via setup.py), use these variables
+#===============================================================================
+from tankoh2 import name, author, version
+
+projectName = name
+
+# # The master toctree document.
+# master_doc = name
+authors = author
+# 
+# # The short X.Y version.
+version = version
+# # The full version, including alpha/beta/rc tags.
+release = version
+#===============================================================================
+# end standalone variables
+#===============================================================================
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

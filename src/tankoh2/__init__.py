@@ -5,7 +5,7 @@ h2 tank optimization
 import logging
 import sys
 
-from tankoh2.__about__ import __title__, __version__, __programDir__, __description__
+from tankoh2.__about__ import __title__, __version__, __programDir__, __description__, __author__
 from tankoh2.settings import applySettings
 
 # main program information
@@ -13,6 +13,8 @@ name = __title__
 programDir = __programDir__
 version = __version__
 description = __description__
+author = __author__
+
 
 # create logger
 level = logging.INFO

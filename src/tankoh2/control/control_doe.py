@@ -14,9 +14,11 @@ import numpy as np
 from delismm.model.doe import LatinizedCentroidalVoronoiTesselation, DOEfromFile
 from delismm.model.samplecalculator import getY
 from delismm.model.customsystemfunction import BoundsHandler, AbstractTargetFunction
+from delismm.control.tank import getKrigings
 
 from fa_pyutils.service.systemutils import getRunDir
 
+import tankoh2
 from tankoh2.control.control_winding import createDesign
 from tankoh2 import programDir, log
 from tankoh2.service.plot.doeplot import plotGeometryRange
@@ -61,11 +63,12 @@ def getDesignAndBounds(name):
     :param name: name of the design and bounds to return. Not case sensitive!
     :return: designKwargs, lowerBoundDict, upperBoundDict, numberOfSamples
     """
-    allowedNames = {'dlight', 'exact_cyl_isotensoid'}
+    allowedNames = {'dlight', 'exact_cyl_isotensoid', 'exact_conical_isotensoid'}
     if name not in allowedNames:
         raise Tankoh2Error(f'Parameter name={name} unknown. Allowed names: {allowedNames}')
     name = name.lower()
     numberOfSamples = 101
+    units = ['[mm]', '[mm]', '[MPa]']
     if name == 'dlight':
         lb = OrderedDict([('dcyl', 300.), ('lcyl', 800), ('pressure', 30)])  # [mm, mm , MPa]
         ub = OrderedDict([('dcyl', 1000.), ('lcyl', 3000), ('pressure', 95)])
@@ -74,14 +77,31 @@ def getDesignAndBounds(name):
         lb = OrderedDict([('dcyl', 1000.), ('lcyl', 150), ('pressure', 0.1)])  # [mm, mm , MPa]
         ub = OrderedDict([('dcyl', 4000.), ('lcyl', 3000), ('pressure', 1)])
         designKwargs = vphDesign1_isotensoid.copy()
+        designKwargs['targetFuncWeights'] = [1.,.2,0.,.0, 0, 0]
         designKwargs['verbosePlot'] = True
         designKwargs['numberOfRovings'] = 12
         designKwargs.pop('lcyl')
         designKwargs.pop('safetyFactor')
-        if 1:  # for testing
+        if 0:  # for testing
             numberOfSamples = 3
             designKwargs['maxLayers'] = 3
-    return designKwargs, lb, ub, numberOfSamples
+    elif name == 'exact_conical_isotensoid':
+        units = ['[mm]', '[mm]', '[MPa]', '[-]', '[-]']
+        lb = OrderedDict([('dcyl', 1000.), ('lcyl', 150), ('pressure', 0.1), ('alpha', 0.2), ('beta', 0.5)])
+        ub = OrderedDict([('dcyl', 4000.), ('lcyl', 3000), ('pressure', 1) , ('alpha', 0.8), ('beta', 2)])
+        designKwargs = vphDesign1_isotensoid.copy()
+        designKwargs.pop('safetyFactor')
+        addArgs = OrderedDict([
+            ('targetFuncWeights', [1.,.2,1.,.0, 0, 0]),
+            ('verbosePlot', True),
+            ('numberOfRovings', 12),
+            ('gamma', 0.3),
+            ('domeType', 'conicalIsotensoid'),
+            ('dome2Type', 'isotensoid'),
+            ('nodeNumber', 1000),
+        ])
+        designKwargs.update(addArgs)
+    return designKwargs, lb, ub, numberOfSamples, units
 
 
 def mainControl(name, sampleXFile):
@@ -92,7 +112,7 @@ def mainControl(name, sampleXFile):
     """
     startTime = datetime.now()
 
-    designKwargs, lb, ub, numberOfSamples = getDesignAndBounds(name)
+    designKwargs, lb, ub, numberOfSamples, _ = getDesignAndBounds(name)
 
     names = list(lb.keys())
     runDir = getRunDir(f'doe_{name}', basePath=os.path.join(programDir, 'tmp'))
@@ -104,7 +124,7 @@ def mainControl(name, sampleXFile):
         lcvt = LatinizedCentroidalVoronoiTesselation(numberOfSamples, len(names))
 
     sampleX = BoundsHandler.scaleToBoundsStatic(lcvt.sampleXNormalized, list(lb.values()), list(ub.values()))
-    plotGeometryRange(lb, ub, plotDir=runDir, samples=sampleX)
+    plotGeometryRange(lb, ub, plotDir=runDir, samples=sampleX, addBox=('exact' in name))
     lcvt.xToFile(os.path.join(runDir, 'sampleX.txt'))
     lcvt.xToFileStatic(os.path.join(runDir, 'sampleX_bounds.txt'), sampleX)
     sampleY = getY(sampleX, winder, verbose=True, runDir=runDir)
@@ -127,14 +147,42 @@ def mainControl(name, sampleXFile):
 
 
 def main():
-    designName = 'dlight'
-    sampleXFile = ''  # + 'C:/PycharmProjects/tankoh2/tmp/doe_circle_20210520_135237_cvt/sampleX.txt'
-    if 1:
-        mainControl(designName, sampleXFile)
+    createDoe = True
+    plotDoe = False
+    createSurrogate = False
+    mmRunDir = getRunDir('tank_surrogates', basePath=os.path.join(tankoh2.programDir, 'tmp'))
+    resultNamesIndexesLog10 = [
+        ('totalMass[kg]',        4, True),
+        ('volume[dm^3]',         5, True),
+        ('area[m^2]',            6, False),
+        ('lengthAxial[mm]',      7, False),
+        ('gravimetricIndex[-]', 10, False),
+    ]
+    if 0:
+        designName = 'exact_cyl_isotensoid'
+        sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_cyl_isotensoid_20230106_230150/sampleX.txt'
+        surrogateDir = '' + r'C:\PycharmProjects\tankoh2\tmp\tank_surrogates_20230109_180336'
+    elif 1:
+        designName = 'exact_conical_isotensoid'
+        sampleXFile = '' + r'C:\PycharmProjects\tankoh2\tmp\doe_exact_conical_isotensoid_20230111_180256/sampleX.txt'
+        surrogateDir = '' #+ r'C:\PycharmProjects\tankoh2\tmp\tank_surrogates_20230109_180336'
+
     else:
-        samples = DOEfromFile(sampleXFile) if sampleXFile else None
-        _, lb, ub, _ = getDesignAndBounds(designName)
-        plotGeometryRange(lb, ub, show=True, samples= samples)
+        designName = 'dlight'
+
+
+    designKwargs, lb, ub, numberOfSamples, units = getDesignAndBounds(designName)
+    if createDoe:
+        mainControl(designName, sampleXFile)
+    if plotDoe:
+        doe = DOEfromFile(sampleXFile) if sampleXFile else None
+        sampleX = BoundsHandler(lb, ub).scaleToBounds(doe.sampleXNormalized)
+        plotGeometryRange(lb, ub, show=True, samples= sampleX, addBox=('exact' in designName))
+    if createSurrogate:
+        parameterNames = lb.keys(lb)
+        parameterNames = [name+unit for name, unit in zip(parameterNames, units)]
+        krigings = getKrigings(surrogateDir, mmRunDir, parameterNames, resultNamesIndexesLog10)
+
 
 if __name__ == '__main__':
     main()

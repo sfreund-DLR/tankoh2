@@ -8,12 +8,10 @@ import numpy as np
 from tankoh2 import log, pychain, programDir
 from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
-from tankoh2.service.plot.muwind import plotStressEpsPuck
 from tankoh2.design.winding.designopt import designLayers
 from tankoh2.design.winding.windingutils import copyAsJson, updateName, getLayerNodalCoordinates, getMandrelNodalCoordinates
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
-from tankoh2.design.winding.solver import getLinearResults
 import tankoh2.design.existingdesigns as parameters
 from tankoh2.control.genericcontrol import saveParametersAndResults, parseDesignArgs, getBurstPressure, \
     saveLayerBook, _parameterNotSet
@@ -108,6 +106,11 @@ def createDesign(**kwargs):
     # create vessel and set liner and composite
     vessel = pychain.winding.Vessel()
     vessel.setLiner(liner)
+    mandrel = liner.getMandrel1()
+    df = pd.DataFrame(np.array([mandrel.getXArray(),mandrel.getRArray(),mandrel.getLArray()]).T,
+                      columns=['x','r','l'])
+    df.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';')
+
     vessel.setComposite(composite)
 
     # #############################################################################
@@ -152,12 +155,13 @@ def createDesign(**kwargs):
         gravimetricIndex = h2Mass / (totalMass + h2Mass)
     else:
         gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
-    results = [frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(), \
-              cylinderThickness, maxThickness, reserveFac, gravimetricIndex, stressRatio,  hoopByHelicalFrac, iterations, duration, \
-              angles, hoopLayerShifts]
+    results = [
+        frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(),
+        reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration,
+        angles, hoopLayerShifts]
     saveParametersAndResults(designArgs['runDir'], results=results)
 
-    vessel.saveToFile(vesselFilename)  # save vessel
+vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:
         updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')
@@ -178,14 +182,6 @@ def createDesign(**kwargs):
     nodalResultsDataframe.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';',)
 
     saveLayerBook(runDir, tankname)
-
-    # #############################################################################
-    # run Evaluation
-    # #############################################################################
-    if 0:
-        results = getLinearResults(vessel, puckProperties, layersToWind - 1, burstPressure)
-        plotStressEpsPuck(True, None, *results)
-
 
     log.info(f'iterations {iterations}, runtime {duration.seconds} seconds')
     log.info('FINISHED')

@@ -172,10 +172,7 @@ class AbstractDome(metaclass=ABCMeta):
 
     def plotContour(self, nodeNumber = 1000, ax = None, **mplKwargs):
         """creates a plot of the outer liner contour. For more details see tankoh2..service.plot.generic"""
-        if 0:
-            points = self.getContourTank(nodeNumber)
-        else:
-            points = self.getContour(nodeNumber)
+        points = self.getContour(nodeNumber)
 
         if ax:
             plotContour(False, '', points[0,:], points[1,:], ax=ax, plotContourCoordinates=False, **mplKwargs)
@@ -367,7 +364,7 @@ class DomeConicalElliptical(AbstractConicalDome):
         |   /                              \    ↓
         |  :                                :   ↑   lRadius
         | |←---------------→                |   ↓
-        |       rLarge
+        |       rCyl
     """
 
     def __init__(self, rCyl, rPolarOpening, delta1, rSmall, lRad, lCone):
@@ -548,7 +545,7 @@ class DomeConicalTorispherical(AbstractConicalDome):
         |   /                              \    ↓
         |  :                                :   ↑   lRadius
         | |←---------------→                |   ↓
-        |       rLarge
+        |       rCyl
     """
     def getGeometry(self):
 
@@ -652,7 +649,7 @@ class DomeConicalIsotensoid(AbstractConicalDome):
             |   /                              \    ↓
             |  :                                :   ↑   lRadius
             | |←---------------→                |   ↓
-            |       rLarge
+            |       rCyl
         """
 
     def getGeometry(self):
