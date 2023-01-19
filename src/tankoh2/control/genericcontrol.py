@@ -121,15 +121,16 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
     if _parameterNotSet(designArgs, 'lcyl'):
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl'] / 2
     # width
-    if _parameterNotSet(designArgs, 'rovingWidthHoop'):
-        designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
-    if _parameterNotSet(designArgs, 'rovingWidthHelical'):
-        designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
-    # thickness
-    if _parameterNotSet(designArgs, 'layerThkHoop'):
-        designArgs['layerThkHoop'] = designArgs['layerThk']
-    if _parameterNotSet(designArgs, 'layerThkHelical'):
-        designArgs['layerThkHelical'] = designArgs['layerThk']
+    if frpOrMetal == 'frp':
+        if _parameterNotSet(designArgs, 'rovingWidthHoop'):
+            designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
+        if _parameterNotSet(designArgs, 'rovingWidthHelical'):
+            designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
+        # thickness
+        if _parameterNotSet(designArgs, 'layerThkHoop'):
+            designArgs['layerThkHoop'] = designArgs['layerThk']
+        if _parameterNotSet(designArgs, 'layerThkHelical'):
+            designArgs['layerThkHelical'] = designArgs['layerThk']
 
     linerThk = designArgs['linerThickness']
     domeVolumes = []
