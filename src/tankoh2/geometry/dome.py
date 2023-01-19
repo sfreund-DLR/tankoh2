@@ -688,7 +688,7 @@ class DomeConicalIsotensoid(DomeConicalElliptical):
         sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 2, 0, 1, self._lRad))
         sketch.addConstraint(Sketcher.Constraint('DistanceX', 0, 1, 1, 2, self._lCone))
 
-        tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/iso")
+        #tank.saveAs(u"D:/bier_ju/06 FreeCAD/tank_shapes/iso")
 
         geometry = sketch.getPropertyByName('Geometry')
 
@@ -960,13 +960,30 @@ class DomeEllipsoid(AbstractDome):
         return self._contourCache[nodeNumber].copy()
 
 class DomeTorispherical(AbstractDome):
+    """Torispherical head defined by r1 and r2
 
-    def __init__(self, rCyl, rPolarOpening):
+    .. image:: path/filename.png
+          :width: 400
+          :alt: torispherical dome
+
+    Klöpper head: r1=dCyl, r2=0.1 * dCyl
+
+    Korbbogen head (DIN 28013): r1=0.8 * dCyl, r2=0.154 * dCyl
+
+    see also https://en.wikipedia.org/wiki/Head_(vessel)#Torispherical_head_(or_flanged_and_dished_head)
+
+    """
+
+    def __init__(self, rCyl, rPolarOpening, r1=None, r2=None):
         AbstractDome.__init__(self)
         if rPolarOpening >= rCyl:
             raise Tankoh2Error('Polar opening should not be greater or equal to the cylindrical radius')
         self._rPolarOpening = rPolarOpening
         self._rCyl = rCyl
+
+        self._r1 = 2 * self._rCyl if r1 is None else r1
+        self._r2 = 2 * self._rCyl if r2 is None else r2
+
 
     @property
     def rCyl(self):

@@ -39,7 +39,7 @@ def optimizeAngle(vessel, targetPolarOpening, layerNumber, angleBounds, bandWidt
         args = [vessel, layerNumber, targetPolarOpening, bandWidth]
     else:
         args = [vessel, layerNumber, targetPolarOpening]
-    while angleBounds[0] < 20:
+    while angleBounds[0] < 30:
         try:
             popt = minimize_scalar(targetFunction, method='bounded',
                                    bounds=angleBounds,
@@ -107,7 +107,7 @@ def minimizeUtilization(bounds, targetFunction, optKwArgs, localOptimization = F
 
     verbosePlot = optKwArgs['verbosePlot']
     if verbosePlot:
-        tfX = np.linspace(*bounds, 200)
+        tfX = np.linspace(*bounds[0], 200)
         targetFunctionPlot = getMaxPuckLocalPuckMassIndexByAngle if targetFunction in helicalTargetFunctions else \
             getMaxPuckLocalPuckMassIndexByShift
         tfPlotVals = np.array([targetFunctionPlot(angleParam, optKwArgs) for angleParam in tfX]).T
@@ -121,8 +121,8 @@ def minimizeUtilization(bounds, targetFunction, optKwArgs, localOptimization = F
         raise Tankoh2Error('no proper value for localOptimization')
     tol = 1e-2
     if localOptimization is True or localOptimization=='both':
-        popt_loc = minimize(targetFunction, bounds[:1],
-                            bounds=[bounds],  # bounds of the angle or hoop shift
+        popt_loc = minimize(targetFunction, np.array(bounds)[:,0],
+                            bounds=bounds,  # bounds of the angle or hoop shift
                             args=optKwArgs,
                             tol=tol,
                             )
@@ -130,7 +130,7 @@ def minimizeUtilization(bounds, targetFunction, optKwArgs, localOptimization = F
             popt = popt_loc
     if localOptimization is False or localOptimization=='both':
         popt_glob = differential_evolution(targetFunction,
-                                           bounds=(bounds,),
+                                           bounds=bounds,
                                            args=[optKwArgs],
                                            atol=tol*10,
                                            seed=settings.optimizerSeed)
@@ -149,13 +149,13 @@ def minimizeUtilization(bounds, targetFunction, optKwArgs, localOptimization = F
                        None, None, True)
         raise Tankoh2Error(errMsg)
     x, funVal, iterations = popt.x, popt.fun, popt.nfev
-    if hasattr(x, '__iter__'):
+    if hasattr(x, '__iter__') and targetFunction in helicalTargetFunctions:
         x = x[0]
     vessel, layerNumber = optKwArgs['vessel'], optKwArgs['layerNumber']
     if targetFunction in helicalTargetFunctions:
         windLayer(vessel, layerNumber, x)
     else:
-        windHoopLayer(vessel, layerNumber, x)
+        windHoopLayer(vessel, layerNumber, *x)
 
     return x, funVal, iterations, tfPlotVals
 

@@ -6,12 +6,14 @@ if __name__ == '__main__':
     import tankoh2.design.existingdesigns as parameters
 
 
-    if 0:
+    if 1:
         params = parameters.atheat3.copy()
 
         params.update([
             ('tankname', params['tankname']),
             ('verbosePlot', True),
+            ('verbosePlot', True),
+            #('dome2Type', 'isotensoid'),
             #('maxLayers', 20),
             ('targetFuncWeights', [1., 1., 0., 0., .25, 0.25])
         ])

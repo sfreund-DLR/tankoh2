@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from tankoh2 import pychain, log
-from tankoh2.design.winding.winding import windLayer
+from tankoh2.design.winding.winding import windLayer, windHoopLayer
 
 
 targetFuncNames = ['max puck', 'max puck at last crit location', 'puck sum', 'mass',
@@ -59,22 +59,20 @@ def getWeightedTargetFuncByShift(angle, args):
     return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:-2])
 
 
-def getMaxPuckLocalPuckMassIndexByShift(shift, kwArgs):
+def getMaxPuckLocalPuckMassIndexByShift(shifts, kwArgs):
     """Sets the given hoop shift, winding sim, puck analysis
 
-    :param shift:
+    :param shifts:
     :param args:
     :return: tuple, (maximum puck fibre failure, index of max FF/IFF)
     """
-    if hasattr(shift, '__iter__'):
-        shift = shift[0]
     vessel, layerNumber, puckProperties = kwArgs['vessel'], kwArgs['layerNumber'], kwArgs['puckProperties']
-    vessel.setHoopLayerShift(layerNumber, shift, True)
+    windHoopLayer(vessel, layerNumber, *shifts)
     actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
         return np.inf, 0
     result = getMaxPuckLocalPuckMass(kwArgs)
-    log.debug(f'Layer {layerNumber}, hoop shift {shift}, ' +
+    log.debug(f'Layer {layerNumber}, hoop shifts {shifts}, ' +
               str([(name, str(val)) for name, val in zip(resultNames, result)]))
     return result
 
@@ -116,7 +114,7 @@ def getMaxPuckLocalPuckMass(kwArgs, puckAndStrainDiff=None, scaleTf=True):
 
 
 def getPuckStrainDiff(vessel, puckProperties, burstPressure, useIndices=None,
-                     symmetricContour=True, useFibreFailure=True, useMeridianStrain=True):
+                      symmetricContour=True, useFibreFailure=True, useMeridianStrain=True):
     """returns the puck values and strain diffs for the actual
 
     """

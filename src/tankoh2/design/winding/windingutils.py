@@ -2,7 +2,7 @@
 
 
 import json
-
+from itertools import zip_longest
 import shutil
 
 import numpy as np
@@ -20,7 +20,8 @@ def getAnglesFromVessel(vessel):
 
 def getHoopShiftsFromVessel(vessel):
     """Returns a list with all hoop shifts using zero for helical layers"""
-    return [vessel.getHoopLayerShift(layerNumber, True) for layerNumber in range(vessel.getNumberOfLayers())]
+    return [[vessel.getHoopLayerShift(layerNumber, True), vessel.getHoopLayerShift(layerNumber, False)] for
+            layerNumber in range(vessel.getNumberOfLayers())]
 
 
 def checkAnglesAndShifts(anglesAndShifts, vessel):
@@ -31,13 +32,20 @@ def checkAnglesAndShifts(anglesAndShifts, vessel):
     """
     anglesVessel = getAnglesFromVessel(vessel)
     shiftsVessel = getHoopShiftsFromVessel(vessel)
-    anglesAndShiftsT = np.array(anglesAndShifts).T
-    if not np.allclose(anglesAndShiftsT, [anglesVessel, shiftsVessel], rtol=2e-2):
-        msgTable = [['tankoh2 angle', 'µWind angle', 'tankoh2 shift', 'µWind shift']]
-        msgTable += list(zip(anglesAndShiftsT[0], anglesVessel, anglesAndShiftsT[1], shiftsVessel))
+    angles = [angle for angle, _ in anglesAndShifts]
+    shifts = [shift for _, shift in anglesAndShifts]
+    if not np.allclose(angles, anglesVessel, rtol=2e-2):
+        msgTable = [['tankoh2 angle', 'µWind angle']]
+        msgTable += list(zip_longest(angles, anglesVessel))
         msgTable = indent(msgTable)
         log.error('\n'+msgTable)
-        raise Tankoh2Error(f'Angles and shifts do not match. \n{msgTable}')
+        raise Tankoh2Error(f'Angles do not match. \n{msgTable}')
+    if not np.allclose(shifts, shiftsVessel, rtol=2e-2):
+        msgTable = [['tankoh2 shift', 'µWind shift']]
+        msgTable += list(zip_longest(shifts, shiftsVessel))
+        msgTable = indent(msgTable)
+        log.error('\n'+msgTable)
+        raise Tankoh2Error(f'Shifts do not match. \n{msgTable}')
 
 
 def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
