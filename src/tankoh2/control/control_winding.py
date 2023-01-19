@@ -9,7 +9,7 @@ from tankoh2 import log, pychain, programDir
 from tankoh2.design.designutils import getMassByVolume
 from tankoh2.service.utilities import indent
 from tankoh2.design.winding.designopt import designLayers
-from tankoh2.design.winding.windingutils import copyAsJson, updateName
+from tankoh2.design.winding.windingutils import copyAsJson, updateName, getLayerNodalCoordinates, getMandrelNodalCoordinates
 from tankoh2.design.winding.contour import getLiner, getDome
 from tankoh2.design.winding.material import getMaterial, getComposite, checkFibreVolumeContent
 import tankoh2.design.existingdesigns as parameters
@@ -122,7 +122,7 @@ def createDesign(**kwargs):
                            dome2 is None, runDir, compositeArgs, verbosePlot,
                            useFibreFailure, relRadiusHoopLayerEnd, initialAnglesAndShifts, targetFuncWeights)
 
-    frpMass, area, iterations, reserveFac, stressRatio, angles, hoopLayerShifts = results
+    frpMass, area, iterations, reserveFac, stressRatio, cylinderThickness, maxThickness, angles, hoopLayerShifts = results
     angles = np.around(angles, decimals=3)
     hoopByHelicalFrac = len([a for a in angles if a>89]) / len([a for a in angles if a<89])
     hoopLayerShifts = np.around(hoopLayerShifts, decimals=3)
@@ -160,7 +160,8 @@ def createDesign(**kwargs):
         reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration,
         angles, hoopLayerShifts]
     saveParametersAndResults(designArgs['runDir'], results=results)
-    vessel.saveToFile(vesselFilename)  # save vessel
+
+vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:
         updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')
@@ -173,6 +174,12 @@ def createDesign(**kwargs):
     windingResults.buildFromVessel(vessel)
     windingResults.saveToFile(windingResultFilename)
     copyAsJson(windingResultFilename, 'wresults')
+
+    # write nodal layer results dataframe to csv
+    mandrelCoordinatesDataframe = getMandrelNodalCoordinates(liner, dome2 is None)
+    layerCoordinatesDataframe = getLayerNodalCoordinates(windingResults, dome2 is None)
+    nodalResultsDataframe = pd.concat([mandrelCoordinatesDataframe, layerCoordinatesDataframe], join='outer', axis=1)
+    nodalResultsDataframe.to_csv(os.path.join(runDir, 'nodalResults.csv'), sep=';',)
 
     saveLayerBook(runDir, tankname)
 

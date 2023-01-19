@@ -3,7 +3,7 @@ import numpy as np
 from scipy.optimize import minimize_scalar
 
 from tankoh2 import log
-from tankoh2.design.metal.fatigue import getFatigueLifeAircraftTanks
+from tankoh2.mechanics.fatigue import getFatigueLifeMetalTankLevel
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
 
@@ -32,7 +32,7 @@ def getMaxWallThickness(pDesign, pUltimate, material, diameter, pMinOperation=0.
     def fatigueLifeFun(thickness):
         stressMax = getStress(pDesign, diameter, thickness)
         stressMin = getStress(pMinOperation, diameter, thickness)
-        fl = getFatigueLifeAircraftTanks(material, stressMax, stressMin, cycles, heatUpCycles, Kt)
+        fl = getFatigueLifeMetalTankLevel(material, stressMax, stressMin, cycles, heatUpCycles, Kt)
         return fl
 
     def fatigueLifeOptFun(thickness):

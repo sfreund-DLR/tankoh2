@@ -94,6 +94,9 @@ def windLayer(vessel, layerNumber, angle=None, useBandMid=False):
                       f'Maybe due to too small polar opening relative to cylindrical radius. '
                       f'Error message: {e}')
             return np.inf
+        if 'Polar Opening too small - Thickness Error!' in str(e):
+            log.warning(f'Got this error during winding: {e}')
+            return np.inf
         else:
             raise
 

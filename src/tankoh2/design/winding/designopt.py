@@ -6,7 +6,7 @@ import pandas as pd
 from collections import OrderedDict
 
 from tankoh2 import log
-from tankoh2.settings import doHoopOpt, maxHoopShiftMuWind
+from tankoh2.settings import doHoopOpt, maxHoopShiftMuWind, maxHelicalAngle
 from tankoh2.design.winding.solver import getMaxPuckLocalPuckMassIndexByShift
 from tankoh2.service.exception import Tankoh2Error
 from tankoh2.service.utilities import indent
@@ -15,14 +15,11 @@ from tankoh2.design.winding.optimize import optimizeAngle, minimizeUtilization
 from tankoh2.design.winding.solver import getLinearResults, getMaxPuckLocalPuckMass, \
     getWeightedTargetFuncByShift, getWeightedTargetFuncByAngle, getPuckStrainDiff
 from tankoh2.design.winding.winding import windHoopLayer, windLayer, getPolarOpeningDiffByAngleBandMid
-from tankoh2.design.winding.windingutils import getLayerThicknesses, getLinearResultsAsDataFrame, \
+from tankoh2.design.winding.windingutils import getLayerThicknesses, getLayerAngles,  getLinearResultsAsDataFrame, \
     getMostCriticalElementIdxPuck, checkAnglesAndShifts
 from tankoh2.geometry.dome import AbstractDome, flipContour
 from tankoh2.service.plot.generic import plotDataFrame, plotContour
 from tankoh2.service.plot.muwind import plotStressEpsPuck, plotThicknesses, plotPuckAndTargetFunc
-
-
-maxHelicalAngle = 70
 
 
 def printLayer(layerNumber, postfix = ''):
@@ -121,7 +118,7 @@ def optimizeHelical(polarOpeningRadius, bandWidth, optKwArgs):
     vessel, layerNumber = optKwArgs['vessel'], optKwArgs['layerNumber']
     symmetricContour = optKwArgs['symmetricContour']
     windLayer(vessel, layerNumber, maxHelicalAngle)
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle), bandWidth,
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, bandWidth,
                                    targetFunction=getPolarOpeningDiffByAngleBandMid)
     bounds = [[minAngle, maxHelicalAngle]]
 
@@ -373,8 +370,8 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
                 vlines=[hoopStart, hoopEnd], vlineColors=['black', 'black'])
     log.debug('Find minimal possible angle')
 
-    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, (1., maxHelicalAngle),
-                                   bandWidth, targetFunction=getPolarOpeningDiffByAngleBandMid)
+    minAngle, _, _ = optimizeAngle(vessel, polarOpeningRadius, layerNumber, bandWidth,
+                                   targetFunction=getPolarOpeningDiffByAngleBandMid)
 
     if initialAnglesAndShifts is not None and len(initialAnglesAndShifts) > 0:
         # wind given angles
@@ -507,25 +504,30 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
 
     results = getLinearResults(vessel, puckProperties, burstPressure, symmetricContour=symmetricContour)
     thicknesses = getLayerThicknesses(vessel, symmetricContour)
+    angles = getLayerAngles(vessel,symmetricContour)
     if show or save:
         plotStressEpsPuck(show, os.path.join(runDir, f'sig_eps_puck.png') if save else '', *results)
         plotThicknesses(show, os.path.join(runDir, f'thicknesses.png'), thicknesses)
 
     thicknesses.columns = ['thk_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
-    mechResults = getLinearResultsAsDataFrame(results)
+    angles.columns = ['ang_lay{}'.format(i) for i, (angle,_) in enumerate(anglesShifts)]
 
+    mechResults = getLinearResultsAsDataFrame(results)
     mandrel = liner.getMandrel1()
     elementLengths = pd.DataFrame(np.array([mandrel.getLArray()]).T, columns=['elementLength'])
-    elementalResults = pd.concat([elementLengths, thicknesses, mechResults], join='outer', axis=1)
+    elementalResults = pd.concat([elementLengths, thicknesses, angles, mechResults], join='outer', axis=1)
     elementalResults.to_csv(os.path.join(runDir, 'elementalResults.csv'), sep=';')
 
     if log.level == logging.DEBUG:
         # vessel.printSimulationStatus()
         composite.info()
 
-    # get volume and surface area
+    # get vessel results
     stats = vessel.calculateVesselStatistics()
     frpMass = stats.overallFRPMass  # in [kg]
+    summedThicknesses = thicknesses.sum(1)
+    cylinderThickness = summedThicknesses[0]
+    maxThickness = summedThicknesses.values.max()
     dome = liner.getDome1()
     areaDome = AbstractDome.getArea([dome.getXCoords(), dome.getRCoords()])
     area = 2 * np.pi * liner.cylinderRadius * liner.cylinderLength + 2 * areaDome  # [mm**2]
@@ -537,6 +539,6 @@ def designLayers(vessel, maxLayers, polarOpeningRadius, bandWidth, puckPropertie
     stressRatio = minCylinderStress/maxCylinderStress
     angles = [angle for angle, _ in anglesShifts]
     shifts = [shift for _, shift in anglesShifts]
-    return frpMass, area, iterations, reserveFac, stressRatio, angles, shifts
+    return frpMass, area, iterations, reserveFac, stressRatio, cylinderThickness, maxThickness, *(np.array(anglesShifts).T)
 
 

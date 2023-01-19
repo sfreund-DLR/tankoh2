@@ -19,6 +19,8 @@ optimizerSeed = None
 maxHoopShiftMuWind = 800
 """In muwind defined maximum hoop shift"""
 
+maxHelicalAngle = 70
+
 class PychainMock():
     """This class is a mock of pychain.
 

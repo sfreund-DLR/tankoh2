@@ -18,8 +18,6 @@ if __name__ == '__main__':
             ('targetFuncWeights', [1., 1., 0., 0., .25, 0.25])
         ])
 
-        params.pop('initialAnglesAndShifts', None)
-
         runCompositCalc = True
         if runCompositCalc:
             createDesignWinding(**params.copy())
