@@ -660,13 +660,30 @@ dLight7tanks_700bar_T1000G.update([
     ('tankname', 'dLight_7tanks_700bar_T1000G'),
     ('materialName', 'CFRP_T1000G_LY556'),
     ('dcyl', 572-50),  # seven cylinders inside
-    ('h2Mass', 150/7), #storageMass
+    ('h2Mass', 150/7),  # storageMass
     ('pressure', 70),  # [MPa]
     ('tex', 485),
     ('fibreDensity', 1.80),
     ('maxFill', 0.95),
     ('nodeNumber', 1000),
-
 ])
+
+shipping = OrderedDict([
+    ('tankname', 'shipping'),
+    ('polarOpeningRadius', 200),  # mm
+    ('dcyl', 5000),  # mm d_a - 2*t_estimate
+    ('lcyl', 50000),  # mm - just an estimate for now
+    ('safetyFactor', 2),
+    ('pressure', 1),  # [MPa]
+    ('temperature',293),
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', False),
+    ('verbosePlot', True),
+    ('tex', defaultDesign['tex']*12),
+    ('rovingWidth', defaultDesign['rovingWidth']*12),
+])
+
+
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))
