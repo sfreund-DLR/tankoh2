@@ -141,8 +141,11 @@ Reference
    :maxdepth: 2
 
    winding
+   optimization
+   bending
    metal
    tankoh2
+
 
 
    

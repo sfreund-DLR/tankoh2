@@ -25,7 +25,7 @@ allArgs = pd.DataFrame(
         ['maxLayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.2,.0,.0,0.,0.], list,
+        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.2,1.,0, .25, 0.1], list,
          'Weights to the target function constituents: maxPuck, maxCritPuck, sumPuck, layerMass', ''],
         # Geometry
         ['dcyl', 'Geometry', 'd_cyl', 400, float,
@@ -38,7 +38,7 @@ allArgs = pd.DataFrame(
          'l_cyl is adapted and if l_cly would be below 150mm d_cyl is adapted', ''],
         # Geometry_Dome
         ['domeType', 'Geometry_Dome', '', 'isotensoid', '',
-         'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
+         'Shape of dome geometry [isotensoid, isotensoid_MuWind, circle, ellipse, custom]', ''],
         ['domeContour', 'Geometry_Dome', '(x,r)', (None,None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
@@ -46,16 +46,16 @@ allArgs = pd.DataFrame(
         ['domeLengthByR', 'Geometry_Dome', 'l/r_cyl', 0.5, float,
          'Axial length of the dome. Only used for domeType==ellipse [mm]', ''],
         ['alpha', 'Geometry_Dome', '(dcyl - dsmall)/dcyl', 0.5, float,
-         'ratio of the difference of cylindrical and small radius to the cylindrical radius', ''],
-        ['beta', 'Geometry_Dome', '(lcyl + lcone)/dcyl', 1.5, float,
-         'ratio of the cylindrical and conical length to the cylindrical radius', ''],
+         'ratio of the difference of cylindrical and small diameter to the cylindrical diameter', ''],
+        ['beta', 'Geometry_Dome', '(lrad + lcone)/dcyl', 1.5, float,
+         'ratio of sum of the radial and conical length to the cylindrical diameter', ''],
         ['gamma', 'Geometry_Dome', 'lrad/(lrad + lcone)', 0.5, float,
-         'ratio of the radial length to the sum f radial and conical length', ''],
+         'ratio of the radial length to the sum of radial and conical length', ''],
         ['delta1', 'Geometry_Dome', 'ldome/rsmall', 0.5, float,
          'ratio of the semi axes of the elliptical dome end', ''],
         # Geometry_Dome2
         ['dome2Type', 'Geometry_Dome2', '', None, '',
-         'Shape of dome geometry [isotensoid, circle, ellipse, custom]', ''],
+         'Shape of dome geometry [isotensoid, isotensoid_MuWind circle, ellipse, custom]', ''],
         ['dome2Contour', 'Geometry_Dome2', '(x,r)', (None, None), '',
          'Must be given if domeType==custom. X- and R-array should be given without whitespaces like '
          '"[x1,x2],[r1,r2]" in [mm]', ''],
@@ -136,7 +136,7 @@ testPostprocessing.update([
     ('initialAnglesAndShifts', [(7.862970189270743, 0), (90, 21.984637908159538)]),
     ('maxLayers', 2),
     ('nodeNumber', 1000),
-    #('domeType', 'isotensoid_MuWind'),
+    #('domeType', 'isotensoid'),
     ])
 
 # design to make plots where the layers are visible in µWind
@@ -147,7 +147,7 @@ plotDesign = OrderedDict([
     ('layerThk', defaultDesign['layerThk']*2),
     ('burstPressure', 42.),
     ('maxLayers', 3),
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('numberOfRovings', 4),
     ('polarOpeningRadius', 7),
     ])
@@ -168,9 +168,11 @@ defaultUnsymmetricDesign.update([
 hymodDesign = OrderedDict([
     ('tankname', 'hymodDesign'),
     ('burstPressure', 77.85),
+    ('temperature',293),
     ('lcyl', 1000.),
     ('polarOpeningRadius', 23),
-    ('dcyl', 300.)
+    ('dcyl', 300.),
+    ('temperature', 293),
 ])
 
 
@@ -180,6 +182,7 @@ NGTBITDesign = OrderedDict([
     ('pressure', 70), # MPa
     ('burstPressure', 140.), # MPa
     ('valveReleaseFactor', 1.),
+    ('temperature',293),
     # Geometry
     ('polarOpeningRadius', 23),
     ('dcyl', 422.),
@@ -206,6 +209,7 @@ NGTBITDesign = OrderedDict([
     # optimizer settings
     ('maxLayers', 3),
     ('verbose', False),
+    ('temperature', 293),
     ])
 
 NGTBIT_Invent = NGTBITDesign.copy()
@@ -286,6 +290,7 @@ NGTBITDesignNewThkCustomV3.update([
 NGTBITDesign_old = OrderedDict([
     ('tankname', 'NGT-BIT-2020-09-16'),
     ('pressure', 70),
+    ('temperature',293),
     ('valveReleaseFactor', 1.),
     # Geometry
     ('nodeNumber', 1000),
@@ -311,6 +316,7 @@ NGTBITDesign_old = OrderedDict([
 
 NGTBITDesign_small = OrderedDict([
     ('tankname', 'NGT-BIT-small'),
+    ('temperature',293),
     ('pressure', 10),
     # Geometry
     ('polarOpeningRadius', 23),
@@ -349,7 +355,36 @@ vphDesign1 = OrderedDict([
 vphDesign1_isotensoid = vphDesign1.copy()
 vphDesign1_isotensoid.update([
     ('lcyl', vphDesign1['lcyl'] + 546.66423),
-    ('domeType', 'isotensoid_MuWind'),])
+    ('domeType', 'isotensoid'),])
+
+vph_hoopTest = vphDesign1_isotensoid.copy()
+vph_hoopTest.pop('lcyl')
+vph_hoopTest.pop('safetyFactor')
+vph_hoopTest.update([
+    ('dcyl', 3790.0), ('lcyl', 824.325), ('pressure', 0.478),
+    ('verbosePlot', True),
+    ('numberOfRovings', 30),
+    ('initialAnglesAndShifts',
+     [(4.202, 0   ),(90, 34.254 ),(10.248, 0  ),(90, 42.627 ),(90, 23.136 ),(12.988, 0  ),(90, 39.755 ),
+      (6.343, 0   ),(90, 42.627 ),(90, 337.686),(90, 48.631 ),(90, 83.767 ),(10.511, 0  ),(90, 48.631 ),
+      #(90, 83.767 ),(90, 48.631 ),(90, 396.533),(90, 48.631 ),(90, 48.631 ),(90, 83.767 ),(90, 48.631 ),
+      #(6.382, 0   ),(90, 48.631 ),(90, 48.631 ),(90, 83.767 ),(90, 83.767 ),(90, 48.631 ),(90, 48.631 ),
+      #(90, 48.631 ),(90, 83.767 ),(90, 83.767 ),(90, 48.631 ),(90, 49.299 ),(90, 11.789 ),(90, 11.789 ),
+      #(90, 11.789 ),(14.631, 0  ),(90, 48.631 ),(90, 48.631 ),(90, 2.568  ),
+      #(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),
+      #(90, 11.789 ),(90, 11.789 ),(7.854, 0   ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),(90, 11.789 ),
+      ]     ),
+    #('maxLayers', 10)
+])
+
+vph_helicalTest = vphDesign1_isotensoid.copy()
+vph_helicalTest.pop('lcyl')
+vph_helicalTest.pop('safetyFactor')
+vph_helicalTest.update([
+    ('dcyl', 2620.0), ('lcyl', 3257.97), ('pressure', 0.874  ),
+    ('verbosePlot', True),
+    ('numberOfRovings', 12),
+])
 
 kautextDesign = OrderedDict([
                              # General
@@ -417,12 +452,14 @@ atheat = OrderedDict([
     #('lcyl', 75),  # mm
     ('safetyFactor', 2.),
     ('pressure', 60),  # [MPa]
+    ('temperature',293),
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
     ('linerThickness', 3),
     ('volume', 0.037),
+    ('temperature', 293),
 ])
 
 atheat2 = atheat.copy()
@@ -434,19 +471,6 @@ atheat2.update([
     ('lcyl', 77.75+11.55),  # mm
     ('dcyl', 400),  # mm
     ('pressure', 60),
-    #('lcyl', 79.85),  # mm
-    # ('initialAnglesAndShifts', [
-    #     (7.862970189270743   , 0                    ),
-    #     (90                  , 21.984637908159538   ),
-    #     (13.866345007970057  , 0                    ),
-    #     (13.866345007970057  , 0                    ),
-    #     (58.4334573009439    , 0                    ),
-    #     (69.01950346986695   , 0                    ),
-    #     (47.36658070728886   , 0                    ),
-    #     (9.171105727970618   , 0                    ),
-    #     (9.539139023476652   , 0                    ),
-    #     (25.001541085240873  , 0                    ),
-    #     (90                  , -2.1997272973884687  ),]),
 ])
 
 atheat3 = atheat2.copy()
@@ -455,7 +479,6 @@ atheat3.update([
     ('tankname', 'atheat_He'),
     ('domeType', 'isotensoid'),
     ('dcyl', 370),  # mm
-    ('rovingWidthHoop', 1),
 ])
 
 atheat4 = atheat3.copy()
@@ -480,6 +503,7 @@ tk_cgh2 = OrderedDict([
     ('lcyl', 4500),  # mm - just an estimate for now
     ('safetyFactor', 1.5),
     ('pressure', 70),  # [MPa]
+    ('temperature',293),
     ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', True),
@@ -496,7 +520,7 @@ conicalTankDesign = OrderedDict([
     ('gamma', 0.796),
     ('safetyFactor', 2),
     ('domeType', 'conicalTorispherical'),
-    ('dome2Type', 'isotensoid_MuWind'),
+    ('dome2Type', 'isotensoid'),
     ('pressure', 0.172),  # pressure in MPa (bar / 10.)
     ('failureMode', 'interFibreFailure'),
     ('tankLocation', 'fuselage'),
@@ -505,7 +529,7 @@ conicalTankDesign = OrderedDict([
     ('minPressure', 0.12),
     ('verbosePlot', True),
     ('nodeNumber', 1000),
-    ('targetFuncWeights', [1.,.25,2.,.1])
+    ('targetFuncWeights', [1.,.25,2.,.1, 0, 0])
 ])
 
 hytazer = OrderedDict([
@@ -579,16 +603,19 @@ hytazerD400 = OrderedDict([
 dLightBase = OrderedDict([
     ('polarOpeningRadius', 50),
     ('dcyl', 1820 - 2 * (2 + 50 + 50)),  # mm, 1820 is fuselage outer d
-    #('lcyl', 500),  # mm
     ('safetyFactor', 2),
     ('valveReleaseFactor', 1.1),
-    ('pressure', 7),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
+    ('pressure', 70),  # [MPa]
+    ('domeType', 'isotensoid'),
     ('failureMode', 'fibreFailure'),
     ('useHydrostaticPressure', False),
     ('relRadiusHoopLayerEnd', 0.98),
-    ('nodeNumber', 1000),
+    ('nodeNumber', 500),
     ('maxLayers', 500),
+    ('temperature', 293),
+    ('linerThickness', 3),
+    ('numberOfRovings', 4),
+    ('linerThickness', 3),
 ])
 
 
@@ -597,88 +624,57 @@ dLightConventional.update([
     ('tankname', 'dLight_conventional'),
     ('volume', 3 * 2/3),  # m**3,  use 2/3 of required volume for front tank to utilize full diameter
 ])
-dLight3tanks = OrderedDict([
+dLight3tanks = dLightBase.copy()
+dLight3tanks.update([
     ('tankname', 'dLight_3tanks'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 796-100),  # three cylinders inside
-    #('lcyl', 500),  # mm
     ('volume', 3.775/3),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
-    ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks = OrderedDict([
+dLight7tanks = dLightBase.copy()
+dLight7tanks.update([
     ('tankname', 'dLight_7tanks'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    #('lcyl', 500),  # mm
     ('volume', 3.775/7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
-    ('pressure', 70),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks_600bar = OrderedDict([
+dLight7tanks_600bar = dLightBase.copy()
+dLight7tanks_600bar.update([
     ('tankname', 'dLight_7tanks_600bar'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    #('lcyl', 500),  # mm
-    ('volume', 4.234/7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
+    ('h2Mass', 150/7),
     ('pressure', 60),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 300),
-    ('linerThickness', 3),
 ])
 
-dLight7tanks_700bar_T1000G = OrderedDict([
+dLight7tanks_700bar_T1000G = dLightBase.copy()
+dLight7tanks_700bar_T1000G.update([
     ('tankname', 'dLight_7tanks_700bar_T1000G'),
     ('materialName', 'CFRP_T1000G_LY556'),
-    ('polarOpeningRadius', 50),
     ('dcyl', 572-50),  # seven cylinders inside
-    ('lcyl', 2000),  # mm
-    #('h2Mass', 150/7), #storageMass
-    ('volume', 4.234 / 7),
-    ('safetyFactor', 2),
-    ('valveReleaseFactor', 1.1),
+    ('h2Mass', 150/7),  # storageMass
     ('pressure', 70),  # [MPa]
-    #('burstPressure', 130),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
-    ('failureMode', 'fibreFailure'),
-    ('useHydrostaticPressure', False),
-    ('relRadiusHoopLayerEnd', 0.98),
-    ('numberOfRovings', 4),
-    ('nodeNumber', 1000),
-    ('maxLayers', 3),
-    ('linerThickness', 3),
     ('tex', 485),
     ('fibreDensity', 1.80),
     ('maxFill', 0.95),
     ('nodeNumber', 1000),
-
 ])
+
+shipping = OrderedDict([
+    ('tankname', 'shipping'),
+    ('polarOpeningRadius', 200),  # mm
+    ('dcyl', 5000),  # mm d_a - 2*t_estimate
+    ('lcyl', 50000),  # mm - just an estimate for now
+    ('safetyFactor', 2),
+    ('pressure', 1),  # [MPa]
+    ('temperature',293),
+    ('domeType', 'isotensoid'),
+    ('failureMode', 'fibreFailure'),
+    ('useHydrostaticPressure', False),
+    ('verbosePlot', True),
+    ('tex', defaultDesign['tex']*12),
+    ('rovingWidth', defaultDesign['rovingWidth']*12),
+])
+
+
 if __name__ == '__main__':
     print("',\n'".join(defaultDesign.keys()))

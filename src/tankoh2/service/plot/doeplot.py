@@ -3,7 +3,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 
-def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, samples=None):
+def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, samples=None, addBox=False):
     """Plot diameter vs volume
 
     :param lowerBoundDict: dict with lower bounds
@@ -18,11 +18,11 @@ def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, sa
         """volume of a tank with circular domes [m**3]
 
         Used as rough estimation!"""
-        return 4 / 3 * np.pi * d ** 3 + lcyl * np.pi * d ** 2
+        return 4 / 3 * np.pi * (d/2) ** 3 + lcyl * np.pi * (d/2) ** 2
 
     diameters = (lb['dcyl'], ub['dcyl'])
     diameters = np.array(diameters) / 1e3  # convert to m
-    lcyls = np.array([lb['lcyl'], ub['lcyl']])
+    lcyls = np.array([lb['lcyl'], ub['lcyl']]) / 1e3  # convert to m
 
 
     fig = plt.figure(figsize=(15,6))
@@ -35,15 +35,20 @@ def plotGeometryRange(lowerBoundDict, upperBoundDict, plotDir='', show=False, sa
         color = 'tab:blue'
         for lcyl in lcyls:
             x = np.linspace(*diameters, 51)
-            volumes = [volumeFunc(d, lcyl) for d in x]
-            ax.plot(x, volumes, color=color, label=f'lcyl={lcyl}')
+            volumes1 = [volumeFunc(d, lcyl) for d in x]
+            ax.plot(x, volumes1, color=color, label=f'lcyl={lcyl}')
             color = 'tab:orange'
         ax.legend()
         if samples is not None:
-            samplesR, sampleslcylByR = samples[:2, :]
+            samplesR, samplesLcyl = samples[:2, :]
             samplesR = samplesR / 1e3
-            volumes = volumeFunc(samplesR, sampleslcylByR)
-            ax.scatter(samplesR, volumes, label=f'samples')
+            samplesLcyl = samplesLcyl / 1e3
+
+            volumes2 = volumeFunc(samplesR, samplesLcyl)
+            ax.scatter(samplesR, volumes2, label=f'samples')
+        if addBox:
+            ax.add_patch(plt.Rectangle((1.2, 3), 1.2, 4, ec="red", fc="none"))
+            ax.add_patch(plt.Rectangle((2, 20), 1.6, 10, ec="green", fc="none"))
 
     if plotDir:
         plt.savefig(plotDir+'/geometryRange.png')

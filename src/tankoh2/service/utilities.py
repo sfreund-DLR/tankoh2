@@ -221,16 +221,24 @@ def wrap_always(text, width):
 
 if __name__ == '__main__':
     input = [
-        ['Material', 'Density (lb / ft**2)', 'Density (kg / m**2)', 'Thermal conductivity (Btu / h ft °F)', 'Thermal conductivity (W / (m*K))'],
-        ['Polymethacrylimide - rigid, closed cell (Rohacell® 41S)', '2.2', '0.018 (at 43°F)'],
-        ['Polyurethane - rigid, open cell', '2.0', '0.021 (at 39°F)'],
-        ['Polyurethane + 10 % chopped - glass fibers, rigid, closed cell(A.D.Little Co.)', '4.0', '0.012 (at - 20°F)'],
-        ['Polyvinylchloride - rigid, closed cell (Klegecell H917)', '3.1', '0.0087 (at - 110°F)'],
+        ['Configuration', 'Puck Weight', 'Bending weight', 'Hoop shift opt', 'Number of layers', 'Remark/Addition'],
+        # ['Test Conf', 1,0,71],
+        # ['Test Conf', 0,1,70],
+        # ['Test Conf', 1,0.5,70],
+        # ['Test Conf', 1, 0.25, 66, 'Use hoop shift opt'],
+        # ['Problem Conf', 1,0,31],
+        # ['Problem Conf', 0,1,33],
+        # ['Problem Conf', 1,0.5,31],
+        ['Test Conf', 1, 0, 'no hoop shift opt', 65, ''],
+        ['Test Conf', 0, 1, 'no hoop shift opt', 88, ''],
+        ['Test Conf', 1, 0.4, 'no hoop shift opt', 67, ''],
+        ['Test Conf', 1, 0, 'hoop shift opt', 65, ''],
+        ['Test Conf', 0, 1, 'hoop shift opt', 88, ''],
+        ['Test Conf', 1, 0.4, 'hoop shift opt', 67, ''],
+        ['Problem Conf', 1, 0, 'no hoop shift opt', 30, ''],
+        ['Problem Conf', 0, 1, 'no hoop shift opt', 100, 'reached max layers'],
+        ['Problem Conf', 1, 0.4, 'no hoop shift opt', 100, 'reached max layers'],
+
     ]
-    densFac = 0.0421401101
-    thcondFac = 0.293071 / 0.3048 / 5/9
-    for it in input[1:]:
-        it.insert(2, float(it[1])*densFac)
-        it.insert(4, float(it[3].split()[0])*thcondFac)
     print(createRstTable(input))
 

@@ -8,7 +8,6 @@ variant 3.
 
 from os.path import dirname, abspath, basename
 import datetime
-now = datetime.datetime.now()
 
 
 try:
@@ -25,12 +24,12 @@ except NameError:
     __title__ = None
 
 __description__ = 'Design and optimization of H2 tanks using muChain'
-__version__ = "2.3.2"
+__version__ = "2.4.1"
 __author__ = 'Sebastian Freund, Caroline Lueders'
 __email__ = 'sebastian.freund@dlr.de'
 __license__ = 'MIT'
-__copyright__ = "Copyright (C) {} Deutsches Zentrum fuer Luft- und Raumfahrt(DLR, German Aerospace Center)".format(now.year)
-__url__='https://github.com/sfreund-DLR/tankoh2'
+__copyright__ = "Copyright (C) 2023 Deutsches Zentrum fuer Luft- und Raumfahrt(DLR, German Aerospace Center)"
+__url__ = 'https://github.com/sfreund-DLR/tankoh2'
 __keywords__ = 'tank h2 optimization design fem model'
 
 

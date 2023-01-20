@@ -8,12 +8,36 @@ import shutil
 import numpy as np
 import pandas as pd
 
+from tankoh2 import log
 from tankoh2.service.exception import Tankoh2Error
+from tankoh2.service.utilities import indent
 
 
 def getAnglesFromVessel(vessel):
     """returns a list with all angles from the vessel"""
     return [np.rad2deg(vessel.getVesselLayer(layerNumber).getVesselLayerElement(0, True).clairaultAngle) for layerNumber in range(vessel.getNumberOfLayers())]
+
+
+def getHoopShiftsFromVessel(vessel):
+    """Returns a list with all hoop shifts using zero for helical layers"""
+    return [vessel.getHoopLayerShift(layerNumber, True) for layerNumber in range(vessel.getNumberOfLayers())]
+
+
+def checkAnglesAndShifts(anglesAndShifts, vessel):
+    """Compares the tankoh2 "anglesAndShifts" with the ones defined in the vessel object
+    :param anglesAndShifts: list [(angle1, shift1), () ...]
+    :param vessel: µWind vessel instance
+    :raises: Tankoh2Error if angles and shifts do not match
+    """
+    anglesVessel = getAnglesFromVessel(vessel)
+    shiftsVessel = getHoopShiftsFromVessel(vessel)
+    anglesAndShiftsT = np.array(anglesAndShifts).T
+    if not np.allclose(anglesAndShiftsT, [anglesVessel, shiftsVessel], rtol=2e-2):
+        msgTable = [['tankoh2 angle', 'µWind angle', 'tankoh2 shift', 'µWind shift']]
+        msgTable += list(zip(anglesAndShiftsT[0], anglesVessel, anglesAndShiftsT[1], shiftsVessel))
+        msgTable = indent(msgTable)
+        log.error('\n'+msgTable)
+        raise Tankoh2Error(f'Angles and shifts do not match. \n{msgTable}')
 
 
 def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
@@ -26,8 +50,8 @@ def getLayerThicknesses(vessel, symmetricContour, layerNumbers=None):
     thicknesses = []
     if layerNumbers is None:
         layerNumbers = range(vessel.getNumberOfLayers())
-    angles = getAnglesFromVessel(vessel)
-    columns = ['lay{}_{:04.1f}'.format(layNum, angles[layNum]) for layNum in layerNumbers]
+    DesignAngles = getAnglesFromVessel(vessel)
+    columns = ['lay{}_{:04.1f}'.format(layNum, DesignAngles[layNum]) for layNum in layerNumbers]
 
     liner = vessel.getLiner()
     numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
@@ -54,6 +78,100 @@ def getElementThicknesses(vessel):
     """returns a vector with thicknesses of each element along the whole vessel"""
     thicknesses = getLayerThicknesses(vessel).T
     return thicknesses.sum()
+
+
+def getLayerAngles(vessel, symmetricContour, layerNumbers=None):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param vessel: vessel obj
+    :param symmetricContour: flag if symmetric contour is used
+    :param layerNumbers: list of layers that should be evaluated. If None, all layers are used
+    :return:
+    """
+    angles = []
+    if layerNumbers is None:
+        layerNumbers = range(vessel.getNumberOfLayers())
+    DesignAngles = getAnglesFromVessel(vessel)
+    columns = ['lay{}_{:04.1f}'.format(layNum, DesignAngles[layNum]) for layNum in layerNumbers]
+
+    liner = vessel.getLiner()
+    numberOfElements1 = liner.getMandrel1().numberOfNodes - 1
+    numberOfElements2 = liner.getMandrel2().numberOfNodes - 1
+    for layerNumber in layerNumbers:
+        vesselLayer = vessel.getVesselLayer(layerNumber)
+        layerAngles = []
+        elemsMandrels =  [(numberOfElements1, True)]
+        if not symmetricContour:
+            elemsMandrels.append((numberOfElements2, False))
+        for numberOfElements, isMandrel1 in elemsMandrels:
+            for elementNumber in range(numberOfElements):
+                layerElement = vesselLayer.getVesselLayerElement(elementNumber, isMandrel1)
+                layerAngles.append(np.rad2deg(layerElement.clairaultAngle))
+            if not symmetricContour and isMandrel1:
+                layerAngles= layerAngles[::-1] # reverse order of mandrel 1
+        angles.append(layerAngles)
+    angles = pd.DataFrame(angles).T
+    angles.columns = columns
+    return angles
+
+
+def getMandrelNodalCoordinates(liner, symmetricContour):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param liner: liner obj
+    :param symmetricContour: flag if symmetric contour is used
+    :return:
+    """
+    mandrel1 = liner.getMandrel1()
+    x = mandrel1.getXArray()
+    r = mandrel1.getRArray()
+    l = mandrel1.getLArray()
+    if not symmetricContour:
+        x = x[::-1]  # reverse order of mandrel 1
+        r = r[::-1]
+        l = l[::-1]
+        mandrel2 = liner.getMandrel2()
+        x2 = mandrel2.getXArray()
+        x = np.append(x, mandrel2.getXArray())
+        r = np.append(r, mandrel2.getRArray())
+        l = np.append(l, mandrel2.getLArray())
+
+    coordinatesDataframe = pd.DataFrame(np.array([x, r, l]).T, columns=['x_mandrel', 'r_mandrel', 'l_mandrel'])
+
+    return coordinatesDataframe
+
+
+def getLayerNodalCoordinates(windingResults, symmetricContour, layerNumbers=None):
+    """returns a dataframe with thicknesses of each layer along the whole vessel
+    :param windingResults: windingResults obj
+    :param symmetricContour: flag if symmetric contour is used
+    :param layerNumbers: list of layers that should be evaluated. If None, all layers are used
+    :return:
+    """
+    if layerNumbers is None:
+        layerNumbers = range(0, windingResults.getNumberOfLayers())
+    coordinates = []
+    columns = []
+    Mandrels = [True]
+    if not symmetricContour:
+        Mandrels.append(False)
+    for layerNumber in layerNumbers:
+        columns.append('x_lay{}'.format(layerNumber))
+        columns.append('r_lay{}'.format(layerNumber))
+        x = []
+        r = []
+        for isMandrel1 in Mandrels:
+            numberOfNodes = windingResults.getNumberOfNodesInLayer(layerNumber+1, isMandrel1)
+            for nodeNumber in range(1, numberOfNodes+1):
+                node = windingResults.getNode(layerNumber+2, nodeNumber, isMandrel1)
+                x.append(node.x)
+                r.append(node.y)
+            if not symmetricContour and isMandrel1:
+                x = x[::-1]  # reverse order of mandrel 1
+                r = r[::-1]
+        coordinates.append(x)
+        coordinates.append(r)
+    coordinatesDataframe = pd.DataFrame(coordinates).T
+    coordinatesDataframe.columns = columns
+    return coordinatesDataframe
 
 
 def copyAsJson(filename, typename):
@@ -134,11 +252,11 @@ def getLinearResultsAsDataFrame(results = None):
     return df
 
 
-def getCriticalElementIdx(puck):
+def getMostCriticalElementIdxPuck(puck):
     """Returns the index of the most critical element
 
     :param puck: 2d array defining puckFF or puckIFF for each element and layer
     """
-    # identify critical element
     layermax = puck.max().argmax()
-    return puck.idxmax()[layermax], layermax
+    elemIdxPuckMax = puck.idxmax()[layermax]
+    return elemIdxPuckMax, layermax

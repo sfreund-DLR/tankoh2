@@ -4,7 +4,7 @@ from matplotlib import pylab as plt
 import numpy as np
 import os
 
-
+from tankoh2.design.winding.solver import targetFuncNames
 from tankoh2.service.plot.generic import plotDataFrame, saveShowClose
 
 
@@ -12,11 +12,12 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                           verbosePlot, useFibreFailure, show,
                           elemIdxmax, hoopStart, hoopEnd, newDesignIndexes, targetFuncScaling):
     """"""
-    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) for i, (angle, _) in enumerate(anglesShifts[:-1])]
+    puck.columns = ['lay{}_{:04.1f}'.format(i, angle) if i >= layerNumber-10 or i < 2 else '_' for i, (angle, _) in enumerate(anglesShifts[:-1])]
     puck.index = puck.index + 0.5
     puckLabelName = 'max puck fibre failure' if useFibreFailure else 'max puck inter fibre failure'
-    fig, axs = plt.subplots(1, 2 if verbosePlot else 1, figsize=(15 / (1 if verbosePlot else 2), 7))
-    if verbosePlot:
+    useTwoPlots = verbosePlot and tfValues is not None
+    fig, axs = plt.subplots(1, 2 if useTwoPlots else 1, figsize=(16 if useTwoPlots else 10, 7))
+    if useTwoPlots:
         plotTargetFunc(axs[1], tfValues, anglesShifts, puckLabelName, targetFuncScaling, None, None, False)
         ax = axs[0]
     else:
@@ -25,7 +26,13 @@ def plotPuckAndTargetFunc(puck, tfValues, anglesShifts, layerNumber, runDir,
                   vlines=[hoopStart, hoopEnd, elemIdxmax + 0.5] + newDesignIndexes,
                   vlineColors=['black', 'black', 'red'] + ['green'] * len(newDesignIndexes),
                   yLabel=puckLabelName, xLabel='Contour index',
-                  plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}})
+                  plotKwArgs={'legendKwargs':{'loc':'center left', 'bbox_to_anchor':(1.03, 0.5)}, 'linewidth':1.0})
+    ax.lines[0].set_color('maroon')
+    ax.get_legend().legendHandles[0].set_color('maroon')
+    if layerNumber > 1 and len(ax.get_legend().legendHandles) > 1:
+        ax.lines[1].set_color('darkolivegreen')
+    for i in range(2,len(puck.columns)-10):
+        ax.lines[i].set_color('black')
     fig.tight_layout()
     saveShowClose(os.path.join(runDir, f'puck_{layerNumber}.png') if runDir else '',
                   show=show, fig=fig, verbosePlot=verbosePlot)
@@ -40,17 +47,24 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     xLabel = 'angle' if anglesShifts[-1][0] < 89 else 'hoop shift'
     angleOrHoopShift = anglesShifts[-1][0] if anglesShifts[-1][0] < 89 else anglesShifts[-1][1]
     tfX = tfValues[0]
-    tfMaxIndexes = tfValues[-1]
-    tfValues = tfValues[1:-1]
+    tfMaxPuckIndexes = tfValues[-2]
+    tfMaxStrainIndexes = tfValues[-1]
+    tfValues = tfValues[1:-2]
     weights, scaling = targetFuncScaling
-    labelNames = [puckLabelName, f'{puckLabelName[4:]} at last crit location', 'puck sum', 'mass']
+    labelNames = targetFuncNames
     labelNames = [f'{labelName}, weight: {round(weight,4)}, scaleFac: {round(scale,4)}'
                   for labelName, weight, scale in zip(labelNames, weights, scaling)]
-    for values, labelName in zip(tfValues, labelNames):
-        if np.all(values < 1e-8): 
+    puckIndex, bendIndex, linesIndex = None, None, 0 # index of puck line and bending line
+    for values, labelName, index in zip(tfValues, labelNames, range(len(labelNames))):
+        if np.all(values < 1e-8):
             continue
+        if index == 0:
+            puckIndex = linesIndex
+        if index == 4:
+            bendIndex = linesIndex
+        linesIndex += 1
         ax.plot(tfX, values, label=labelName)
-    if tfValues.shape[0] == 4:  # plot weighted sum
+    if tfValues.shape[0] > 1:  # plot weighted sum
         ax.plot(tfX, tfValues.sum(axis=0), label='target function: weighted sum')
 
     # plot optimal angle or shift as vertical line
@@ -60,8 +74,13 @@ def plotTargetFunc(ax, tfValues, anglesShifts, puckLabelName, targetFuncScaling,
     ax.set_xlabel(xLabel)
     ax2 = ax.twinx()  # plot on secondary axes
     ax2.set_ylabel('Contour index of highest Puck value')
-    ax2.scatter(tfX, tfMaxIndexes, label='Contour index of highest Puck value', s=2, color='orange')
     lines, labels = ax.get_legend_handles_labels()
+    if puckIndex is not None:
+        ax2.scatter(tfX, tfMaxPuckIndexes, label='Contour index of highest Puck value', s=3,
+                    color=lines[puckIndex].get_color())
+    if bendIndex is not None:
+        ax2.scatter(tfX, tfMaxStrainIndexes, label='Contour index of highest strain value', s=3,
+                    color=lines[bendIndex].get_color())
     lines2, labels2 = ax2.get_legend_handles_labels()
     ax2.legend(lines + lines2, labels + labels2, loc='lower center', bbox_to_anchor=(0.5, 1.01))
     if fig:

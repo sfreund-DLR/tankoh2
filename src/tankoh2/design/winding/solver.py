@@ -5,7 +5,11 @@ import pandas as pd
 
 from tankoh2 import pychain, log
 from tankoh2.design.winding.winding import windLayer
-from tankoh2.design.winding.windingutils import getLayerThicknesses
+
+
+targetFuncNames = ['max puck', 'max puck at last crit location', 'puck sum', 'mass',
+                   'strain diff', 'strain diff at last crit location']
+resultNames = targetFuncNames + ['maxPuckIndex', 'maxStrainDiffIndex']
 
 
 def getMaxPuckByAngle(angle, args):
@@ -19,14 +23,14 @@ def getWeightedTargetFuncByAngle(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    return np.sum(getMaxPuckLocalPuckMassIndexByAngle(angle, args)[:-1])
+    return np.sum(getMaxPuckLocalPuckMassIndexByAngle(angle, args)[:-2])
 
 
-def getMaxPuckLocalPuckMassIndexByAngle(angle, args):
+def getMaxPuckLocalPuckMassIndexByAngle(angle, kwArgs):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _, _, _, _ = args
+    vessel, layerNumber, puckProperties = kwArgs['vessel'], kwArgs['layerNumber'], kwArgs['puckProperties']
     if hasattr(angle, '__iter__'):
         angle = angle[0]
     if angle is not None:
@@ -34,11 +38,10 @@ def getMaxPuckLocalPuckMassIndexByAngle(angle, args):
         actualPolarOpening = windLayer(vessel, layerNumber, angle)
         if actualPolarOpening is np.inf:
             return np.inf, 0
-    maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex = getMaxPuckLocalPuckMass(args)
-    failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-    log.debug(f'Layer {layerNumber}, angle {angle}, max {failure} {maxPuck}, '
-              f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
-    return maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex
+    result = getMaxPuckLocalPuckMass(kwArgs)
+    log.debug(f'Layer {layerNumber}, angle {angle}, ' +
+              str([(name, str(val)) for name, val in zip(resultNames, result)]))
+    return result
 
 
 def getMaxPuckByShift(shift, args):
@@ -53,10 +56,10 @@ def getWeightedTargetFuncByShift(angle, args):
     """Sets the given angle, winding sim, puck analysis
 
     :return: maximum puck fibre failure"""
-    return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:-1])
+    return np.sum(getMaxPuckLocalPuckMassIndexByShift(angle, args)[:-2])
 
 
-def getMaxPuckLocalPuckMassIndexByShift(shift, args):
+def getMaxPuckLocalPuckMassIndexByShift(shift, kwArgs):
     """Sets the given hoop shift, winding sim, puck analysis
 
     :param shift:
@@ -65,49 +68,74 @@ def getMaxPuckLocalPuckMassIndexByShift(shift, args):
     """
     if hasattr(shift, '__iter__'):
         shift = shift[0]
-    vessel, layerNumber, puckProperties, burstPressure, _, useFibreFailure, _, _, _, _ = args
+    vessel, layerNumber, puckProperties = kwArgs['vessel'], kwArgs['layerNumber'], kwArgs['puckProperties']
     vessel.setHoopLayerShift(layerNumber, shift, True)
     actualPolarOpening = windLayer(vessel, layerNumber)
     if actualPolarOpening is np.inf:
         return np.inf, 0
-    maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex = getMaxPuckLocalPuckMass(args)
-    failure = 'fibre failure' if useFibreFailure else 'inter fibre failure'
-    log.debug(f'Layer {layerNumber}, hoop shift {shift}, max {failure} {maxPuck}, '
-              f'{failure} at crit index {puckAtCritIdx}, layer mass {layMass}, index {maxIndex}')
-    return maxPuck, puckAtCritIdx, puckSum, layMass, maxIndex
+    result = getMaxPuckLocalPuckMass(kwArgs)
+    log.debug(f'Layer {layerNumber}, hoop shift {shift}, ' +
+              str([(name, str(val)) for name, val in zip(resultNames, result)]))
+    return result
 
 
-
-def getMaxPuckLocalPuckMass(args, puck=None, scaleTf=True):
-    """Return maximum fibre failure of the all layers after winding the given angle"""
-    vessel, layerNumber, puckProperties, burstPressure, useIndices, useFibreFailure, _, symmetricContour, \
-        critIdx, targetFuncScaling = args
-    if puck is None:
-        index = 0 if useFibreFailure else 1
-        puck = getLinearResults(
-            vessel, puckProperties, burstPressure, useIndices, True, symmetricContour)[index]
+def getMaxPuckLocalPuckMass(kwArgs, puckAndStrainDiff=None, scaleTf=True):
+    """Return maximum fibre failure of the all layers after winding the given angle
+    :param kwArgs:
+    :param puckAndStrainDiff: tuple (puck values, strain Diff)
+    :param scaleTf:
+    :return:
+    """
+    vessel, layerNumber, puckProperties = kwArgs['vessel'], kwArgs['layerNumber'], kwArgs['puckProperties']
+    burstPressure, useIndices = kwArgs['burstPressure'], kwArgs['useIndices']
+    useFibreFailure, symmetricContour = kwArgs['useFibreFailure'], kwArgs['symmetricContour']
+    elemIdxPuckMax, elemIdxBendMax = kwArgs['elemIdxPuckMax'], kwArgs['elemIdxBendMax']
+    targetFuncScaling = kwArgs['targetFuncScaling']
+    if puckAndStrainDiff is None:
+        puck, strainDiff = getPuckStrainDiff(vessel, puckProperties, burstPressure, useIndices,
+                                             symmetricContour, useFibreFailure, True)
+    else:
+        puck, strainDiff = puckAndStrainDiff
     maxPerElement = puck.max(axis=1)
-    maxIndex = maxPerElement.idxmax()
+    maxPuckIndex = maxPerElement.idxmax()
+
+    maxStrainDiff = strainDiff.max()
+    maxStrainDiffIndex = np.argmax(strainDiff)
+    strainDiffAtCritIdx = strainDiff[elemIdxBendMax]
 
     maxPuck = maxPerElement.max()
-    puckAtCritIdx = maxPerElement[critIdx]
+    puckAtCritIdx = maxPerElement[elemIdxPuckMax]
     puckSum = np.sum(maxPerElement)
+
     layMass = vessel.getVesselLayer(layerNumber).getVesselLayerPropertiesSolver().getWindingLayerResults().fiberMass
 
-    tfValues = np.array([maxPuck, puckAtCritIdx, puckSum, layMass])
+    tfValues = np.array([maxPuck, puckAtCritIdx, puckSum, layMass, maxStrainDiff, strainDiffAtCritIdx])
     if scaleTf:
         tfValues *= targetFuncScaling
-    return *tfValues, maxIndex
+    return *tfValues, maxPuckIndex, maxStrainDiffIndex
 
 
-def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puckOnly = False,
+def getPuckStrainDiff(vessel, puckProperties, burstPressure, useIndices=None,
+                     symmetricContour=True, useFibreFailure=True, useMeridianStrain=True):
+    """returns the puck values and strain diffs for the actual
+
+    """
+    results = getLinearResults(vessel, puckProperties, burstPressure, useIndices=useIndices,
+                               symmetricContour=symmetricContour)
+    puck = results[7] if useFibreFailure else results[8]
+    strainDiff = abs(results[3] - results[4]) if useMeridianStrain else abs(results[5] - results[6])
+    return puck, strainDiff
+
+
+def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None,
                      symmetricContour=True):
     """Calculates puck results and returns them as dataframe
 
     :param vessel: µWind vessel instance
     :param puckProperties: µWind puckProperties instance
-    :param layerNumber: 0-based
+    :param burstPressure: burst pressure in MPa
     :param useIndices: list of element indicies that should be used for evaluation
+    :param symmetricContour:
     :return: 2-tuple with dataframes (fibre failure, inter fibre failure)
     """
     puck = pychain.failure.PuckFailureCriteria2D()
@@ -129,9 +157,9 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     stressVec = pychain.utility.StressVector()
     puckFF, puckIFF = [], []
     if useIndices is not None:
-        useIndices = set(useIndices)
+        useIndicesSet = set(useIndices)
     for elemIdx, elemStresses in enumerate(stresses):
-        if useIndices is not None and elemIdx not in useIndices:
+        if useIndices is not None and elemIdx not in useIndicesSet:
             failures = np.zeros((numberOfLayers,2))
         else:
             failures = []
@@ -149,23 +177,24 @@ def getLinearResults(vessel, puckProperties, burstPressure, useIndices=None, puc
     puckFF = pd.DataFrame(np.array(puckFF), columns=columns)
     columns = [f'puckIFFlay{layerNumber}' for layerNumber in range(numberOfLayers)]
     puckIFF = pd.DataFrame(np.array(puckIFF), columns=columns)
-    if puckOnly:
-        # if useIndices is not None:
-        #     noUseIndices = set(puckFF.index).difference(useIndices)
-        #     puckFF.drop(noUseIndices, inplace=True)
-        #     puckIFF.drop(noUseIndices, inplace=True)
-        return puckFF, puckIFF
 
     epsAxialBot = shellModel.getEpsAxialBottom(0)
     epsAxialTop = shellModel.getEpsAxialTop(0)
     epsCircBot = shellModel.getEpsCircBottom(0)
     epsCircTop = shellModel.getEpsCircTop(0)
     if not symmetricContour:
-        epsAxialBot = np.append(epsAxialBot[::-1], shellModel.getEpsAxialBottom(0))
-        epsAxialTop = np.append(epsAxialTop[::-1], shellModel.getEpsAxialTop(0))
-        epsCircBot = np.append(epsCircBot[::-1], shellModel.getEpsCircBottom(0))
-        epsCircTop = np.append(epsCircTop[::-1], shellModel.getEpsCircTop(0))
+        epsAxialBot = np.append(epsAxialBot[::-1], shellModel2.getEpsAxialBottom(0))
+        epsAxialTop = np.append(epsAxialTop[::-1], shellModel2.getEpsAxialTop(0))
+        epsCircBot = np.append(epsCircBot[::-1], shellModel2.getEpsCircBottom(0))
+        epsCircTop = np.append(epsCircTop[::-1], shellModel2.getEpsCircTop(0))
+    if useIndices is not None:
+        zeroIndices = np.array([idx not in useIndicesSet for idx in range(len(epsAxialBot))])
+        epsAxialBot[zeroIndices] = 0.
+        epsAxialTop[zeroIndices] = 0.
+        epsCircBot[zeroIndices] = 0.
+        epsCircTop[zeroIndices] = 0.
     return S11, S22, S12, epsAxialBot, epsAxialTop, epsCircBot, epsCircTop, puckFF, puckIFF
+
 
 
 def _getShellModels(vessel, burstPressure, symmetricContour):
@@ -181,5 +210,4 @@ def _getShellModels(vessel, burstPressure, symmetricContour):
         linerSolver = pychain.mycrofem.LinearSolver(shellModel2)
         linerSolver.run(True)
     return shellModel, shellModel2
-
 

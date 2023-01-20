@@ -13,48 +13,51 @@ from tankoh2.design.loads import getHydrostaticPressure
 from tankoh2.settings import useRstOutput, minCylindricalLength
 from tankoh2.design.designutils import getRequiredVolume
 
-resultNamesFrp = ['Output Name', 'shellMass', 'liner mass', 'insulation mass', 'fairing mass', 'total mass', 'volume',
-                  'area', 'length axial', 'numberOfLayers', 'reserve factor', 'gravimetric index', 'stress ratio',
-                  'iterations', 'duration', 'angles', 'hoopLayerShifts']
-resultUnitsFrp = ['unit', 'kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', '', '', '', '', 's', '°', 'mm']
+resultNamesFrp = ['shellMass', 'linerMass', 'insulationMass', 'fairingMass', 'totalMass', 'volume',
+                  'area', 'lengthAxial', 'numberOfLayers', 'cylinderThickness', 'maxThickness', 'reserveFactor',
+                  'gravimetricIndex', 'stressRatio', 'hoopHelicalRatio', 'iterations', 'duration', 'angles', 'hoopLayerShifts']
+resultUnitsFrp = ['kg', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', '', 'mm', 'mm', '', '', '', '', '', 's', '°', 'mm']
 
-resultNamesMetal = ['Output Name', 'metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
+resultNamesMetal = ['metalMass', 'insulation mass', 'fairing mass', 'total mass', 'volume', 'area',
                     'length axial', 'wallThickness', 'duration']
-resultUnitsMetal = ['unit', 'kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
+resultUnitsMetal = ['kg', 'kg', 'kg', 'kg', 'dm^3', 'm^2', 'mm', 'mm', 's']
 
 indentFunc = createRstTable if useRstOutput else indent
 
 
-def saveParametersAndResults(inputKwArgs, results=None, createMessage=False):
+def saveParametersAndResults(runDir, specificInputs=None, allInputKwArgs=None, results=None):
     """saves all input parameters and results to a file
 
-    :param inputKwArgs: dict with input keys and values
+    :param specificInputs: dict with non-default input keys and values
+    :param allInputKwArgs: dict with all input keys and values
     :param results: list with result values as returned by createDesign() in control_winding and control_metal
     :param createMessage: flag if a log message should be created
     """
-    filename = 'all_parameters_and_results.txt'
-    runDir = inputKwArgs.get('runDir')
+
     np.set_printoptions(linewidth=np.inf)  # to put arrays in one line
-    outputStr = [
-        '\nINPUTS\n\n',
-        indentFunc(inputKwArgs.items())
-    ]
+    outputStr = ''
+
+    if specificInputs is not None:
+        outputStr += '\n\nNON-DEFAULT INPUTS\n\n' + indentFunc(specificInputs.items()) + '\n'
+        if allInputKwArgs is None:
+            log.info(outputStr)
+    if allInputKwArgs is not None:
+        outputStr += '\nALL INPUTS\n\n' + indentFunc(allInputKwArgs.items()) + '\n'
+        if results is None:
+            log.info(outputStr)
     if results is not None:
-        if len(results) == len(resultNamesFrp) - 1:
+        if len(results) == len(resultNamesFrp):
             resultNames, resultUnits = resultNamesFrp, resultUnitsFrp
         else:
             resultNames, resultUnits = resultNamesMetal, resultUnitsMetal
-        outputStr += ['\n\nOUTPUTS\n\n',
-                      indentFunc(zip(resultNames, resultUnits, ['value'] + list(results)))]
-    log.info('Parameters' + ('' if results is None else ' and results') + ':' + ''.join(outputStr))
+        resultNames = ['Output Name'] + resultNames
+        resultUnits = ['Unit'] + resultUnits
+        outputStr += '\nOUTPUTS\n\n' + indentFunc(zip(resultNames, resultUnits, ['value'] + list(results)))
+        log.info(outputStr)
 
-    if results is not None:
-        outputStr += ['\n\n' + indentFunc([resultNames, resultUnits, ['value'] + list(results)])]
-    outputStr = ''.join(outputStr)
-    with open(os.path.join(runDir, filename), 'w') as f:
+    filename = os.path.join(runDir, 'all_parameters_and_results.txt')
+    with open(filename, 'a') as f:
         f.write(outputStr)
-    if createMessage:
-        log.info('Inputs, Outputs:\n' + outputStr)
     np.set_printoptions(linewidth=75)  # reset to default
 
 
@@ -78,7 +81,12 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
         log.warning(f'These input keywords are unknown: {notDefinedArgs}')
 
     # update missing args with default design args
-    inputKwArgs['runDir'] = inputKwArgs['runDir'] if 'runDir' in inputKwArgs else getRunDir(inputKwArgs.get('tankname', ''))
+
+    if 'runDir' not in inputKwArgs:
+        if frpOrMetal == 'metal':
+            inputKwArgs['runDir'] = getRunDir(inputKwArgs.get('tankname', ''), useMilliSeconds=True)
+        else:
+            inputKwArgs['runDir'] = getRunDir(inputKwArgs.get('tankname', ''))
     designArgs = defaultDesign.copy()
 
     removeIfIncluded = np.array([('lcylByR', 'lcyl'),
@@ -117,16 +125,17 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
 
     if _parameterNotSet(designArgs, 'lcyl'):
         designArgs['lcyl'] = designArgs['lcylByR'] * designArgs['dcyl'] / 2
-    # width
-    if _parameterNotSet(designArgs, 'rovingWidthHoop'):
-        designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
-    if _parameterNotSet(designArgs, 'rovingWidthHelical'):
-        designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
-    # thickness
-    if _parameterNotSet(designArgs, 'layerThkHoop'):
-        designArgs['layerThkHoop'] = designArgs['layerThk']
-    if _parameterNotSet(designArgs, 'layerThkHelical'):
-        designArgs['layerThkHelical'] = designArgs['layerThk']
+    elif frpOrMetal == 'frp':
+        # width
+        if _parameterNotSet(designArgs, 'rovingWidthHoop'):
+            designArgs['rovingWidthHoop'] = designArgs['rovingWidth']
+        if _parameterNotSet(designArgs, 'rovingWidthHelical'):
+            designArgs['rovingWidthHelical'] = designArgs['rovingWidth']
+        # thickness
+        if _parameterNotSet(designArgs, 'layerThkHoop'):
+            designArgs['layerThkHoop'] = designArgs['layerThk']
+        if _parameterNotSet(designArgs, 'layerThkHelical'):
+            designArgs['layerThkHelical'] = designArgs['layerThk']
 
     linerThk = designArgs['linerThickness']
     domeVolumes = []
@@ -179,39 +188,36 @@ def parseDesignArgs(inputKwArgs, frpOrMetal='frp'):
 
         if designArgs['lcyl'] > minCylindricalLength:
             log.info(f'Due to volume requirement (V={designArgs["volume"]} m^3), the cylindrical length'
-                     f'was reduced to {designArgs["lcyl"]}.')
+                     f' was set to {designArgs["lcyl"]}.')
         else:
-            if not hasattr(dome, 'adaptGeometry'):
-                raise NotImplementedError(f'Adjusting the dome diameter is not supported for the dome of type'
-                                          f'{dome.__class__}. Please contact the developer and/or ')
             # if the tank volume given in the designArgs is so low that is already fits into the domes,
             # the tank diameter is scaled down to achieve a minimum of minCylindricalLength
-            # cylindrical length needed to run
-            # simulation with muWind. The parameters alpha, beta, gamma and delta are kept constant while the
-            # cylindrical diameter is changed
+            # cylindrical length needed to run simulation with muWind.
+            # For conical domes, the parameters alpha, beta, gamma and delta are kept constant while the
+            # cylindrical diameter is changed.
 
             designArgs['lcyl'] = minCylindricalLength
-            while(abs(volumeReq - domeVolumes[0] * 1e-9 - domeVolumes[-1] * 1e-9 - np.pi * (designArgs['dcyl'] / 2) ** 2 * designArgs['lcyl'] * 1e-9)) > 0.01 * volumeReq:
-                domeVolumes = []
-                adaptGeometry = dome.adaptGeometry(10, designArgs['beta'])
-                # domeVolumes.append(adaptGeometry[0])
-                designArgs['dcyl'] = 2 * adaptGeometry[-1]
 
-                for domeName in ['dome2', 'dome']:
-                    domeVolumes.append(dome.volume)
-
-                    domeType = designArgs[f'{domeName}Type']
-                    r = designArgs['dcyl'] / 2
-
-                    dome = getDome(r, designArgs['polarOpeningRadius'], domeType,
-                                   designArgs.get(f'{domeName}LengthByR', 0.) * r,
-                                   designArgs['delta1'], r - designArgs['alpha'] * r,
-                                   designArgs['beta'] * designArgs['gamma'] * designArgs['dcyl'],
-                                   designArgs['beta'] * designArgs['dcyl'] - designArgs['beta'] * designArgs['gamma'] *
-                                   designArgs['dcyl'])
-
-                    designArgs[f'{domeName}Contour'] = dome.getContour(designArgs['nodeNumber'] // 2)
-                    designArgs[f'{domeName}'] = dome
+            # The diameter is reduced first in 10 mm steps until the volume falls below the requirement.
+            # The loop continues in 1 mm steps from the previous design values until the requirement is again reached.
+            for step in [10, 1]:
+                while True:
+                    domeVolumes = []
+                    dome = designArgs['dome'].getDomeResizedByRCyl(-step)
+                    domeVolumes.append(dome.getDomeResizedByThickness(-linerThk).volume)
+                    if not _parameterNotSet(designArgs, 'dome2'):
+                            dome2 = designArgs['dome2'].getDomeResizedByRCyl(-step)
+                            domeVolumes.append(dome2.getDomeResizedByThickness(-linerThk).volume)
+                    newVolume = domeVolumes[0] * 1e-9 + domeVolumes[-1] * 1e-9 \
+                                + np.pi * (dome.rCyl - linerThk) ** 2 * designArgs['lcyl'] * 1e-9
+                    if newVolume < volumeReq:
+                        break
+                    designArgs['dome'] = dome
+                    designArgs['domeContour'] = dome.getContour(designArgs['nodeNumber'] // 2)
+                    if not _parameterNotSet(designArgs, 'dome2'):
+                        designArgs['dome2'] = dome2
+                        designArgs['dome2Contour'] = dome2.getContour(designArgs['nodeNumber'] // 2)
+                    designArgs['dcyl'] = 2 * dome.rCyl
 
             log.warning(f'Due to volume requirement (V={designArgs["volume"]} m^3) and high cylindrical diameter, '
                         f'the cylindrical length was reduced to {designArgs["lcyl"]} and '

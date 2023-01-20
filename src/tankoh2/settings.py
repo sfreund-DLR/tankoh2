@@ -10,10 +10,16 @@ exampleSettingsFileName = 'settings_example.json'
 useRstOutput = False
 minCylindricalLength = 150
 epsilon = 1e-8
+doHoopOpt = False
+"""Flag if hoop shift should be optimized or a linear distribution should be assumed"""
 
 optimizerSeed = None
 """Seed for evolutionary optimization for repeatable runs. If -1, no seed is used"""
 
+maxHoopShiftMuWind = 800
+"""In muwind defined maximum hoop shift"""
+
+maxHelicalAngle = 70
 
 class PychainMock():
     """This class is a mock of pychain.
