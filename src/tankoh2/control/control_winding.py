@@ -161,7 +161,7 @@ def createDesign(**kwargs):
         angles, hoopLayerShifts]
     saveParametersAndResults(designArgs['runDir'], results=results)
 
-vessel.saveToFile(vesselFilename)  # save vessel
+    vessel.saveToFile(vesselFilename)  # save vessel
     updateName(vesselFilename, tankname, ['vessel'])
     if pressure:
         updateName(vesselFilename, pressure, ['vessel'], attrName='operationPressure')

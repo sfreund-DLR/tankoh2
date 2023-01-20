@@ -114,7 +114,7 @@ def minimizeUtilization(bounds, targetFunction, optKwArgs, localOptimization = F
         tfX = np.linspace(*bounds, 200)
         targetFunctionPlot = getMaxPuckLocalPuckMassIndexByAngle if targetFunction in helicalTargetFunctions else \
             getMaxPuckLocalPuckMassIndexByShift
-        tfPlotVals = [targetFunctionPlot(angleParam, optArgs) for angleParam in tfX]
+        tfPlotVals = [targetFunctionPlot(angleParam, optKwArgs) for angleParam in tfX]
         isInfArray = [val[0] == np.inf for val in tfPlotVals]
         tfX = np.array([x for x, isInf in zip(tfX, isInfArray) if not isInf])
         tfPlotVals = np.array([val for val, isInf in zip(tfPlotVals, isInfArray) if not isInf]).T
