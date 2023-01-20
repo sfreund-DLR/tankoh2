@@ -12,8 +12,8 @@ if __name__ == '__main__':
     from tankoh2.control.control_winding import createDesign as createDesignWinding
     import tankoh2.design.existingdesigns as parameters
 
-    if 0:
-        params = parameters.vphDesign1_isotensoid.copy()
+    if 1:
+        params = parameters.hytazerSMR1.copy()
 
         params['dcyl'] = 7500
         params['lcylByR'] = 2

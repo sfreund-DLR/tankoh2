@@ -25,7 +25,7 @@ allArgs = pd.DataFrame(
         ['maxLayers', 'Optimization', 'layers', 100, int, 'Maximum number of layers to be added', ''],
         ['relRadiusHoopLayerEnd', 'Optimization', '', 0.95, float,
          'relative radius (to cyl radius) where hoop layers end [-]', ''],
-        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.25,2.,.1], list,
+        ['targetFuncWeights', 'Optimization', 'tfWeights', [1.,.2,.0,.0,0.,0.], list,
          'Weights to the target function constituents: maxPuck, maxCritPuck, sumPuck, layerMass', ''],
         # Geometry
         ['dcyl', 'Geometry', 'd_cyl', 400, float,
@@ -529,44 +529,26 @@ hytazer = OrderedDict([
     ('nodeNumber', 1000),
 ])
 
-DomeTest = OrderedDict([
-    ('tankname', 'torispherical_const_length045'),
-    ('lcyl', 200),  # m^3
-    ('dcyl', 3650),  # mm
-    ('polarOpeningRadius', 100),  # mm
-    ('domeType', 'torispherical'),
-    ('domeLengthByR', 0.2),
-    ('pressure', 0.25),  # [MPa]
-    ('failureMode', 'interFibreFailure'),
-    ('tankLocation', 'fuselage'),
-    ('useHydrostaticPressure', True),
-    ('numberOfRovings', 12),
-    ('minPressure', 0.12),
-    ('verbosePlot', True),
-    ('nodeNumber', 1000),
-])
-
 
 hytazerSMR1 = OrderedDict([ # short/medium range single aisle aircraft, tank #1
     ('tankname', 'hytazer_smr_ff_10bar'),
     ('polarOpeningRadius', 100),
     ('dcyl', 2 * (1716 + defaultDesign['linerThickness'])),  # mm
     ('pressure', .2),  # [MPa]
-    ('domeType', 'isotensoid_MuWind'),
+    ('domeType', 'isotensoid'),
     ('useHydrostaticPressure', True),
     ('volume', 23.252),
     ('failureMode', 'interFibreFailure'),
     ('safetyFactor', 1.33),
-    #('failureMode', 'fibreFailure'),
-    #('safetyFactor', 2.),
     ('nodeNumber', 1000),
     ('materialName', 'CFRP_T700SC_LY556'),
     ('valveReleaseFactor', 1.1),
     ('verbosePlot', True),
     ('numberOfRovings', 12),
+    ('targetFuncWeights', [1.,.2,.0,.0,0.,0.]),
 ])
 hytazerSMR1['tankname'] = f'hytazer_smr_{"ff" if hytazerSMR1["failureMode"] == "fibreFailure" else "iff"}_' \
-                          f'{hytazerSMR1["pressure"]}bar'
+                          f'{hytazerSMR1["pressure"]*10}bar'
 
 
 hytazerSMR2 = hytazerSMR1.copy()
