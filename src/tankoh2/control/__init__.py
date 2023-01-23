@@ -11,7 +11,7 @@ if __name__ == '__main__':
         params.update([
             ('tankname', params['tankname']),
             ('verbosePlot', True),
-            #('maxLayers', 20),
+            #('maxLayers', 3),
             ('targetFuncWeights', [1., 1., 0., 0., .25, 0.25])
         ])
 

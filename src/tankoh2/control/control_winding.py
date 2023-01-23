@@ -157,8 +157,9 @@ def createDesign(**kwargs):
         gravimetricIndex = 'Pressure not defined, cannot calculate mass from volume'
     results = [
         frpMass, *auxMasses, totalMass, volume, area, liner.linerLength, vessel.getNumberOfLayers(),
-        reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac, iterations, duration,
-        angles, hoopLayerShifts]
+        cylinderThickness, maxThickness, reserveFac, gravimetricIndex, stressRatio, hoopByHelicalFrac,
+        iterations, duration, angles, hoopLayerShifts]
+
     saveParametersAndResults(designArgs['runDir'], results=results)
 
     vessel.saveToFile(vesselFilename)  # save vessel
