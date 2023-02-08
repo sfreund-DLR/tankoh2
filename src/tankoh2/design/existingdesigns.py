@@ -600,6 +600,17 @@ hytazerD400 = OrderedDict([
     ('nodeNumber', 500),
 ])
 
+upLiftHalfTank400 = hytazerD400.copy()
+upLiftHalfTank400.pop('pressure')
+upLiftHalfTank400.update([
+    ('tankname', 'upLiftHalfTank400'),
+    ('lcyl', 500),  # mm
+    ('burstPressure', 5),  # [MPa]
+    ('temperature', 77),
+    ('failureMode', 'interFibreFailure'),
+    ('numberOfRovings', 4),
+])
+
 dLightBase = OrderedDict([
     ('polarOpeningRadius', 50),
     ('dcyl', 1820 - 2 * (2 + 50 + 50)),  # mm, 1820 is fuselage outer d

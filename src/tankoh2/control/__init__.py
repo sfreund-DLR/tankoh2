@@ -6,10 +6,9 @@ if __name__ == '__main__':
     import tankoh2.design.existingdesigns as parameters
 
     if 1:
-        params = parameters.hytazerSMR1.copy()
+        params = parameters.upLiftHalfTank400.copy()
 
         params.update([
-            ('tankname', params['tankname']),
             ('verbosePlot', True),
             #('maxLayers', 3),
             ('targetFuncWeights', [1., 1., 0., 0., .25, 0.25])
