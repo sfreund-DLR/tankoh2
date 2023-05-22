@@ -1,5 +1,0 @@
-name version license
-python 3.8 PSF
-numpy 1.19.1 NUMPY_LICENSE
-scipy 1.5.0 SCIPY_LICENSE
-pandas 1.1.1 BSD 3-Clause
